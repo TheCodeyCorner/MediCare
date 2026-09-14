@@ -1,0 +1,43 @@
+<div class="profile-completion-overlay" id="profileCompletionPopup">
+
+    <div class="profile-completion-popup">
+
+        <button
+            type="button"
+            class="profile-completion-close"
+            id="profileCompletionClose"
+            aria-label="Close"
+        >
+            &times;
+        </button>
+
+        <div class="profile-completion-icon">
+            <i data-lucide="user-round"></i>
+        </div>
+
+        <h2>Complete Your Profile</h2>
+
+        <p>
+            Your patient profile is incomplete. Please complete your
+            medical information so we can provide you with the best
+            possible experience.
+        </p>
+
+        <a
+            href="{% url 'patient_profile' %}"
+            class="profile-completion-button"
+        >
+            Complete Profile
+        </a>
+
+        <button
+            type="button"
+            class="profile-completion-later"
+            id="profileCompletionLater"
+        >
+            Maybe Later
+        </button>
+
+    </div>
+
+</div>

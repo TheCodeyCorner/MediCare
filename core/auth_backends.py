@@ -20,7 +20,6 @@ class SupabaseUser:
         access_id,
         access_level,
         status,
-        last_login,
     ):
         self.pk = str(user_id)
         self.id = str(user_id)
@@ -32,7 +31,6 @@ class SupabaseUser:
         self.access_id = access_id
         self.access_level = access_level
         self.status = status
-        self.last_login = last_login
 
     @property
     def is_authenticated(self):
@@ -83,8 +81,7 @@ class SupabaseBackend:
                         u.email,
                         u.access_id,
                         al.access_level,
-                        u.status,
-                        u.last_login
+                        u.status
                     FROM "QueueCare".users AS u
                     LEFT JOIN "QueueCare".access_levels AS al
                         ON u.access_id = al.access_id
@@ -105,7 +102,6 @@ class SupabaseBackend:
                     access_id=row[2],
                     access_level=row[3],
                     status=row[4],
-                    last_login=row[5],
                 )
 
         finally:

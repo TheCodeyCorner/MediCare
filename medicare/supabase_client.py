@@ -12,10 +12,6 @@ load_dotenv(ENV_FILE, override=True)
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-print("ENV FILE:", ENV_FILE)
-print("SUPABASE_URL:", repr(SUPABASE_URL))
-print("SUPABASE_KEY loaded:", bool(SUPABASE_KEY))
-
 if not SUPABASE_URL:
     raise ValueError("SUPABASE_URL is missing")
 

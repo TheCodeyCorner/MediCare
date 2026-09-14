@@ -1,3 +1,4 @@
+console.log("PATIENT.JS LOADED");
 /**
  * Medicare — Patient Details
  * Vanilla JS behaviour, converted from the React `useState` menu toggle
@@ -320,4 +321,78 @@ function initBloodPressureChart() {
             pointsContainer.appendChild(point);
         });
     }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const popup = document.getElementById(
+        "profileCompletionPopup"
+    );
+
+    const closeButton = document.getElementById(
+        "profileCompletionClose"
+    );
+
+    const laterButton = document.getElementById(
+        "profileCompletionLater"
+    );
+
+    console.log("Popup:", popup);
+    console.log("Close button:", closeButton);
+    console.log("Later button:", laterButton);
+
+    if (closeButton) {
+        closeButton.addEventListener("click", function () {
+
+            fetch("/api/patient/profile-popup/dismiss/", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken"),
+                    "Content-Type": "application/json"
+                }
+            })
+                .then(function (response) {
+                    if (response.ok) {
+                        popup.style.display = "none";
+                    }
+                });
+
+        });
+    }
+
+    if (laterButton) {
+        laterButton.addEventListener("click", function () {
+
+            fetch("/api/patient/profile-popup/dismiss/", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken"),
+                    "Content-Type": "application/json"
+                }
+            })
+                .then(function (response) {
+                    if (response.ok) {
+                        popup.style.display = "none";
+                    }
+                });
+
+        });
+    }
+
+});
+
+function getCookie(name) {
+    const cookies = document.cookie.split(";");
+
+    for (let cookie of cookies) {
+        cookie = cookie.trim();
+
+        if (cookie.startsWith(name + "=")) {
+            return decodeURIComponent(
+                cookie.substring(name.length + 1)
+            );
+        }
+    }
+
+    return null;
 }

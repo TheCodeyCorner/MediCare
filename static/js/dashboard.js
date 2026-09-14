@@ -77,33 +77,3 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
 });
-
-document.getElementById("logoutLink")?.addEventListener("click", async (event) => {
-    event.preventDefault();
-
-    const csrfToken = document.querySelector(
-        "[name=csrfmiddlewaretoken]"
-    )?.value;
-
-    try {
-        const response = await fetch("{% url 'logout' %}", {
-            method: "POST",
-            headers: {
-                "X-CSRFToken": csrfToken
-            },
-            credentials: "same-origin"
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            window.location.href = "{% url 'login' %}";
-        } else {
-            alert("Unable to sign out.");
-        }
-
-    } catch (error) {
-        console.error("Logout error:", error);
-        alert("Unable to sign out. Please try again.");
-    }
-});

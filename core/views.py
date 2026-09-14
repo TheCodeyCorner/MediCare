@@ -49,38 +49,6 @@ def login_patient(request):
                 status=401
             )
         
-        first_login = (
-            user.access_level in ("Patient", "Doctor")
-            and user.last_login is None
-        )
-
-        if first_login:
-            database_url = os.getenv("DATABASE_URL")
-
-            if not database_url:
-                raise ValueError("DATABASE_URL is missing")
-
-            connection = psycopg2.connect(database_url)
-
-            try:
-                with connection.cursor() as cursor:
-                    cursor.execute(
-                        """
-                        UPDATE "QueueCare".users
-                        SET last_login = NOW()
-                        WHERE user_id = %s;
-                        """,
-                        (str(user.id),),
-                    )
-
-                connection.commit()
-
-            finally:
-                connection.close()
-
-            request.session["first_login"] = True
-            request.session["first_login_role"] = user.access_level
-        
         # Store only the Supabase UUID in the Django session.
         request.session["supabase_user_id"] = str(user.id)
         request.session.save()
@@ -104,7 +72,6 @@ def login_patient(request):
             "user_id": str(user.id),
             "email": user.email,
             "access_level": user.access_level,
-            "first_login": first_login,
             "redirect": redirect_url,
         })
 
@@ -142,7 +109,10 @@ def register_patient(request):
 
         response = supabase.auth.sign_up({
             "email": email,
-            "password": password
+            "password": password,
+            "options": {
+                "email_redirect_to": "https://medicare-3r2j.onrender.com/login/"
+            }
         })
 
         if not response.user:
@@ -172,8 +142,8 @@ def register_patient(request):
             # -----------------------------------------------------
 
             cursor.execute("""
-                SELECT access_id
-                FROM "QueueCare".access_levels
+                SELECT access_id FROM 
+                "QueueCare".access_levels
                 WHERE access_level = 'Patient'
                 LIMIT 1;
             """)
@@ -246,6 +216,47 @@ def register_patient(request):
 
 @role_required("Patient")
 def patient_dashboard(request):
+    # ---------------------------------------------------------
+    # Check whether the patient's profile is complete
+    # ---------------------------------------------------------
+
+    database_url = os.getenv("DATABASE_URL")
+
+    if not database_url:
+        raise ValueError("DATABASE_URL is missing")
+
+    connection = psycopg2.connect(database_url)
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM "QueueCare".patients p
+                    WHERE p.user_id = %s
+                      AND p.first_name IS NOT NULL
+                      AND p.dob IS NOT NULL
+                      AND p.contact IS NOT NULL
+                      AND p.blood_group IS NOT NULL
+                      AND p.country IS NOT NULL
+                      AND p.address IS NOT NULL
+                      AND p.state IS NOT NULL
+                ) AS profile_complete;
+                """,
+                (str(request.user.id),)
+            )
+
+            profile_complete = cursor.fetchone()[0]
+
+    finally:
+        connection.close()
+
+    profile_incomplete = not profile_complete
+
+    if request.session.get("profile_popup_dismissed"):
+        profile_incomplete = False
+
     # TODO: Replace all sample data below with injectable/database-backed patient data later.
     # patient = request.user.patient_profile
 
@@ -454,9 +465,6 @@ def patient_dashboard(request):
         ],
     }
 
-    first_login = request.session.get("first_login", False)
-    first_login_role = request.session.get("first_login_role")
-
     return render(
         request,
         "patient/dashboard.html",
@@ -469,9 +477,7 @@ def patient_dashboard(request):
             "prescriptions": prescriptions,
             "appointments": appointments,
             "medical_info": medical_info,
-
-            "first_login": first_login,
-            "first_login_role": first_login_role,
+            "profile_incomplete": profile_incomplete,
         },
     )
 
@@ -508,6 +514,13 @@ def patient_profile(request):
         },
     )
 
+@require_POST
+def dismiss_profile_popup(request):
+    request.session["profile_popup_dismissed"] = True
+
+    return JsonResponse({
+        "success": True
+    })
 
 @role_required("Doctor")
 def doctor_dashboard(request):

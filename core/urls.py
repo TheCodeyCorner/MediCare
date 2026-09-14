@@ -14,7 +14,7 @@ urlpatterns = [
     path("patient/appointments/", views.patient_appointments, name="patient_appointments"),
     path("patient/medical-records/", views.patient_medical_records, name="patient_medical_records"),
     path("patient/profile/", views.patient_profile, name="patient_profile"),
-
+    path("api/patient/profile-popup/dismiss/", views.dismiss_profile_popup, name="dismiss_profile_popup"),
 
     path("doctor/", views.doctor_dashboard, name="doctor_dashboard"),
 
