@@ -2,7 +2,9 @@
 
 
 {% block patient_title %}
-    My Profile | Medlink
+
+My Profile | Medlink
+
 {% endblock %}
 
 
@@ -13,12 +15,14 @@
     <header class="panel__header profile-form-panel__header">
 
         <div class="profile-form-panel__heading">
+
             <h2>Complete Your Profile</h2>
 
             <p>
                 Add your personal and medical information to keep your
                 patient record up to date.
             </p>
+
         </div>
 
     </header>
@@ -44,11 +48,13 @@
                 <div class="profile-form__section-header">
 
                     <div>
+
                         <h3>Personal Information</h3>
 
                         <p>
                             Basic information about the patient.
                         </p>
+
                     </div>
 
                 </div>
@@ -104,8 +110,7 @@
                             type="date"
                             id="dob"
                             name="dob"
-                            value="{{ patient.dob|default:'' }}"
-                            required
+                            value="{{ patient.dob|date:'Y-m-d' }}"
                         >
 
                     </div>
@@ -122,6 +127,7 @@
                             name="gender"
                             required
                         >
+
                             <option value="">
                                 Select gender
                             </option>
@@ -165,11 +171,13 @@
                 <div class="profile-form__section-header">
 
                     <div>
+
                         <h3>Contact Information</h3>
 
                         <p>
                             Your primary contact information.
                         </p>
+
                     </div>
 
                 </div>
@@ -209,11 +217,13 @@
                 <div class="profile-form__section-header">
 
                     <div>
+
                         <h3>Address</h3>
 
                         <p>
                             Your current residential address.
                         </p>
+
                     </div>
 
                 </div>
@@ -290,11 +300,13 @@
                 <div class="profile-form__section-header">
 
                     <div>
+
                         <h3>Medical Information</h3>
 
                         <p>
                             Important information about your health.
                         </p>
+
                     </div>
 
                 </div>
@@ -313,6 +325,7 @@
                             name="blood_group"
                             required
                         >
+
                             <option value="">
                                 Select blood group
                             </option>
@@ -408,11 +421,13 @@
                 <div class="profile-form__section-header">
 
                     <div>
+
                         <h3>Emergency Contact</h3>
 
                         <p>
                             Someone we can contact during an emergency.
                         </p>
+
                     </div>
 
                 </div>
@@ -484,11 +499,13 @@
                 <div class="profile-form__section-header">
 
                     <div>
+
                         <h3>Insurance</h3>
 
                         <p>
-                            Your health insurance information.
+                            Select your active health insurance policy.
                         </p>
+
                     </div>
 
                 </div>
@@ -499,16 +516,30 @@
                     <div class="profile-form__field">
 
                         <label for="insurance_id">
-                            Insurance ID
+                            Insurance Policy
                         </label>
 
-                        <input
-                            type="text"
+                        <select
                             id="insurance_id"
                             name="insurance_id"
-                            value="{{ patient.insurance_id|default:'' }}"
-                            placeholder="Enter insurance ID"
                         >
+
+                            <option value="">
+                                No insurance / Select policy
+                            </option>
+
+                            {% for policy in insurance_policies %}
+
+                                <option
+                                    value="{{ policy.insurance_id }}"
+                                    {% if patient.insurance_id == policy.insurance_id %}selected{% endif %}
+                                >
+                                    {{ policy.plan_name }}
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
 
                     </div>
 
@@ -539,4 +570,3 @@
 </section>
 
 {% endblock %}
-

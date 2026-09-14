@@ -48,10 +48,72 @@ def login_patient(request):
                 {"error": "Invalid email or password."},
                 status=401
             )
-        
+
         # Store only the Supabase UUID in the Django session.
         request.session["supabase_user_id"] = str(user.id)
         request.session.save()
+
+        # Update QueueCare login information.
+        database_url = os.getenv("DATABASE_URL")
+
+        if not database_url:
+            raise ValueError("DATABASE_URL is missing")
+
+        connection = psycopg2.connect(database_url)
+
+        try:
+            with connection.cursor() as cursor:
+
+                # Check previous login.
+                cursor.execute(
+                    """
+                    SELECT last_login
+                    FROM "QueueCare".users
+                    WHERE user_id = %s
+                    LIMIT 1;
+                    """,
+                    (str(user.id),)
+                )
+
+                row = cursor.fetchone()
+
+                if row is None:
+                    raise RuntimeError(
+                        "QueueCare.users record not found for this user."
+                    )
+
+                last_login = row[0]
+
+                # First login: create patient record.
+                if last_login is None:
+                    cursor.execute(
+                        """
+                        INSERT INTO "QueueCare".patients (
+                            user_id
+                        )
+                        VALUES (%s);
+                        """,
+                        (str(user.id),)
+                    )
+
+                # Update login time on every login.
+                cursor.execute(
+                    """
+                    UPDATE "QueueCare".users
+                    SET last_login = NOW()
+                    WHERE user_id = %s;
+                    """,
+                    (str(user.id),)
+                )
+
+                connection.commit()
+
+        except Exception:
+            connection.rollback()
+            raise
+
+        finally:
+            connection.close()
 
         # Determine destination.
         if user.access_level == "Admin":
@@ -225,10 +287,14 @@ def patient_dashboard(request):
     if not database_url:
         raise ValueError("DATABASE_URL is missing")
 
+    user_id = str(request.user.id)
+
     connection = psycopg2.connect(database_url)
 
     try:
         with connection.cursor() as cursor:
+
+            # Check profile completion
             cursor.execute(
                 """
                 SELECT EXISTS (
@@ -244,37 +310,160 @@ def patient_dashboard(request):
                       AND p.state IS NOT NULL
                 ) AS profile_complete;
                 """,
-                (str(request.user.id),)
+                (user_id,)
             )
 
             profile_complete = cursor.fetchone()[0]
 
+            # Get patient data, user email, and insurance name
+            cursor.execute(
+                """
+                SELECT
+                    p.patient_id,
+                    u.email,
+                    p.first_name,
+                    p.last_name,
+                    p.dob,
+                    p.contact,
+                    p.blood_group,
+                    p.allergies,
+                    p.emergency_contact,
+                    p.emergency_contact_name,
+                    p.emergency_contact_relation,
+                    p.insurance_id,
+                    p.country,
+                    p.address,
+                    p.state,
+                    p.gender,
+                    ip.plan_name,
+                    prov.provider_name
+                FROM "QueueCare".patients p
+                JOIN "QueueCare".users u
+                    ON p.user_id = u.user_id
+                LEFT JOIN "QueueCare".insurance_policies ip
+                    ON p.insurance_id = ip.insurance_id
+                LEFT JOIN "QueueCare".insurance_providers prov
+                    ON ip.provider_id = prov.provider_id
+                WHERE p.user_id = %s
+                LIMIT 1;
+                """,
+                (user_id,)
+            )
+
+            row = cursor.fetchone()
+
+            if row is None:
+                raise RuntimeError(
+                    "Patient record not found for this user."
+                )
+
+            patient_id = row[0]
+            email = row[1]
+            first_name = row[2]
+            last_name = row[3]
+            dob = row[4]
+            contact = row[5]
+            blood_group = row[6]
+            allergies = row[7]
+            emergency_contact = row[8]
+            emergency_contact_name = row[9]
+            emergency_contact_relation = row[10]
+            insurance_id = row[11]
+            country = row[12]
+            address = row[13]
+            state = row[14]
+            gender = row[15]
+            insurance_plan = row[16]
+            insurance_provider = row[17]
+
     finally:
         connection.close()
+
+    # ---------------------------------------------------------
+    # Calculate age from date of birth
+    # ---------------------------------------------------------
+
+    age = None
+
+    if dob:
+        from datetime import date
+
+        today = date.today()
+
+        age = today.year - dob.year
+
+        if (today.month, today.day) < (dob.month, dob.day):
+            age -= 1
+
+    # ---------------------------------------------------------
+    # Profile popup
+    # ---------------------------------------------------------
 
     profile_incomplete = not profile_complete
 
     if request.session.get("profile_popup_dismissed"):
         profile_incomplete = False
 
-    # TODO: Replace all sample data below with injectable/database-backed patient data later.
-    # patient = request.user.patient_profile
+    # ---------------------------------------------------------
+    # Insurance display name
+    # ---------------------------------------------------------
+
+    insurance_name = None
+
+    if insurance_provider and insurance_plan:
+        insurance_name = f"{insurance_provider} - {insurance_plan}"
+    elif insurance_provider:
+        insurance_name = insurance_provider
+    elif insurance_plan:
+        insurance_name = insurance_plan
+
+    # ---------------------------------------------------------
+    # Patient data
+    # ---------------------------------------------------------
 
     patient = {
-        "name": "Daniel Wong",
-        "patient_id": "PT-10528",
-        "phone": "+62 812-9012-4477",
-        "email": "daniel.wong@example.com",
-        "address": "31, Kaliurang Rd, Yogyakarta",
-        "age": 42,
-        "gender": "Male",
-        "date_of_birth": "23 July 1983",
-        "blood_type": "O+",
+        "name": " ".join(
+            part for part in [first_name, last_name]
+            if part
+        ) or "Patient",
+
+        "patient_id": patient_id,
+
+        "email": email,
+
+        "phone": contact,
+
+        "address": address,
+
+        "age": age,
+
+        "gender": gender,
+
+        "date_of_birth": dob,
+
+        "blood_type": blood_group,
+
         "status": "Active",
-        "insurance": "BPJS – Class 1",
+
+        "insurance": insurance_name,
+
+        "allergies": allergies,
+
+        "country": country,
+
+        "state": state,
+
+        "emergency_contact": emergency_contact,
+
+        "emergency_contact_name": emergency_contact_name,
+
+        "emergency_contact_relation": emergency_contact_relation,
     }
 
-    # TODO: Replace with patient health metrics from the database/service layer.
+    # ---------------------------------------------------------
+    # Sample health metrics
+    # ---------------------------------------------------------
+
     health_metrics = {
         "blood_sugar": {
             "value": 171,
@@ -290,7 +479,10 @@ def patient_dashboard(request):
         },
     }
 
-    # TODO: Replace with patient blood pressure readings from the database/service layer.
+    # ---------------------------------------------------------
+    # Sample blood pressure data
+    # ---------------------------------------------------------
+
     blood_pressure = {
         "last_checkup": "Dec, 2026",
         "monthly_readings": [
@@ -369,7 +561,10 @@ def patient_dashboard(request):
         ],
     }
 
-    # TODO: Replace with prescription records from the database/service layer.
+    # ---------------------------------------------------------
+    # Sample prescriptions
+    # ---------------------------------------------------------
+
     prescriptions = [
         {
             "name": "Paracetamol Tablet",
@@ -409,7 +604,10 @@ def patient_dashboard(request):
         },
     ]
 
-    # TODO: Replace with appointment records from the database/service layer.
+    # ---------------------------------------------------------
+    # Sample appointments
+    # ---------------------------------------------------------
+
     appointments = [
         {
             "date": "10 Mar 2026",
@@ -443,19 +641,16 @@ def patient_dashboard(request):
         },
     ]
 
-    # TODO: Replace with medical information from the database/service layer.
+    # ---------------------------------------------------------
+    # Medical information
+    # ---------------------------------------------------------
+
     medical_info = {
         "conditions": [
             "Bone Fracture — Left Tibia",
             "Hypertension — Controlled",
         ],
-        "allergies": [
-            "Penicillin",
-            "Aspirin",
-            "Shellfish",
-            "Dust Mites",
-            "Peanuts",
-        ],
+        "allergies": allergies or [],
         "previous_surgeries": [
             "Tibia Fracture Fixation — Mar 2026",
         ],
@@ -504,15 +699,202 @@ def patient_medical_records(request):
     )
 
 
+@role_required("Patient")
 def patient_profile(request):
+
+    database_url = os.getenv("DATABASE_URL")
+
+    if not database_url:
+        raise ValueError("DATABASE_URL is missing")
+
+    user_id = str(request.user.id)
+
+    connection = psycopg2.connect(database_url)
+
+    try:
+        with connection.cursor() as cursor:
+
+            # Save profile form
+            if request.method == "POST":
+
+                first_name = request.POST.get("first_name", "").strip()
+                last_name = request.POST.get("last_name", "").strip()
+                dob = request.POST.get("dob") or None
+                gender = request.POST.get("gender") or None
+                contact = request.POST.get("contact") or None
+                address = request.POST.get("address", "").strip()
+                state = request.POST.get("state", "").strip()
+                country = request.POST.get("country", "").strip()
+                blood_group = request.POST.get("blood_group") or None
+                allergies_input = request.POST.get("allergies", "").strip()
+                allergies = [
+                    allergy.strip()
+                    for allergy in allergies_input.split(",")
+                    if allergy.strip()
+                ]
+                emergency_contact = request.POST.get(
+                    "emergency_contact", ""
+                ).strip()
+                emergency_name = request.POST.get(
+                    "emergency_name", ""
+                ).strip()
+                emergency_relation = request.POST.get(
+                    "emergency_relation", ""
+                ).strip()
+                insurance_id = request.POST.get("insurance_id") or None
+
+                cursor.execute(
+                    """
+                    UPDATE "QueueCare".patients
+                    SET
+                        first_name = %s,
+                        last_name = %s,
+                        dob = %s,
+                        gender = %s,
+                        contact = %s,
+                        address = %s,
+                        state = %s,
+                        country = %s,
+                        blood_group = %s,
+                        allergies = %s,
+                        emergency_contact = %s,
+                        emergency_contact_name = %s,
+                        emergency_contact_relation = %s,
+                        insurance_id = %s
+                    WHERE user_id = %s;
+                    """,
+                    (
+                        first_name or None,
+                        last_name or None,
+                        dob,
+                        gender,
+                        contact,
+                        address or None,
+                        state or None,
+                        country or None,
+                        blood_group,
+                        allergies or None,
+                        emergency_contact or None,
+                        emergency_name or None,
+                        emergency_relation or None,
+                        insurance_id,
+                        user_id,
+                    )
+                )
+
+                connection.commit()
+
+                return redirect("patient_profile")
+
+            # Get patient profile
+            cursor.execute(
+                """
+                SELECT
+                    p.patient_id,
+                    p.user_id,
+                    p.first_name,
+                    p.last_name,
+                    p.dob,
+                    p.contact,
+                    p.blood_group,
+                    p.allergies,
+                    p.emergency_contact,
+                    p.emergency_contact_name,
+                    p.emergency_contact_relation,
+                    p.insurance_id,
+                    p.country,
+                    p.address,
+                    p.state,
+                    p.gender
+                FROM "QueueCare".patients p
+                WHERE p.user_id = %s
+                LIMIT 1;
+                """,
+                (user_id,)
+            )
+
+            row = cursor.fetchone()
+
+            if row is None:
+                raise RuntimeError(
+                    "Patient record not found for this user."
+                )
+
+            patient = {
+                "patient_id": row[0],
+                "user_id": row[1],
+                "first_name": row[2],
+                "last_name": row[3],
+                "dob": row[4],
+                "contact": row[5],
+                "blood_group": row[6],
+                "allergies": row[7],
+                "emergency_contact": row[8],
+                "emergency_name": row[9],
+                "emergency_relation": row[10],
+                "insurance_id": row[11],
+                "country": row[12],
+                "address": row[13],
+                "state": row[14],
+                "gender": row[15],
+            }
+
+            # Get available insurance policies and providers
+            cursor.execute(
+                """
+                SELECT
+                    ip.insurance_id,
+                    ip.policy_number,
+                    ip.plan_name,
+                    ip.coverage_percentage,
+                    ip.coverage_limit,
+                    ip.start_date,
+                    ip.expiry_date,
+                    ip.status,
+                    ip.provider_id,
+                    prov.provider_name
+                FROM "QueueCare".insurance_policies ip
+                LEFT JOIN "QueueCare".insurance_providers prov
+                    ON ip.provider_id = prov.provider_id
+                WHERE ip.status = 'active'
+                ORDER BY
+                    prov.provider_name,
+                    ip.plan_name;
+                """
+            )
+
+            insurance_rows = cursor.fetchall()
+
+            insurance_policies = []
+
+            for row in insurance_rows:
+                insurance_policies.append({
+                    "insurance_id": row[0],
+                    "policy_number": row[1],
+                    "plan_name": row[2],
+                    "coverage_percentage": row[3],
+                    "coverage_limit": row[4],
+                    "start_date": row[5],
+                    "expiry_date": row[6],
+                    "status": row[7],
+                    "provider_id": row[8],
+                    "provider_name": row[9],
+                })
+
+    finally:
+        connection.close()
+
     return render(
         request,
         "patient/profile.html",
         {
             "page_title": "My Profile",
             "breadcrumb": "Patient / Profile",
+            "patient": patient,
+            "insurance_policies": insurance_policies,
         },
     )
+
 
 @require_POST
 def dismiss_profile_popup(request):

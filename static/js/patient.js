@@ -296,6 +296,14 @@ function initBloodPressureChart() {
             point.type = "button";
             point.className = "md-chart__point";
 
+            if (index < 3) {
+                point.classList.add("tooltip-right");
+            }
+
+            if (index >= readings.length - 3) {
+                point.classList.add("tooltip-left");
+            }
+
             const xPercent =
                 readings.length === 1
                     ? 50
