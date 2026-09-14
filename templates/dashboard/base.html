@@ -8,29 +8,21 @@
 
     <meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>
         {% block title %}
-            Medlink
+        Medlink
         {% endblock %}
     </title>
 
-    <meta
-        name="description"
-        content="{% block description %}
+    <meta name="description" content="{% block description %}
             Medlink healthcare dashboard
         {% endblock %}">
 
-    <link
-        rel="stylesheet"
-        href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 
-    <script
-        src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"
-        defer>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer>
     </script>
 
     {% block extra_css %}

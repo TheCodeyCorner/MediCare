@@ -1,4 +1,17 @@
-from django.shortcuts import render
+import json
+import os
+import psycopg2
+from medicare.supabase_client import supabase
+
+from django.contrib.auth import authenticate
+from django.http import JsonResponse
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
+
+from .decorators import role_required
+
+from dotenv import load_dotenv
+load_dotenv()
 
 
 def landing(request):
@@ -8,7 +21,242 @@ def landing(request):
 def login(request):
     return render(request, "login.html")
 
+
+@require_POST
+def login_patient(request):
+    try:
+        data = json.loads(request.body)
+
+        email = data.get("email", "").strip()
+        password = data.get("password", "")
+
+        if not email or not password:
+            return JsonResponse(
+                {"error": "Email and password are required."},
+                status=400
+            )
+
+        # Authenticate through Supabase + QueueCare.
+        user = authenticate(
+            request,
+            email=email,
+            password=password,
+        )
+
+        if user is None:
+            return JsonResponse(
+                {"error": "Invalid email or password."},
+                status=401
+            )
+        
+        # Store only the Supabase UUID in the Django session.
+        request.session["supabase_user_id"] = str(user.id)
+        request.session.save()
+
+        # Determine destination.
+        if user.access_level == "Admin":
+            redirect_url = "/admin-dashboard/"
+        elif user.access_level == "Doctor":
+            redirect_url = "/doctor/"
+        elif user.access_level == "Patient":
+            redirect_url = "/patient/"
+        else:
+            return JsonResponse(
+                {"error": "Invalid account access level."},
+                status=403
+            )
+
+        return JsonResponse({
+            "success": True,
+            "message": "Login successful.",
+            "user_id": str(user.id),
+            "email": user.email,
+            "access_level": user.access_level,
+            "redirect": redirect_url,
+        })
+
+    except Exception as error:
+        print("Login error:", repr(error))
+
+        return JsonResponse(
+            {"error": str(error)},
+            status=500
+        )
+
+
+def register(request):
+    return render(request, "register.html")
+
+
+@require_POST
+def register_patient(request):
+    try:
+        data = json.loads(request.body)
+
+        email = data.get("email", "").strip()
+        password = data.get("password", "")
+
+        # Basic validation
+        if not email or not password:
+            return JsonResponse(
+                {"error": "Email and password are required."},
+                status=400
+            )
+
+        # ---------------------------------------------------------
+        # 1. Create user in Supabase Auth
+        # ---------------------------------------------------------
+
+        response = supabase.auth.sign_up({
+            "email": email,
+            "password": password,
+            "options": {
+                "email_redirect_to": "https://medicare-3r2j.onrender.com/login/"
+            }
+        })
+
+        if not response.user:
+            return JsonResponse(
+                {"error": "Unable to create account."},
+                status=400
+            )
+
+        user = response.user
+
+        # ---------------------------------------------------------
+        # 2. Connect to QueueCare PostgreSQL
+        # ---------------------------------------------------------
+
+        database_url = os.getenv("DATABASE_URL")
+
+        if not database_url:
+            raise ValueError("DATABASE_URL is missing")
+
+        connection = psycopg2.connect(database_url)
+
+        try:
+            cursor = connection.cursor()
+
+            # -----------------------------------------------------
+            # 3. Get Patient access level
+            # -----------------------------------------------------
+
+            cursor.execute("""
+                SELECT access_id FROM 
+                "QueueCare".access_levels
+                WHERE access_level = 'Patient'
+                LIMIT 1;
+            """)
+
+            row = cursor.fetchone()
+
+            if row is None:
+                raise RuntimeError(
+                    "Patient access level not found in QueueCare.access_levels"
+                )
+
+            patient_access_id = row[0]
+
+            # -----------------------------------------------------
+            # 4. Create QueueCare.users row
+            # -----------------------------------------------------
+
+            cursor.execute("""
+                INSERT INTO "QueueCare".users (
+                    user_id,
+                    email,
+                    access_id,
+                    status,
+                    created_at
+                )
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    'active',
+                    NOW()
+                )
+                RETURNING
+                    user_id,
+                    email,
+                    access_id,
+                    status;
+            """, (
+                user.id,
+                email,
+                patient_access_id
+            ))
+
+            queuecare_user = cursor.fetchone()
+
+            connection.commit()
+
+        except Exception:
+            connection.rollback()
+            raise
+
+        finally:
+            cursor.close()
+            connection.close()
+
+        return JsonResponse({
+            "success": True,
+            "message": "Patient account created successfully.",
+            "user_id": str(queuecare_user[0])
+        })
+
+    except Exception as error:
+        print("Registration error:", error)
+
+        return JsonResponse(
+            {"error": str(error)},
+            status=500
+        )
+
+
+@role_required("Patient")
 def patient_dashboard(request):
+    # ---------------------------------------------------------
+    # Check whether the patient's profile is complete
+    # ---------------------------------------------------------
+
+    database_url = os.getenv("DATABASE_URL")
+
+    if not database_url:
+        raise ValueError("DATABASE_URL is missing")
+
+    connection = psycopg2.connect(database_url)
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM "QueueCare".patients p
+                    WHERE p.user_id = %s
+                      AND p.first_name IS NOT NULL
+                      AND p.dob IS NOT NULL
+                      AND p.contact IS NOT NULL
+                      AND p.blood_group IS NOT NULL
+                      AND p.country IS NOT NULL
+                      AND p.address IS NOT NULL
+                      AND p.state IS NOT NULL
+                ) AS profile_complete;
+                """,
+                (str(request.user.id),)
+            )
+
+            profile_complete = cursor.fetchone()[0]
+
+    finally:
+        connection.close()
+
+    profile_incomplete = not profile_complete
+
+    if request.session.get("profile_popup_dismissed"):
+        profile_incomplete = False
+
     # TODO: Replace all sample data below with injectable/database-backed patient data later.
     # patient = request.user.patient_profile
 
@@ -229,6 +477,7 @@ def patient_dashboard(request):
             "prescriptions": prescriptions,
             "appointments": appointments,
             "medical_info": medical_info,
+            "profile_incomplete": profile_incomplete,
         },
     )
 
@@ -264,3 +513,26 @@ def patient_profile(request):
             "breadcrumb": "Patient / Profile",
         },
     )
+
+@require_POST
+def dismiss_profile_popup(request):
+    request.session["profile_popup_dismissed"] = True
+
+    return JsonResponse({
+        "success": True
+    })
+
+@role_required("Doctor")
+def doctor_dashboard(request):
+    return render(request, "doctor/dashboard.html")
+
+
+@role_required("Admin")
+def admin_dashboard(request):
+    return render(request, "admin/dashboard.html")
+
+
+@require_POST
+def logout(request):
+    request.session.flush()
+    return redirect("login")

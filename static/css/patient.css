@@ -1056,6 +1056,634 @@
     color: var(--dashboard-foreground);
 }
 
+
+/* ==========================================================================
+   Profile Completion Popup
+   ========================================================================== */
+
+
+.profile-completion-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: var(--dashboard-overlay);
+}
+
+.profile-completion-popup {
+    position: relative;
+
+    width: 420px;
+    max-width: calc(100% - 40px);
+
+    padding: 2rem;
+
+    background: var(--dashboard-card);
+    border: 1px solid var(--dashboard-border);
+    border-radius: var(--dashboard-radius);
+
+    box-shadow:
+        0 20px 60px oklch(0.2 0.02 214 / 30%);
+
+    color: var(--dashboard-foreground);
+    text-align: center;
+
+    z-index: 1000000;
+}
+
+.profile-completion-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+
+    z-index: 1000001;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 2rem;
+    height: 2rem;
+
+    padding: 0;
+
+    border: none;
+    border-radius: var(--dashboard-radius-pill);
+
+    background: transparent;
+    color: var(--dashboard-muted-foreground);
+
+    font-size: 1.5rem;
+    line-height: 1;
+
+    cursor: pointer;
+}
+
+.profile-completion-close:hover {
+    background: var(--dashboard-muted);
+    color: var(--dashboard-foreground);
+}
+
+/* --------------------------------------------------------------------------
+   Profile Completion Buttons
+   -------------------------------------------------------------------------- */
+
+.profile-completion-button,
+.profile-completion-later {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    padding: 0.75rem 1rem;
+
+    border-radius: var(--dashboard-radius);
+
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.25;
+
+    text-decoration: none;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
+}
+
+
+/* Complete Profile — Primary */
+
+.profile-completion-button {
+    margin-top: 1.5rem;
+
+    border: 1px solid var(--dashboard-primary);
+    background: var(--dashboard-primary);
+    color: var(--dashboard-primary-foreground);
+}
+
+.profile-completion-button:hover {
+    background: color-mix(in oklch,
+            var(--dashboard-primary) 95%,
+            black);
+
+    border-color: color-mix(in oklch,
+            var(--dashboard-primary) 95%,
+            black);
+}
+
+
+/* Maybe Later — Secondary */
+
+.profile-completion-later {
+    margin-top: 0.75rem;
+
+    border: 1px solid var(--dashboard-border);
+    background: var(--dashboard-muted);
+    color: var(--dashboard-foreground);
+}
+
+.profile-completion-later:hover {
+    background: var(--dashboard-border);
+}
+
+
+/* ==========================================================================
+   Patient Profile Form
+   ========================================================================== */
+
+.profile-form-panel {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+    overflow: hidden;
+}
+
+
+/* ==========================================================================
+   Profile Panel Header
+   ========================================================================== */
+
+.profile-form-panel__header {
+    width: 100%;
+    min-width: 0;
+
+    height: auto;
+    min-height: 4.25rem;
+
+    box-sizing: border-box;
+
+    padding: 0.85rem 1.1rem;
+}
+
+.profile-form-panel__heading {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.profile-form-panel__heading h2 {
+    margin: 0;
+
+    color: var(--dashboard-foreground);
+
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.35;
+
+    overflow-wrap: break-word;
+}
+
+.profile-form-panel__heading p {
+    margin: 0.2rem 0 0;
+
+    color: var(--dashboard-muted-foreground);
+
+    font-size: 0.65rem;
+    line-height: 1.4;
+
+    overflow-wrap: break-word;
+}
+
+
+/* ==========================================================================
+   Profile Panel Body
+   ========================================================================== */
+
+.profile-form-panel__body {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+    padding: 0 1.1rem;
+}
+
+
+/* ==========================================================================
+   Form
+   ========================================================================== */
+
+.profile-form {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+
+    box-sizing: border-box;
+}
+
+
+/* ==========================================================================
+   Form Sections
+   ========================================================================== */
+
+.profile-form__section {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+    padding: 1.1rem 0;
+
+    border-bottom: 1px solid var(--dashboard-border);
+}
+
+.profile-form__section:first-child {
+    padding-top: 1rem;
+}
+
+.profile-form__section:last-of-type {
+    border-bottom: none;
+}
+
+
+/* ==========================================================================
+   Section Header
+   ========================================================================== */
+
+.profile-form__section-header {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+
+    margin: 0 0 0.75rem;
+
+    box-sizing: border-box;
+}
+
+.profile-form__section-header h3 {
+    margin: 0;
+
+    color: var(--dashboard-foreground);
+
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.profile-form__section-header p {
+    margin: 0.2rem 0 0;
+
+    color: var(--dashboard-muted-foreground);
+
+    font-size: 0.58rem;
+    line-height: 1.35;
+
+    overflow-wrap: break-word;
+}
+
+
+/* ==========================================================================
+   Field Grid
+   ========================================================================== */
+
+.profile-form__fields {
+    display: grid;
+
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+    grid-template-columns: minmax(0, 1fr);
+
+    gap: 0.7rem 0.75rem;
+}
+
+.profile-form__fields--two {
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1fr);
+}
+
+.profile-form__fields--three {
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        minmax(0, 1fr);
+}
+
+
+/* ==========================================================================
+   Individual Field
+   ========================================================================== */
+
+.profile-form__field {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+    gap: 0.3rem;
+}
+
+.profile-form__field--full {
+    grid-column: 1 / -1;
+}
+
+
+/* ==========================================================================
+   Labels
+   ========================================================================== */
+
+.profile-form__field label {
+    display: block;
+
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+    color: var(--dashboard-foreground);
+
+    font-size: 0.61rem;
+    font-weight: 600;
+    line-height: 1.3;
+
+    overflow-wrap: break-word;
+}
+
+
+/* ==========================================================================
+   Inputs / Selects / Textareas
+   ========================================================================== */
+
+.profile-form__field input,
+.profile-form__field select,
+.profile-form__field textarea {
+    display: block;
+
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+    margin: 0;
+
+    border: 1px solid var(--dashboard-border);
+    border-radius: 0.45rem;
+
+    background: var(--dashboard-muted);
+    color: var(--dashboard-foreground);
+
+    font-family: inherit;
+    font-size: 0.65rem;
+    line-height: 1.35;
+
+    outline: none;
+
+    transition:
+        border-color 160ms ease,
+        background-color 160ms ease,
+        box-shadow 160ms ease;
+}
+
+
+/* ==========================================================================
+   Input Padding
+   ========================================================================== */
+
+.profile-form__field input,
+.profile-form__field select {
+    min-height: 2rem;
+
+    padding: 0.45rem 0.6rem;
+}
+
+.profile-form__field textarea {
+    min-height: 4.5rem;
+
+    padding: 0.55rem 0.6rem;
+
+    resize: vertical;
+}
+
+
+/* ==========================================================================
+   Placeholder
+   ========================================================================== */
+
+.profile-form__field input::placeholder,
+.profile-form__field textarea::placeholder {
+    color: var(--dashboard-muted-foreground);
+
+    opacity: 0.7;
+}
+
+
+/* ==========================================================================
+   Focus
+   ========================================================================== */
+
+.profile-form__field input:focus,
+.profile-form__field select:focus,
+.profile-form__field textarea:focus {
+    border-color: var(--dashboard-primary);
+
+    background: var(--dashboard-card);
+
+    box-shadow:
+        0 0 0 2px
+        color-mix(
+            in oklch,
+            var(--dashboard-primary) 12%,
+            transparent
+        );
+}
+
+
+/* ==========================================================================
+   Select
+   ========================================================================== */
+
+.profile-form__field select {
+    cursor: pointer;
+}
+
+
+/* ==========================================================================
+   Form Actions
+   ========================================================================== */
+
+.profile-form__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+    padding: 1rem 0;
+}
+
+
+/* ==========================================================================
+   Submit Button
+   ========================================================================== */
+
+.profile-form__submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 7rem;
+    max-width: 100%;
+    min-height: 2.1rem;
+
+    box-sizing: border-box;
+
+    padding: 0.5rem 0.85rem;
+
+    border: 1px solid var(--dashboard-primary);
+    border-radius: 0.45rem;
+
+    background: var(--dashboard-primary);
+    color: var(--dashboard-primary-foreground);
+
+    font-family: inherit;
+    font-size: 0.65rem;
+    font-weight: 600;
+    line-height: 1.3;
+
+    cursor: pointer;
+
+    transition:
+        background-color 160ms ease,
+        border-color 160ms ease,
+        transform 160ms ease;
+}
+
+.profile-form__submit:hover {
+    background: color-mix(
+        in oklch,
+        var(--dashboard-primary) 95%,
+        black
+    );
+
+    border-color: color-mix(
+        in oklch,
+        var(--dashboard-primary) 95%,
+        black
+    );
+}
+
+.profile-form__submit:active {
+    transform: translateY(1px);
+}
+
+
+/* ==========================================================================
+   Tablet
+   ========================================================================== */
+
+@media (max-width: 900px) {
+
+    .profile-form__fields--three {
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(0, 1fr);
+    }
+
+}
+
+
+/* ==========================================================================
+   Small Screens
+   ========================================================================== */
+
+@media (max-width: 640px) {
+
+    .profile-form-panel__header {
+        min-height: 0;
+
+        padding: 0.8rem 0.85rem;
+    }
+
+    .profile-form-panel__body {
+        padding: 0 0.85rem;
+    }
+
+    .profile-form__fields--two,
+    .profile-form__fields--three {
+        grid-template-columns:
+            minmax(0, 1fr);
+    }
+
+    .profile-form__field--full {
+        grid-column: auto;
+    }
+
+    .profile-form__section {
+        padding: 0.9rem 0;
+    }
+
+    .profile-form__section:first-child {
+        padding-top: 0.85rem;
+    }
+
+    .profile-form__section-header {
+        margin-bottom: 0.65rem;
+    }
+
+    .profile-form__actions {
+        justify-content: stretch;
+
+        padding: 0.85rem 0;
+    }
+
+    .profile-form__submit {
+        width: 100%;
+    }
+
+}
+
+
+/* ==========================================================================
+   Very Small Screens
+   ========================================================================== */
+
+@media (max-width: 400px) {
+
+    .profile-form-panel__header {
+        padding: 0.75rem;
+    }
+
+    .profile-form-panel__body {
+        padding: 0 0.75rem;
+    }
+
+    .profile-form__fields {
+        gap: 0.6rem;
+    }
+
+    .profile-form__field input,
+    .profile-form__field select {
+        min-height: 2.1rem;
+    }
+
+}
+
 /* ==========================================================================
    Mobile Dashboard Layout
    ========================================================================== */

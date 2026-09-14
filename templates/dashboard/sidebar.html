@@ -1,10 +1,6 @@
 {% load static %}
 
-<button
-    type="button"
-    class="md-overlay"
-    aria-label="Close navigation backdrop"
-    data-nav-overlay>
+<button type="button" class="md-overlay" aria-label="Close navigation backdrop" data-nav-overlay>
 </button>
 
 <aside class="md-sidebar" data-sidebar>
@@ -13,10 +9,7 @@
 
         <div class="md-brand">
             <span class="md-brand__mark">
-                <img
-                    src="{% static 'images/logo_textless.webp' %}"
-                    alt="Medicare Logo"
-                >
+                <img src="{% static 'images/logo_textless.webp' %}" alt="Medicare Logo">
             </span>
 
             <span class="md-brand__name">
@@ -24,116 +17,98 @@
             </span>
         </div>
 
-        <button
-            type="button"
-            class="icon-button md-sidebar__close"
-            aria-label="Close navigation"
-            data-nav-close>
+        <button type="button" class="icon-button md-sidebar__close" aria-label="Close navigation" data-nav-close>
             <i data-lucide="x"></i>
         </button>
 
     </div>
 
 
-    <nav
-        class="md-nav"
-        aria-label="Main navigation">
+    <nav class="md-nav" aria-label="Main navigation">
 
         {% for item in sidebar_items %}
 
-            {% if item.children %}
+        {% if item.children %}
 
-                <div
-                    class="md-nav__group"
-                    data-nav-group="{{ item.id }}">
+        <div class="md-nav__group" data-nav-group="{{ item.id }}">
 
-                    <button
-                        type="button"
-                        class="md-nav__item md-nav__parent"
-                        data-submenu-toggle="{{ item.id }}">
+            <button type="button" class="md-nav__item md-nav__parent" data-submenu-toggle="{{ item.id }}">
 
-                        <i data-lucide="{{ item.icon }}"></i>
+                <i data-lucide="{{ item.icon }}"></i>
 
-                        <span>
-                            {{ item.label }}
-                        </span>
+                <span>
+                    {{ item.label }}
+                </span>
 
-                    </button>
+            </button>
 
 
-                    <div
-                        class="md-nav__submenu"
-                        data-submenu="{{ item.id }}">
+            <div class="md-nav__submenu" data-submenu="{{ item.id }}">
 
-                        {% for child in item.children %}
+                {% for child in item.children %}
 
-                            <a
-                                href="{{ child.url }}"
-                                class="md-nav__subitem
+                <a href="{{ child.url }}" class="md-nav__subitem
                                 {% if child.active %}is-active{% endif %}">
 
-                                <span>
-                                    {{ child.label }}
-                                </span>
-
-                                {% if child.badge %}
-                                    <span class="md-nav__badge">
-                                        {{ child.badge }}
-                                    </span>
-                                {% endif %}
-
-                            </a>
-
-                        {% endfor %}
-
-                    </div>
-
-                </div>
-
-            {% else %}
-
-                <a
-                    href="{{ item.url }}"
-                    class="md-nav__item
-                    {% if item.active %}is-active{% endif %}">
-
-                    <i data-lucide="{{ item.icon }}"></i>
-
                     <span>
-                        {{ item.label }}
+                        {{ child.label }}
                     </span>
 
-                    {% if item.badge %}
-                        <span class="md-nav__badge">
-                            {{ item.badge }}
-                        </span>
+                    {% if child.badge %}
+                    <span class="md-nav__badge">
+                        {{ child.badge }}
+                    </span>
                     {% endif %}
 
                 </a>
 
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+        {% else %}
+
+        <a href="{{ item.url }}" class="md-nav__item
+                    {% if item.active %}is-active{% endif %}">
+
+            <i data-lucide="{{ item.icon }}"></i>
+
+            <span>
+                {{ item.label }}
+            </span>
+
+            {% if item.badge %}
+            <span class="md-nav__badge">
+                {{ item.badge }}
+            </span>
             {% endif %}
+
+        </a>
+
+        {% endif %}
 
         {% empty %}
 
-            <div class="md-nav__empty">
-                No navigation available.
-            </div>
+        <div class="md-nav__empty">
+            No navigation available.
+        </div>
 
         {% endfor %}
 
     </nav>
 
+    <form action="{% url 'logout' %}" method="POST">
+        {% csrf_token %}
 
-    <a
-        href="#"
-        class="md-signout">
+        <button type="submit" class="md-signout">
+            <i data-lucide="log-out"></i>
 
-        <i data-lucide="log-out"></i>
-
-        <span>
-            Sign Out
-        </span>
-
-    </a>
+            <span>
+                Sign Out
+            </span>
+        </button>
+    </form>
 
 </aside>

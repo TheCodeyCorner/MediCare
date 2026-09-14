@@ -4,25 +4,19 @@
 
 
 {% block title %}
-    {% block patient_title %}
-        Patient Dashboard | Medlink
-    {% endblock %}
+{% block patient_title %}
+Patient Dashboard | Medlink
+{% endblock %}
 {% endblock %}
 
 
 {% block extra_css %}
 
-    <link
-        rel="stylesheet"
-        href="{% static 'css/patient.css' %}">
+<link rel="stylesheet" href="{% static 'css/patient.css' %}">
 
 {% endblock %}
 
 
 {% block extra_js %}
-
-    <script
-        src="{% static 'js/patient.js' %}">
-    </script>
-
+<script src="{% static 'js/patient.js' %}"></script>
 {% endblock %}

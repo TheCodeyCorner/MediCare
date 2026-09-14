@@ -6,31 +6,19 @@ from .navigation import (
 
 
 def dashboard_navigation(request):
-    """
-    Provides role-specific dashboard navigation to all templates.
-    """
-
     if not request.user.is_authenticated:
-        return {
-            
-            "sidebar_items": get_patient_navigation(),
-        }
+        return {"sidebar_items": get_patient_navigation()}
 
-    # if not request.user.is_authenticated:
-    # return {
-    #     "sidebar_items": [],
-    # }
-
-    # Temporary role detection.
-    if request.user.is_staff:
+    if request.user.access_level == "Admin":
         navigation = get_admin_navigation()
 
-    elif hasattr(request.user, "doctor_profile"):
+    elif request.user.access_level == "Doctor":
         navigation = get_doctor_navigation()
 
-    else:
+    elif request.user.access_level == "Patient":
         navigation = get_patient_navigation()
 
-    return {
-        "sidebar_items": navigation,
-    }
+    else:
+        navigation = []
+
+    return {"sidebar_items": navigation}

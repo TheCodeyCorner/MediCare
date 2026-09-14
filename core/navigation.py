@@ -2,6 +2,7 @@ from django.urls import reverse
 
 
 def get_patient_navigation():
+
     return [
         {
             "id": "dashboard",
@@ -34,7 +35,7 @@ def get_patient_navigation():
                     "url": reverse("patient_medical_records") + "?type=prescriptions",
                 },
             ],
-        },     
+        },
         {
             "id": "appointments",
             "label": "Appointments",
@@ -55,6 +56,7 @@ def get_patient_navigation():
 
 
 def get_doctor_navigation():
+
     return [
         {
             "id": "dashboard",
@@ -62,42 +64,11 @@ def get_doctor_navigation():
             "icon": "layout-dashboard",
             "url": reverse("doctor_dashboard"),
         },
-        {
-            "id": "appointments",
-            "label": "Appointments",
-            "icon": "calendar-days",
-            "url": reverse("doctor_appointments"),
-            "children": [
-                {
-                    "label": "Today's Appointments",
-                    "url": reverse("doctor_appointments") + "?status=today",
-                },
-                {
-                    "label": "Upcoming",
-                    "url": reverse("doctor_appointments") + "?status=upcoming",
-                },
-                {
-                    "label": "Completed",
-                    "url": reverse("doctor_appointments") + "?status=completed",
-                },
-            ],
-        },
-        {
-            "id": "patients",
-            "label": "Patients",
-            "icon": "users",
-            "url": reverse("doctor_patients"),
-        },
-        {
-            "id": "profile",
-            "label": "My Profile",
-            "icon": "user-round",
-            "url": reverse("doctor_profile"),
-        },
     ]
 
 
 def get_admin_navigation():
+
     return [
         {
             "id": "dashboard",
@@ -105,28 +76,24 @@ def get_admin_navigation():
             "icon": "layout-dashboard",
             "url": reverse("admin_dashboard"),
         },
-        {
-            "id": "patients",
-            "label": "Patients",
-            "icon": "users",
-            "url": reverse("admin_patients"),
-        },
-        {
-            "id": "doctors",
-            "label": "Doctors",
-            "icon": "stethoscope",
-            "url": reverse("admin_doctors"),
-        },
-        {
-            "id": "appointments",
-            "label": "Appointments",
-            "icon": "calendar-days",
-            "url": reverse("admin_appointments"),
-        },
-        {
-            "id": "departments",
-            "label": "Departments",
-            "icon": "building-2",
-            "url": reverse("admin_departments"),
-        },
     ]
+
+
+def dashboard_navigation(request):
+
+    if not request.user.is_authenticated:
+        return {"sidebar_items": get_patient_navigation()}
+
+    if request.user.access_level == "Admin":
+        navigation = get_admin_navigation()
+
+    elif request.user.access_level == "Doctor":
+        navigation = get_doctor_navigation()
+
+    elif request.user.access_level == "Patient":
+        navigation = get_patient_navigation()
+
+    else:
+        navigation = []
+
+    return {"sidebar_items": navigation}

@@ -149,10 +149,7 @@ input:focus-visible {
   background: var(--dashboard-card);
 
   animation:
-    fade-in-down
-    0.45s
-    cubic-bezier(0.2, 0.8, 0.2, 1)
-    both;
+    fade-in-down 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .md-header__menu-btn {
@@ -487,7 +484,7 @@ input:focus-visible {
   text-align: left;
 }
 
-.md-nav__parent > span {
+.md-nav__parent>span {
   flex: 1;
   min-width: 0;
 }
@@ -501,10 +498,7 @@ input:focus-visible {
   flex-direction: column;
 
   margin:
-    0.2rem
-    0
-    0.25rem
-    1.5rem;
+    0.2rem 0 0.25rem 1.5rem;
 
   padding-left: 0.75rem;
 
@@ -595,26 +589,40 @@ input:focus-visible {
    ========================================================================== */
 
 .md-signout {
+
   display: flex;
+
   align-items: center;
 
   gap: 0.75rem;
 
   width: 100%;
+
   height: 2.5rem;
 
   margin-top: auto;
+
+  border: none;
 
   border-radius: var(--dashboard-radius-md);
 
   padding: 0 0.75rem;
 
+  background: transparent;
+
   color: var(--dashboard-muted-foreground);
 
+  font-family: inherit;
+
   font-size: 0.75rem;
+
   font-weight: 500;
 
   text-decoration: none;
+
+  text-align: left;
+
+  cursor: pointer;
 
   transition:
     background-color 160ms ease,
@@ -622,12 +630,16 @@ input:focus-visible {
 }
 
 .md-signout:hover {
+
   background: var(--dashboard-muted);
+
   color: var(--dashboard-foreground);
 }
 
 .md-signout svg {
+
   width: 1rem;
+
   height: 1rem;
 
   flex-shrink: 0;
@@ -818,9 +830,7 @@ input:focus-visible {
     /*
      * Sidebar width + header's normal right-side spacing.
      */
-    padding-left: calc(
-      var(--dashboard-sidebar-w) + 1rem
-    );
+    padding-left: calc(var(--dashboard-sidebar-w) + 1rem);
 
     padding-right: 1.5rem;
   }
@@ -920,10 +930,8 @@ input:focus-visible {
   /* Sidebar */
 
   .md-sidebar {
-    width: min(
-      var(--dashboard-sidebar-w),
-      calc(100vw - 2rem)
-    );
+    width: min(var(--dashboard-sidebar-w),
+        calc(100vw - 2rem));
 
     max-width: calc(100vw - 2rem);
 

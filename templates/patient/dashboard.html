@@ -30,14 +30,18 @@ Patient Dashboard | Medicare
 
         <div class="md-col">
 
-        {% include "patient/sections/patient_prescriptions.html" %}
+            {% include "patient/sections/patient_prescriptions.html" %}
 
-        {% include "patient/sections/patient_appointments.html" %}
+            {% include "patient/sections/patient_appointments.html" %}
 
-    </div>
+        </div>
 
     </div>
 
 </section>
+
+{% if profile_incomplete %}
+    {% include "patient/sections/patient_profile_completion_popup.html" %}
+{% endif %}
 
 {% endblock %}
