@@ -2,12 +2,7 @@
 
     <div class="profile-completion-popup">
 
-        <button
-            type="button"
-            class="profile-completion-close"
-            id="profileCompletionClose"
-            aria-label="Close"
-        >
+        <button type="button" class="profile-completion-close" id="profileCompletionClose" aria-label="Close">
             &times;
         </button>
 
@@ -23,18 +18,17 @@
             possible experience.
         </p>
 
-        <a
-            href="{% url 'patient_profile' %}"
-            class="profile-completion-button"
-        >
-            Complete Profile
-        </a>
+        <form method="POST" action="{% url 'dismiss_profile_popup' %}">
+            {% csrf_token %}
 
-        <button
-            type="button"
-            class="profile-completion-later"
-            id="profileCompletionLater"
-        >
+            <input type="hidden" name="redirect" value="profile">
+
+            <button type="submit" class="profile-completion-button">
+                Complete Profile
+            </button>
+        </form>
+
+        <button type="button" class="profile-completion-later" id="profileCompletionLater">
             Maybe Later
         </button>
 

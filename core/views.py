@@ -518,6 +518,9 @@ def patient_profile(request):
 def dismiss_profile_popup(request):
     request.session["profile_popup_dismissed"] = True
 
+    if request.POST.get("redirect") == "profile":
+        return redirect("patient_profile")
+
     return JsonResponse({
         "success": True
     })
