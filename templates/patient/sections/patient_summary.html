@@ -1,85 +1,75 @@
 {% load static %}
 
-<section class="md-patient-card shadow-panel">
+<section class="patient-card patient-summary">
 
-    <img src="{% static 'images/patient-avatar.jpg' %}" alt="Patient {{ patient.name }}" class="md-patient-card__photo"
-        width="512" height="512">
+    <div class="patient-summary__profile">
 
-    <div class="md-patient-card__body">
+        <img src="{% static 'images/patient-avatar.jpg' %}" alt="Patient {{ patient.name }}"
+            class="patient-summary__photo" width="512" height="512">
 
-        <div class="md-patient-card__name-row">
-            <h2>{{ patient.name }}</h2>
+        <div class="patient-summary__identity">
 
-            <span class="status-info">
-                #{{ patient.patient_id }}
-            </span>
+            <h2 class="patient-summary__name">
+                {{ patient.name }}
+            </h2>
+
+
+            <div class="patient-summary__contacts">
+
+                <span>
+                    <i data-lucide="phone"></i>
+                    {{ patient.phone }}
+                </span>
+
+                <span>
+                    <i data-lucide="mail"></i>
+                    {{ patient.email }}
+                </span>
+
+                <span>
+                    <i data-lucide="map-pin"></i>
+                    {{ patient.address }}
+                </span>
+
+            </div>
+
         </div>
-
-        <div class="md-patient-card__contacts">
-
-            <span>
-                <i data-lucide="phone" width="13" height="13"></i>
-                {{ patient.phone }}
-            </span>
-
-            <span>
-                <i data-lucide="mail" width="13" height="13"></i>
-                {{ patient.email }}
-            </span>
-
-            <span>
-                <i data-lucide="map-pin" width="13" height="13"></i>
-                {{ patient.address }}
-            </span>
-
-        </div>
-
-        <dl class="md-info-grid">
-
-            <div class="md-info-grid__item">
-                <dt>DOB</dt>
-                <dd>
-                    {{ patient.date_of_birth }}
-                </dd>
-            </div>
-
-            <div class="md-info-grid__item">
-                <dt>Age</dt>
-                <dd>
-                    {{ patient.age }}
-                </dd>
-            </div>
-
-            <div class="md-info-grid__item">
-                <dt>Gender</dt>
-                <dd>
-                    {{ patient.gender }}
-                </dd>
-            </div>
-
-            <div class="md-info-grid__item">
-                <dt>Blood Type</dt>
-                <dd>
-                    {{ patient.blood_type }}
-                </dd>
-            </div>
-
-            <div class="md-info-grid__item">
-                <dt>Status</dt>
-                <dd>
-                    {{ patient.status }}
-                </dd>
-            </div>
-
-            <div class="md-info-grid__item">
-                <dt>Insurance</dt>
-                <dd>
-                    {{ patient.insurance }}
-                </dd>
-            </div>
-
-        </dl>
 
     </div>
+
+
+    <dl class="patient-summary__details">
+
+        <div class="patient-summary__detail">
+            <dt>DOB</dt>
+            <dd>{{ patient.date_of_birth }}</dd>
+        </div>
+
+        <div class="patient-summary__detail">
+            <dt>Member Since</dt>
+            <dd>{{ patient.member_since }}</dd>
+        </div>
+
+        <div class="patient-summary__detail">
+            <dt>Status</dt>
+            <dd>{{ patient.status }}</dd>
+        </div>
+
+        <div class="patient-summary__detail">
+            <dt>Age</dt>
+            <dd>{{ patient.age }} Years</dd>
+        </div>
+
+        <div class="patient-summary__detail">
+            <dt>Gender</dt>
+            <dd>{{ patient.gender }}</dd>
+        </div>
+
+        <div class="patient-summary__detail">
+            <dt>Blood Group</dt>
+            <dd>{{ patient.blood_type }}</dd>
+        </div>
+
+    </dl>
 
 </section>

@@ -2,11 +2,7 @@
 
 <header class="md-header">
 
-    <button
-        type="button"
-        class="icon-button md-header__menu-btn"
-        aria-label="Open navigation"
-        aria-expanded="false"
+    <button type="button" class="icon-button md-header__menu-btn" aria-label="Open navigation" aria-expanded="false"
         data-nav-open>
 
         <i data-lucide="menu"></i>
@@ -33,18 +29,12 @@
 
             <i data-lucide="search"></i>
 
-            <input
-                type="text"
-                aria-label="Search"
-                placeholder="Search anything">
+            <input type="text" aria-label="Search" placeholder="Search anything">
 
         </label>
 
 
-        <button
-            type="button"
-            class="icon-button"
-            aria-label="Notifications">
+        <button type="button" class="icon-button" aria-label="Notifications">
 
             <i data-lucide="bell"></i>
 
@@ -55,16 +45,13 @@
 
         <div class="md-user">
 
-            <img
-                src="{% static 'images/patient-avatar.jpg' %}"
-                alt="{{ request.user.get_full_name }}"
-                width="512"
+            <img src="{% static 'images/patient-avatar.jpg' %}" alt="{{ request.user.get_full_name }}" width="512"
                 height="512">
 
             <div class="md-user__meta">
 
                 <p>
-                    {{ request.user.get_full_name|default:"User" }}
+                    {{ patient.name }}
                 </p>
 
                 <p>
@@ -76,16 +63,6 @@
             <i data-lucide="chevron-down"></i>
 
         </div>
-
-
-        <button
-            type="button"
-            class="icon-button"
-            aria-label="Settings">
-
-            <i data-lucide="settings"></i>
-
-        </button>
 
     </div>
 

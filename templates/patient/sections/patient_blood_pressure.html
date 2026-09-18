@@ -1,100 +1,185 @@
-<section class="panel shadow-panel">
+{% load static %}
 
-    <header class="panel__header">
+<section class="patient-card md-blood-pressure">
 
-        <h2>Blood Pressure</h2>
+    <!-- ============================================================
+         Header
+         ============================================================ -->
 
-        <button type="button" class="icon-button" aria-label="More Blood Pressure options">
-            <i data-lucide="more-horizontal"></i>
-        </button>
+    <header class="md-blood-pressure__header">
+
+        <div class="md-blood-pressure__title-group">
+
+            <span class="md-blood-pressure__icon" aria-hidden="true">
+                <i data-lucide="activity"></i>
+            </span>
+
+            <h2 class="md-blood-pressure__title">
+                Blood Pressure Trend
+            </h2>
+
+        </div>
 
     </header>
 
+
+    <!-- ============================================================
+         Chart + Latest Reading
+         ============================================================ -->
+
     <div class="md-chart-wrap">
 
-        <div class="md-chart-legend">
+        <!-- ========================================================
+             Chart
+             ======================================================== -->
 
-            <span>
-                Last check-up:
-                <b>{{ blood_pressure.last_checkup }}</b>
-            </span>
+        <div class="md-chart-area">
 
-            <span class="md-chart-legend__series">
+            <!-- Chart Legend -->
 
-                <span>
-                    <i class="md-chart-legend__dot systolic"></i>
+            <div class="md-chart-legend">
+
+                <span class="md-chart-legend__item">
+
+                    <i class="md-chart-legend__line systolic" aria-hidden="true"></i>
+
                     Systolic
+
                 </span>
 
-                <span>
-                    <i class="md-chart-legend__dot diastolic"></i>
+                <span class="md-chart-legend__item">
+
+                    <i class="md-chart-legend__line diastolic" aria-hidden="true"></i>
+
                     Diastolic
+
                 </span>
 
-                <span>
-                    <i class="md-chart-legend__dot hr"></i>
-                    Heart Rate
-                </span>
+            </div>
 
-            </span>
+
+            <!-- Blood Pressure Chart -->
+
+            <div class="md-chart" data-blood-pressure-chart>
+
+                <!-- Y Axis -->
+
+                <div class="md-chart__y-axis">
+
+                    <span>180</span>
+                    <span>140</span>
+                    <span>100</span>
+                    <span>60</span>
+                    <span>20</span>
+
+                </div>
+
+
+                <!-- Chart Body -->
+
+                <div class="md-chart__body">
+
+                    <!-- Grid -->
+
+                    <div class="md-chart__grid" aria-hidden="true">
+
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+
+                    </div>
+
+
+                    <!-- SVG Lines -->
+
+                    <svg class="md-chart__svg" viewBox="0 0 1200 280" preserveAspectRatio="none"
+                        xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+
+                        <polyline class="md-chart__line diastolic" data-chart-line="diastolic" points=""></polyline>
+
+                        <polyline class="md-chart__line systolic" data-chart-line="systolic" points=""></polyline>
+
+                    </svg>
+
+
+                    <!-- Interactive Points -->
+
+                    <div class="md-chart__points" data-chart-points></div>
+
+
+                    <!-- Month Labels -->
+
+                    <div class="md-chart__months">
+
+                        {% for reading in blood_pressure.monthly_readings %}
+
+                        <span>
+                            {{ reading.month }}
+                        </span>
+
+                        {% endfor %}
+
+                    </div>
+
+                </div>
+
+            </div>
 
         </div>
 
 
-        <div class="md-chart" data-blood-pressure-chart>
+        <!-- ========================================================
+             Latest Reading
+             ======================================================== -->
 
-            <div class="md-chart__y-axis">
-                <span>180</span>
-                <span>145</span>
-                <span>110</span>
-                <span>75</span>
-                <span>40</span>
-            </div>
+        <aside class="md-latest-reading">
 
+            <p class="md-latest-reading__label">
+                Latest Reading
+            </p>
 
-            <div class="md-chart__body">
+            <p class="md-latest-reading__value">
+                {{ blood_pressure.latest_systolic }}/{{ blood_pressure.latest_diastolic }}
+            </p>
 
-                <div class="md-chart__grid">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
+            <span class="md-latest-reading__status">
+                {{ blood_pressure.status }}
+            </span>
 
 
-                <svg class="md-chart__svg" viewBox="0 0 1200 280" preserveAspectRatio="none"
-                    xmlns="http://www.w3.org/2000/svg">
-                    <polyline class="md-chart__line systolic" data-chart-line="systolic" fill="none"></polyline>
+            <!-- Last Checked -->
 
-                    <polyline class="md-chart__line diastolic" data-chart-line="diastolic" fill="none"></polyline>
+            <div class="md-latest-reading__checked">
 
-                    <polyline class="md-chart__line hr" data-chart-line="heart-rate" fill="none"></polyline>
-                </svg>
+                <span class="md-latest-reading__calendar" aria-hidden="true">
+                    <i data-lucide="calendar"></i>
+                </span>
 
+                <div class="md-latest-reading__date">
 
-                <div class="md-chart__points" data-chart-points></div>
-
-
-                <div class="md-chart__months">
-
-                    {% for reading in blood_pressure.monthly_readings %}
-
-                    <span>
-                        {{ reading.month }}
+                    <span class="md-latest-reading__date-label">
+                        Last Checked
                     </span>
 
-                    {% endfor %}
+                    <span class="md-latest-reading__date-value">
+                        {{ blood_pressure.last_checkup }}
+                    </span>
 
                 </div>
 
             </div>
 
-        </div>
-
-
-        {{ blood_pressure.monthly_readings|json_script:"blood-pressure-data" }}
+        </aside>
 
     </div>
 
 </section>
+
+
+<!-- ================================================================
+     Blood Pressure Data
+     ================================================================ -->
+
+{{ blood_pressure.monthly_readings|json_script:"blood-pressure-data" }}

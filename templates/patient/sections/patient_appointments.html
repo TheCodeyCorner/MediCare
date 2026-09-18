@@ -1,126 +1,133 @@
-<section class="panel shadow-panel">
-    <header class="panel__header">
-        <h2>Appointments</h2>
+{% load static %}
 
-        <button
-            type="button"
-            class="icon-button"
-            aria-label="More Appointments options"
-        >
+<section class="patient-card md-appointments">
+
+    <header class="md-appointments__header">
+
+        <h2 class="md-appointments__title">
+            Appointments
+        </h2>
+
+        <button type="button" class="md-appointments__menu" aria-label="More Appointments options">
             <i data-lucide="more-horizontal"></i>
         </button>
+
     </header>
 
-    <div
-        class="md-tabs"
-        data-tabs=".md-appointments-table"
-    >
-        <button
-            type="button"
-            class="tab-active"
-            data-tab="all"
-        >
+
+    <div class="md-appointments__tabs" data-tabs=".md-appointments__table-wrap">
+
+        <button type="button" class="md-appointments__tab is-active" data-tab="all">
             All
         </button>
 
-        <button
-            type="button"
-            class="tab"
-            data-tab="upcoming"
-        >
+        <button type="button" class="md-appointments__tab" data-tab="upcoming">
             Upcoming
         </button>
 
-        <button
-            type="button"
-            class="tab"
-            data-tab="history"
-        >
+        <button type="button" class="md-appointments__tab" data-tab="history">
             History
         </button>
+
     </div>
 
-    <div class="md-table-wrap md-appointments-table">
-        <table class="md-table">
+
+    <div class="md-appointments__table-wrap">
+
+        <table class="md-appointments__table">
+
             <thead>
                 <tr>
-                    <th class="table-head checkbox-col">
-                        <input
-                            type="checkbox"
-                            aria-label="Select all appointments"
-                            data-select-all
-                        />
+
+                    <th class="md-appointments__checkbox">
+                        <input type="checkbox" aria-label="Select all appointments" data-select-all>
                     </th>
 
-                    <th class="table-head">Date</th>
-                    <th class="table-head">Time</th>
-                    <th class="table-head">Type</th>
-                    <th class="table-head">Doctor</th>
-                    <th class="table-head">Status</th>
-                    <th class="table-head">Note</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Type</th>
+                    <th>Doctor</th>
+                    <th>Status</th>
+                    <th>Note</th>
+
                 </tr>
             </thead>
 
+
             <tbody>
+
                 {% for appointment in appointments %}
-                    <tr data-tab-value="{{ appointment.category }}">
-                        <td class="table-cell checkbox-col">
-                            <input
-                                type="checkbox"
-                                aria-label="Select appointment {{ appointment.date }}"
-                                data-row-check
-                            />
-                        </td>
 
-                        <td class="table-cell">
-                            {{ appointment.date }}
-                        </td>
+                <tr data-tab-value="{{ appointment.category }}">
 
-                        <td class="table-cell">
-                            {{ appointment.time }}
-                        </td>
+                    <td class="md-appointments__checkbox">
+                        <input type="checkbox" aria-label="Select appointment {{ appointment.date }}" data-row-check>
+                    </td>
 
-                        <td class="table-cell">
-                            {{ appointment.type }}
-                        </td>
+                    <td>
+                        {{ appointment.date }}
+                    </td>
 
-                        <td class="table-cell">
-                            <span class="table-cell strong">
-                                {{ appointment.doctor }}
-                            </span>
-                            <br />
-                            <span class="table-sub">
-                                {{ appointment.department }}
-                            </span>
-                        </td>
+                    <td>
+                        {{ appointment.time }}
+                    </td>
 
-                        <td class="table-cell">
-                            {% if appointment.status == "Completed" or appointment.status == "Scheduled" %}
-                                <span class="status-success">
-                                    {{ appointment.status }}
-                                </span>
-                            {% else %}
-                                <span class="status-neutral">
-                                    {{ appointment.status }}
-                                </span>
-                            {% endif %}
-                        </td>
+                    <td>
+                        {{ appointment.type }}
+                    </td>
 
-                        <td class="table-cell">
-                            {{ appointment.note }}
-                        </td>
-                    </tr>
+                    <td class="md-appointments__doctor">
+
+                        <span class="md-appointments__doctor-name">
+                            {{ appointment.doctor }}
+                        </span>
+
+                        <span class="md-appointments__department">
+                            {{ appointment.department }}
+                        </span>
+
+                    </td>
+
+                    <td>
+
+                        {% if appointment.status == "Completed" or appointment.status == "Scheduled" %}
+
+                        <span class="md-appointments__status is-success">
+                            {{ appointment.status }}
+                        </span>
+
+                        {% else %}
+
+                        <span class="md-appointments__status">
+                            {{ appointment.status }}
+                        </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+                        {{ appointment.note }}
+                    </td>
+
+                </tr>
+
                 {% empty %}
-                    <tr>
-                        <td
-                            class="table-cell"
-                            colspan="7"
-                        >
-                            No appointments found.
-                        </td>
-                    </tr>
+
+                <tr class="md-appointments__empty">
+
+                    <td colspan="7">
+                        No appointments found.
+                    </td>
+
+                </tr>
+
                 {% endfor %}
+
             </tbody>
+
         </table>
+
     </div>
+
 </section>

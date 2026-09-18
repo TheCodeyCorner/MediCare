@@ -1,0 +1,144 @@
+{% load static %}
+
+<section class="patient-card appointment-status">
+
+    <!-- Header -->
+    <div class="appointment-status__header">
+
+        <div class="appointment-status__title">
+
+            <span class="appointment-status__icon">
+                <i data-lucide="calendar-days"></i>
+            </span>
+
+            <div>
+                <h3>Next Appointment</h3>
+                <p>Your upcoming visit</p>
+            </div>
+
+        </div>
+
+        <a href="#" class="appointment-status__link">
+            View Details
+            <i data-lucide="chevron-right"></i>
+        </a>
+
+    </div>
+
+
+    <!-- Appointment -->
+    <div class="appointment-status__appointment">
+
+        <img src="{% static appointment.doctor.image %}" alt="{{ appointment.doctor.name }}"
+            class="appointment-status__doctor">
+
+        <div class="appointment-status__doctor-info">
+
+            <h4>{{ appointment.doctor.name }}</h4>
+
+            <p class="appointment-status__speciality">
+                {{ appointment.doctor.speciality }}
+            </p>
+
+            <div class="appointment-status__meta">
+
+                <span>
+                    <i data-lucide="calendar"></i>
+                    {{ appointment.date }}
+                </span>
+
+                <span>
+                    <i data-lucide="clock-3"></i>
+                    {{ appointment.time }} IST
+                </span>
+
+                <span>
+                    <i data-lucide="map-pin"></i>
+                    {{ appointment.location }}
+                </span>
+
+            </div>
+
+        </div>
+
+        <button type="button" class="appointment-status__button">
+            View Appointment
+            <i data-lucide="arrow-up-right"></i>
+        </button>
+
+    </div>
+
+
+    <!-- Queue -->
+    <div class="appointment-status__queue">
+
+        <div class="appointment-status__queue-main">
+
+            <div class="appointment-status__queue-title">
+
+                <span class="appointment-status__queue-icon">
+                    <i data-lucide="users"></i>
+                </span>
+
+                <div>
+                    <h4>Live Queue</h4>
+
+                    <span class="appointment-status__live">
+                        <span></span>
+                        Live
+                    </span>
+                </div>
+
+            </div>
+
+            <div class="appointment-status__token">
+
+                <span>Your Token</span>
+
+                <strong>{{ appointment.queue.token }}</strong>
+
+                <small>
+                    {{ appointment.queue.patients_ahead }} patients ahead
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <div class="appointment-status__queue-stats">
+
+            <div class="appointment-status__queue-stat">
+
+                <i data-lucide="clock-3"></i>
+
+                <div>
+                    <span>Estimated Wait</span>
+                    <strong>{{ appointment.queue.estimated_wait }} min</strong>
+                </div>
+
+            </div>
+
+
+            <div class="appointment-status__queue-stat">
+
+                <i data-lucide="footprints"></i>
+
+                <div>
+                    <span>Recommended Arrival</span>
+                    <strong>{{ appointment.queue.recommended_arrival }}</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <p class="appointment-status__notification">
+            <i data-lucide="bell"></i>
+            We'll notify you when it's almost your turn.
+        </p>
+
+    </div>
+
+</section>

@@ -299,6 +299,9 @@ textarea:focus-visible {
     flex-direction: column;
 
     overflow: visible;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .hero__nav {

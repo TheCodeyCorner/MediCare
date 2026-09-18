@@ -1,13 +1,15 @@
-{% load static %}
+{% extends "patient/base.html" %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Admin Dashboard — MediCare</title>
-</head>
-<body>
-    <h1>Admin Dashboard</h1>
-    <p>Admin dashboard is under development.</p>
-</body>
-</html>
+{% block patient_title %}
+Patient Dashboard | Medicare
+{% endblock %}
+
+{% block content %}
+
+<!-- COMMENT -->
+
+{% if profile_incomplete %}
+{% include "patient/sections/patient_profile_completion_popup.html" %}
+{% endif %}
+
+{% endblock %}

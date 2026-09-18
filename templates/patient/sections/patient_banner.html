@@ -1,44 +1,39 @@
 {% load static %}
 
-<section class="md-banner shadow-panel">
+<div class="patient-banner-wrapper">
 
-    <span class="md-banner__ring"></span>
-
-    <div class="md-banner__inner">
-
-        <div class="md-brand">
-
-            <span class="md-brand__mark">
-                <img
-                    src="{% static 'images/logo_textless.webp' %}"
-                    alt="Medicare"
-                >
-            </span>
-
-            <span class="md-brand__name">
-                Medicare
-            </span>
-
-        </div>
-
-        <div>
-
-            <p class="md-banner__name">
-                {{ patient.name }}
-            </p>
-
-            <div class="md-banner__meta">
-                <span>
-                    ID: {{ patient.patient_id }}
-                </span>
-
-                <span>
-                    {{ patient.blood_type }} Blood Type
-                </span>
-            </div>
-
-        </div>
-
+    <div class="md-banner-meta">
+        <span class="md-banner-meta__date">
+            {% now "l, F j, Y" %}
+        </span>
     </div>
 
-</section>
+    <section class="patient-card md-banner">
+
+        <div class="md-banner__content">
+
+            <p class="md-banner__greeting">
+                Welcome back
+            </p>
+
+            <h1 class="md-banner__name">
+                {{ patient.name }}
+            </h1>
+
+            <p class="md-banner__message">
+                Stay on top of your health, appointments, and care — all in one place.
+            </p>
+
+            <a href="#" class="md-banner__appointment">
+                Create Appointment
+            </a>
+
+        </div>
+
+        <div class="md-banner__doctor">
+            <img src="{% static 'images/doctor.webp' %}" alt="Doctor">
+        </div>
+
+    </section>
+
+</div>

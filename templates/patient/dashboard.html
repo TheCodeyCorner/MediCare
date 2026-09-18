@@ -8,27 +8,69 @@ Patient Dashboard | Medicare
 
 <section class="patient-page">
 
-    <div class="md-top-grid">
+    <!-- ============================================================
+         Greeting
+         ============================================================ -->
 
-        {% include "patient/sections/patient_summary.html" %}
+    {% include "patient/sections/patient_banner.html" %}
 
-        {% include "patient/sections/patient_banner.html" %}
 
-    </div>
+    <!-- ============================================================
+         Main Details
+         User Details + Next Appointment / Live Queue
+         ============================================================ -->
 
-    <div class="md-content-grid">
+    <section class="md-dashboard-section md-main-details">
 
-        <div class="md-col">
+        <div class="md-main-details-grid md-dashboard-card-grid">
 
-            {% include "patient/sections/patient_health_metrics.html" %}
+            {% include "patient/sections/patient_summary.html" %}
 
-            {% include "patient/sections/patient_blood_pressure.html" %}
-
-            {% include "patient/sections/patient_medical_info.html" %}
+            {% include "patient/sections/patient_appointment_status.html" %}
 
         </div>
 
-        <div class="md-col">
+    </section>
+
+
+    <!-- ============================================================
+         Vitals
+         Dynamic Vital Cards
+         ============================================================ -->
+
+    <section class="md-dashboard-section md-vitals-section">
+
+        {% include "patient/sections/patient_health_metrics.html" %}
+
+    </section>
+
+
+    <!-- ============================================================
+         Health & Coverage
+         Blood Pressure Chart + Insurance
+         ============================================================ -->
+
+    <section class="md-dashboard-section md-health-coverage">
+
+        <div class="md-health-coverage-grid md-dashboard-card-grid">
+
+            {% include "patient/sections/patient_blood_pressure.html" %}
+
+            {% include "patient/sections/patient_insurance_details.html" %}
+
+        </div>
+
+    </section>
+
+
+    <!-- ============================================================
+         Medications & Appointments
+         Prescriptions + Upcoming Appointments
+         ============================================================ -->
+
+    <section class="md-dashboard-section md-medications-appointments">
+
+        <div class="md-medications-appointments-grid md-dashboard-card-grid">
 
             {% include "patient/sections/patient_prescriptions.html" %}
 
@@ -36,12 +78,13 @@ Patient Dashboard | Medicare
 
         </div>
 
-    </div>
+    </section>
 
 </section>
 
+
 {% if profile_incomplete %}
-    {% include "patient/sections/patient_profile_completion_popup.html" %}
+{% include "patient/sections/patient_profile_completion_popup.html" %}
 {% endif %}
 
 {% endblock %}

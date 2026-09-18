@@ -1,142 +1,422 @@
 /* ==========================================================================
    Medicare — Patient Dashboard
-   Patient-specific components
+   Patient-specific theme, layout, cards and dashboard components
    ========================================================================== */
 
 
 /* ==========================================================================
-   Patient Header Section
+   Patient Theme
    ========================================================================== */
 
-.md-top-grid {
-    display: grid;
-    gap: 1rem;
+:root {
+
+    /* ----------------------------------------------------------------------
+       Surfaces
+       ---------------------------------------------------------------------- */
+
+    --patient-surface:
+        var(--dashboard-card);
+
+    --patient-surface-muted:
+        var(--dashboard-muted);
+
+
+    /* ----------------------------------------------------------------------
+       Borders
+       ---------------------------------------------------------------------- */
+
+    --patient-border:
+        var(--dashboard-border);
+
+    --patient-border-strong:
+        var(--dashboard-border-strong,
+            var(--dashboard-primary));
+
+
+    /* ----------------------------------------------------------------------
+       Text
+       ---------------------------------------------------------------------- */
+
+    --patient-text:
+        var(--dashboard-foreground);
+
+    --patient-text-muted:
+        var(--dashboard-muted-foreground);
+
+    --patient-text-soft:
+        color-mix(in oklch,
+            var(--dashboard-foreground) 70%,
+            var(--dashboard-muted-foreground));
+
+
+    /* ----------------------------------------------------------------------
+       Primary
+       ---------------------------------------------------------------------- */
+
+    --patient-primary:
+        var(--dashboard-primary);
+
+    --patient-primary-hover:
+        var(--dashboard-primary-hover,
+            var(--dashboard-primary));
+
+    --patient-primary-foreground:
+        var(--dashboard-primary-foreground);
+
+    --patient-primary-soft:
+        var(--dashboard-primary-soft,
+            var(--dashboard-muted));
+
+
+    /* ----------------------------------------------------------------------
+       Status Colors
+       ---------------------------------------------------------------------- */
+
+    --patient-success:
+        var(--dashboard-success);
+
+    --patient-success-soft:
+        var(--dashboard-success-soft,
+            var(--dashboard-muted));
+
+    --patient-alert:
+        var(--dashboard-alert);
+
+    --patient-alert-soft:
+        var(--dashboard-alert-soft,
+            var(--dashboard-muted));
+
+    --patient-danger:
+        var(--dashboard-danger,
+            var(--dashboard-alert));
+
+    --patient-danger-soft:
+        var(--dashboard-danger-soft,
+            var(--dashboard-muted));
+
+    --patient-info:
+        var(--dashboard-info,
+            var(--dashboard-primary));
+
+    --patient-info-soft:
+        var(--dashboard-info-soft,
+            var(--dashboard-muted));
+
+
+    /* ----------------------------------------------------------------------
+       Patient Banner
+       ---------------------------------------------------------------------- */
+
+    --patient-banner-start:
+        var(--dashboard-primary);
+
+    --patient-banner-end:
+        color-mix(in oklch,
+            var(--dashboard-primary) 82%,
+            var(--dashboard-info,
+                var(--dashboard-primary)));
+
+    --patient-banner-foreground:
+        var(--dashboard-primary-foreground);
+
+
+    /* ----------------------------------------------------------------------
+       Health Metrics
+       ---------------------------------------------------------------------- */
+
+    --patient-vital-icon-bg:
+        var(--dashboard-primary-soft,
+            var(--dashboard-muted));
+
+    --patient-vital-icon-color:
+        var(--dashboard-primary);
+
+    --patient-vital-value:
+        var(--dashboard-foreground);
+
+
+    /* ----------------------------------------------------------------------
+       Blood Pressure Chart
+       ---------------------------------------------------------------------- */
+
+    --patient-chart-systolic:
+        var(--dashboard-chart-systolic,
+            var(--dashboard-primary));
+
+    --patient-chart-diastolic:
+        var(--dashboard-chart-diastolic,
+            var(--dashboard-info,
+                var(--dashboard-primary)));
+
+    --patient-chart-grid:
+        var(--dashboard-chart-grid,
+            var(--dashboard-border));
+
+
+    /* ----------------------------------------------------------------------
+       Card Geometry
+       ---------------------------------------------------------------------- */
+
+    --patient-card-radius:
+        var(--dashboard-radius);
+
+    --patient-card-radius-sm:
+        var(--dashboard-radius-sm);
+
+    --patient-card-radius-md:
+        var(--dashboard-radius-md);
+
+    --patient-card-shadow:
+        var(--dashboard-shadow-sm,
+            0 4px 20px oklch(0.36 0.03 210 / 6%));
+
+    --patient-card-shadow-hover:
+        var(--dashboard-shadow-md,
+            0 8px 24px oklch(0.36 0.03 210 / 8%));
+
+
+    /* ----------------------------------------------------------------------
+       Spacing
+       ---------------------------------------------------------------------- */
+
+    --patient-section-gap:
+        1.5rem;
+
+    --patient-card-gap:
+        1rem;
+
+    --patient-content-gap:
+        0.75rem;
+
+
+    /* ----------------------------------------------------------------------
+       Motion
+       ---------------------------------------------------------------------- */
+
+    --patient-transition-fast:
+        160ms ease;
+
+    --patient-transition:
+        220ms ease;
+
+    --patient-transition-slow:
+        300ms ease;
 }
 
-.md-patient-card {
+
+/* ==========================================================================
+   Dashboard Layout
+   ========================================================================== */
+
+.patient-page {
     display: flex;
-    flex-direction: row;
-    gap: 1rem;
+    flex-direction: column;
 
-    border: 1px solid var(--dashboard-border);
-    background: var(--dashboard-card);
-    border-radius: var(--dashboard-radius);
+    width: 100%;
+    min-width: 0;
 
-    padding: 1rem;
+    gap: var(--patient-section-gap);
+}
+
+.md-dashboard-section {
+    width: 100%;
+    min-width: 0;
+
+    container-type: inline-size;
+}
+
+
+/* --------------------------------------------------------------------------
+   Main Dashboard Details
+   -------------------------------------------------------------------------- */
+
+.md-main-details {
+    width: 100%;
+    min-width: 0;
+}
+
+.md-main-details-grid {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr) minmax(0, 1fr);
+
+    gap: var(--patient-card-gap);
+
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* --------------------------------------------------------------------------
+   Health & Coverage
+   -------------------------------------------------------------------------- */
+
+.md-health-coverage-grid {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 2fr) minmax(0, 1fr);
+
+    gap: var(--patient-card-gap);
+
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* --------------------------------------------------------------------------
+   Medications & Appointments
+   -------------------------------------------------------------------------- */
+
+.md-medications-appointments-grid {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr) minmax(0, 1fr);
+
+    gap: var(--patient-card-gap);
+
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* --------------------------------------------------------------------------
+   Adaptive Dashboard Stacking
+   -------------------------------------------------------------------------- */
+
+@container (max-width: 800px) {
+
+    .md-dashboard-card-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ==========================================================================
+   Patient Card Foundation
+   ========================================================================== */
+
+.patient-card {
+    position: relative;
+
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    border: 1px solid var(--patient-border);
+    border-radius: var(--patient-card-radius);
+
+    background: var(--patient-surface);
+
+    box-shadow: var(--patient-card-shadow);
+
+    overflow: visible;
 
     transition:
-        transform 160ms ease,
-        box-shadow 160ms ease,
-        border-color 160ms ease;
+        transform var(--patient-transition-fast),
+        box-shadow var(--patient-transition-fast),
+        border-color var(--patient-transition-fast);
 }
 
-.md-patient-card:hover {
+.patient-card:hover {
+    border-color: var(--patient-border-strong);
+
+    box-shadow: var(--patient-card-shadow-hover);
+
     transform: translateY(-2px);
-
-    border-color: var(--dashboard-primary);
-
-    box-shadow:
-        0 0.5rem 1.25rem rgb(15 23 42 / 8%);
 }
 
-.md-patient-card__photo {
-    width: 6rem;
-    height: 6rem;
 
-    border-radius: var(--dashboard-radius);
+/* --------------------------------------------------------------------------
+   Card Header
+   -------------------------------------------------------------------------- */
 
-    object-fit: cover;
+.patient-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 
-    animation:
-        scale-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-.md-patient-card__body {
+    width: 100%;
     min-width: 0;
-    flex: 1;
+
+    box-sizing: border-box;
+
+    padding: 0.9rem 1rem;
+
+    border-bottom: 1px solid var(--patient-border);
 }
 
-.md-patient-card__name-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-
-    margin-bottom: 1rem;
-}
-
-.md-patient-card__name-row h2 {
+.patient-card__title {
     margin: 0;
 
-    font-size: 1.125rem;
+    color: var(--patient-text);
+
+    font-size: 0.875rem;
     font-weight: 600;
+    line-height: 1.3;
 }
 
-.status-info {
-    border-radius: var(--dashboard-radius-pill);
+.patient-card__subtitle {
+    margin: 0.2rem 0 0;
 
-    background: oklch(0.94 0.034 190);
+    color: var(--patient-text-muted);
 
-    padding: 0.2rem 0.55rem;
-
-    color: oklch(0.42 0.078 190);
-
-    font-size: 0.6rem;
-    font-weight: 700;
+    font-size: 0.65rem;
+    line-height: 1.35;
 }
 
-.md-patient-card__contacts {
+
+/* --------------------------------------------------------------------------
+   Card Body
+   -------------------------------------------------------------------------- */
+
+.patient-card__body {
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 1rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Card Footer
+   -------------------------------------------------------------------------- */
+
+.patient-card__footer {
     display: flex;
-    flex-wrap: wrap;
-
-    gap: 0.5rem 1.25rem;
-
-    margin-bottom: 1rem;
-
-    font-size: 0.75rem;
-    color: var(--dashboard-muted-foreground);
-}
-
-.md-patient-card__contacts span {
-    display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+    justify-content: space-between;
+
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 0.75rem 1rem;
+
+    border-top: 1px solid var(--patient-border);
 }
 
-.md-patient-card__contacts svg {
-    flex: none;
+
+/* --------------------------------------------------------------------------
+   Card Variants
+   -------------------------------------------------------------------------- */
+
+.patient-card--compact .patient-card__body {
+    padding: 0.75rem;
 }
 
+.patient-card--static:hover {
+    border-color: var(--patient-border);
 
-/* Patient information grid */
+    box-shadow: var(--patient-card-shadow);
 
-.md-info-grid {
-    display: grid;
-
-    grid-template-columns: repeat(2, 1fr);
-
-    gap: 0.75rem;
-}
-
-.md-info-grid__item {
-    border: 1px solid var(--dashboard-border);
-    border-radius: var(--dashboard-radius-md);
-
-    padding: 0.5rem;
-}
-
-.md-info-grid__item dt {
-    margin: 0;
-
-    font-size: 0.5625rem;
-    color: var(--dashboard-muted-foreground);
-}
-
-.md-info-grid__item dd {
-    margin: 0.125rem 0 0;
-
-    font-size: 0.625rem;
-    font-weight: 600;
+    transform: none;
 }
 
 
@@ -144,344 +424,1452 @@
    Patient Banner
    ========================================================================== */
 
+.patient-banner-wrapper {
+    width: 100%;
+    min-width: 0;
+
+    padding-top: 1.5rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Banner Metadata
+   -------------------------------------------------------------------------- */
+
+.md-banner-meta {
+    display: flex;
+    align-items: center;
+
+    margin-bottom: 0.6rem;
+}
+
+.md-banner-meta__date {
+    color: var(--patient-text-muted);
+
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+
+/* --------------------------------------------------------------------------
+   Banner Surface
+   -------------------------------------------------------------------------- */
+
 .md-banner {
     position: relative;
-    overflow: hidden;
 
-    border: 1px solid transparent;
-    border-radius: var(--dashboard-radius);
+    display: grid;
+    align-items: center;
+
+    grid-template-columns:
+        minmax(0, 1fr) minmax(0, 1fr);
+
+    min-height: 12rem;
+
+    padding: 2rem 2.5rem;
 
     background:
         linear-gradient(135deg,
-            oklch(0.72 0.11 182),
-            oklch(0.54 0.12 198));
+            var(--patient-banner-start),
+            var(--patient-banner-end));
 
-    color: var(--dashboard-primary-foreground);
+    color: var(--patient-banner-foreground);
 
-    padding: 1.25rem;
-
-    transition:
-        transform 160ms ease,
-        box-shadow 160ms ease,
-        border-color 160ms ease;
+    overflow: visible;
 }
 
-.md-banner:hover {
-    transform: translateY(-2px);
 
-    border-color: var(--dashboard-primary);
+/* --------------------------------------------------------------------------
+   Banner Content
+   -------------------------------------------------------------------------- */
 
-    box-shadow:
-        0 0.5rem 1.25rem rgb(15 23 42 / 12%);
-}
-
-.md-banner__ring {
-    position: absolute;
-
-    right: -2.5rem;
-    top: -3rem;
-
-    width: 10rem;
-    height: 10rem;
-
-    border-radius: 999px;
-
-    border: 24px solid oklch(1 0 0 / 12%);
-}
-
-.md-banner__inner {
+.md-banner__content {
     position: relative;
+    z-index: 2;
 
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    align-items: flex-start;
 
-    min-height: 8rem;
-    height: 100%;
+    gap: 0.35rem;
+
+    min-width: 0;
 }
 
-.md-banner__name {
+.md-banner__greeting {
     margin: 0;
 
-    font-size: 1.125rem;
-    font-weight: 600;
-}
+    color: var(--patient-banner-foreground);
 
-.md-banner__meta {
-    display: flex;
-    justify-content: space-between;
+    font-size: 0.9rem;
+    font-weight: 500;
+    line-height: 1.3;
 
-    margin-top: 0.25rem;
-
-    font-size: 0.625rem;
     opacity: 0.8;
 }
 
+.md-banner__name {
+    margin: 0 0 0.6rem;
 
-/* ==========================================================================
-   Content Grid
-   ========================================================================== */
+    color: var(--patient-banner-foreground);
 
-.md-content-grid {
-    display: grid;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.15;
 
-    gap: 1rem;
+    overflow-wrap: anywhere;
 }
 
-.md-col {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+.md-banner__message {
+    max-width: 24rem;
 
-    padding-top: 1rem;
+    margin: 0 0 0.9rem;
+
+    color: var(--patient-banner-foreground);
+
+    font-size: 0.8rem;
+    font-weight: 400;
+    line-height: 1.5;
+
+    opacity: 0.78;
 }
 
 
-/* ==========================================================================
-   Metrics
-   ========================================================================== */
+/* --------------------------------------------------------------------------
+   Banner Appointment Action
+   -------------------------------------------------------------------------- */
 
-.md-metrics {
-    display: grid;
+.md-banner__appointment {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 
-    grid-template-columns: repeat(3, 1fr);
+    padding: 0.65rem 1rem;
 
-    gap: 0.75rem;
-}
+    border-radius: var(--patient-card-radius-sm);
 
-.md-metric-card {
-    border: 1px solid var(--dashboard-border);
+    background: var(--patient-banner-foreground);
+    color: var(--patient-banner-start);
 
-    background: var(--dashboard-card);
+    font-size: 0.85rem;
+    font-weight: 600;
 
-    border-radius: var(--dashboard-radius);
-
-    padding: 0.75rem;
+    text-decoration: none;
 
     transition:
-        transform 160ms ease,
-        box-shadow 160ms ease,
-        border-color 160ms ease;
+        transform var(--patient-transition-fast),
+        opacity var(--patient-transition-fast);
 }
 
-.md-metric-card:hover {
+.md-banner__appointment:hover {
+    opacity: 0.9;
+
     transform: translateY(-2px);
-
-    border-color: var(--dashboard-primary);
-
-    box-shadow:
-        0 0.5rem 1.25rem rgb(15 23 42 / 8%);
 }
 
-.md-metric-card__icon {
+
+/* --------------------------------------------------------------------------
+   Banner Doctor Artwork
+   -------------------------------------------------------------------------- */
+
+.md-banner__doctor {
+    position: static;
+    z-index: 1;
+
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+
+    align-self: stretch;
+
+    min-height: 0;
+}
+
+.md-banner__doctor img {
+    position: absolute;
+
+    right: 0;
+    bottom: 0;
+
+    z-index: 2;
+
+    width: auto;
+    max-width: none;
+    height: 125%;
+
+    object-fit: contain;
+    object-position: bottom;
+}
+
+
+/* ==========================================================================
+   Patient Summary
+   ========================================================================== */
+
+.patient-summary {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+
+    box-sizing: border-box;
+
+    gap: 1rem;
+
+    padding: 1rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Profile Row
+   -------------------------------------------------------------------------- */
+
+.patient-summary__profile {
+    display: flex;
+    align-items: flex-start;
+
+    flex: 0 0 auto;
+
+    width: 100%;
+    min-width: 0;
+
+    gap: 1rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Patient Photo
+   -------------------------------------------------------------------------- */
+
+.patient-summary__photo {
+    width: 5rem;
+    height: 5rem;
+
+    flex: 0 0 5rem;
+
+    border-radius: var(--patient-card-radius-md);
+
+    object-fit: cover;
+
+    animation:
+        scale-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+
+/* --------------------------------------------------------------------------
+   Identity
+   -------------------------------------------------------------------------- */
+
+.patient-summary__identity {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+
+    min-width: 0;
+}
+
+.patient-summary__name {
+    margin: 0;
+
+    color: var(--patient-text);
+
+    font-size: 1.2rem;
+    font-weight: 650;
+    line-height: 1.25;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* --------------------------------------------------------------------------
+   Quick Information
+   -------------------------------------------------------------------------- */
+
+.patient-summary__quick-info {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 0.4rem;
+
+    margin-top: 0.3rem;
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.7rem;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.patient-summary__separator {
+    color: var(--patient-border);
+
+    user-select: none;
+}
+
+
+/* --------------------------------------------------------------------------
+   Contact Information
+   -------------------------------------------------------------------------- */
+
+.patient-summary__contacts {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 0.4rem 1rem;
+
+    min-width: 0;
+
+    margin-top: 0.75rem;
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.68rem;
+}
+
+.patient-summary__contacts span {
+    display: inline-flex;
+    align-items: center;
+
+    min-width: 0;
+
+    gap: 0.3rem;
+}
+
+.patient-summary__contacts svg {
+    width: 0.78rem;
+    height: 0.78rem;
+
+    flex: none;
+}
+
+
+/* --------------------------------------------------------------------------
+   Patient Detail Grid
+   -------------------------------------------------------------------------- */
+
+.patient-summary__details {
     display: grid;
-    place-items: center;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    align-items: stretch;
+
+    flex: 1 1 auto;
+
+    width: 100%;
+    min-width: 0;
+
+    gap: 0.75rem;
+
+    margin: 0;
+    padding: 0;
+}
+
+.patient-summary__detail {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    width: 100%;
+    min-width: 0;
+    min-height: 4.5rem;
+
+    box-sizing: border-box;
+
+    padding: 0.8rem 0.75rem;
+
+    border: 1px solid var(--patient-border);
+    border-radius: var(--patient-card-radius-md);
+
+    background: var(--patient-surface-muted);
+}
+
+.patient-summary__detail dt {
+    margin: 0;
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.56rem;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.patient-summary__detail dd {
+    margin: 0.2rem 0 0;
+
+    color: var(--patient-text);
+
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1.3;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+/* ==========================================================================
+   Appointment Status
+   ========================================================================== */
+
+.appointment-status {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    min-width: 0;
+
+    padding: 1rem;
+
+    container-type: inline-size;
+}
+
+
+/* --------------------------------------------------------------------------
+   Appointment Header
+   -------------------------------------------------------------------------- */
+
+.appointment-status__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 1rem;
+
+    padding-bottom: 0.85rem;
+
+    border-bottom: 1px solid var(--patient-border);
+}
+
+.appointment-status__title {
+    display: flex;
+    align-items: center;
+
+    min-width: 0;
+
+    gap: 0.65rem;
+}
+
+.appointment-status__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 
     width: 2rem;
     height: 2rem;
 
-    margin-bottom: 0.75rem;
+    flex: 0 0 2rem;
 
-    border-radius: 999px;
+    border-radius: var(--patient-card-radius-md);
 
-    background: oklch(0.94 0.034 190);
-    color: var(--dashboard-primary);
-
-    transition:
-        transform 160ms ease,
-        background-color 160ms ease;
+    background: var(--patient-primary-soft);
+    color: var(--patient-primary);
 }
 
-.md-metric-card:hover .md-metric-card__icon {
-    transform: scale(1.08);
-
-    background: oklch(0.91 0.05 190);
+.appointment-status__icon svg {
+    width: 0.95rem;
+    height: 0.95rem;
 }
 
-.md-metric-card__label {
+.appointment-status__title h3 {
     margin: 0;
 
-    font-size: 0.625rem;
-    color: var(--dashboard-muted-foreground);
+    color: var(--patient-text);
+
+    font-size: 0.9rem;
+    font-weight: 650;
+    line-height: 1.3;
 }
 
-.md-metric-card__value {
-    margin: 0.25rem 0 0;
+.appointment-status__title p {
+    margin: 0.15rem 0 0;
 
-    font-size: 1.25rem;
-    font-weight: 600;
+    color: var(--patient-text-muted);
+
+    font-size: 0.58rem;
+    line-height: 1.3;
 }
 
-.md-metric-card__value span {
-    margin-left: 0.125rem;
-
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-
-/* ==========================================================================
-   Panels
-   ========================================================================== */
-
-.panel {
-    border: 1px solid var(--dashboard-border);
-
-    background: var(--dashboard-card);
-
-    border-radius: var(--dashboard-radius);
-
-    transition:
-        transform 160ms ease,
-        box-shadow 160ms ease,
-        border-color 160ms ease;
-}
-
-.panel:hover {
-    transform: translateY(-2px);
-
-    border-color: var(--dashboard-primary);
-
-    box-shadow:
-        0 0.5rem 1.25rem rgb(15 23 42 / 8%);
-}
-
-.panel__header {
-    display: flex;
+.appointment-status__link {
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
 
-    height: 3rem;
+    flex: none;
 
-    border-bottom: 1px solid var(--dashboard-border);
+    gap: 0.15rem;
 
-    padding: 0 1rem;
+    color: var(--patient-primary);
+
+    font-size: 0.62rem;
+    font-weight: 600;
+
+    text-decoration: none;
 }
 
-.panel__header h2 {
+.appointment-status__link svg {
+    width: 0.7rem;
+    height: 0.7rem;
+}
+
+.appointment-status__link:hover {
+    text-decoration: underline;
+}
+
+
+/* --------------------------------------------------------------------------
+   Current Appointment
+   -------------------------------------------------------------------------- */
+
+.appointment-status__appointment {
+    display: grid;
+    align-items: center;
+
+    grid-template-columns:
+        auto minmax(0, 1fr) auto;
+
+    gap: 0.9rem;
+
+    padding: 1rem 0;
+}
+
+.appointment-status__doctor {
+    width: 4.5rem;
+    height: 5rem;
+
+    border-radius: var(--patient-card-radius-md);
+
+    background: var(--patient-surface-muted);
+
+    object-fit: cover;
+    object-position: top center;
+}
+
+.appointment-status__doctor-info {
+    min-width: 0;
+}
+
+.appointment-status__doctor-info h4 {
     margin: 0;
 
-    font-size: 0.875rem;
-    font-weight: 600;
+    color: var(--patient-text);
+
+    font-size: 0.9rem;
+    font-weight: 650;
+    line-height: 1.3;
 }
 
+.appointment-status__speciality {
+    margin: 0.2rem 0 0.65rem;
 
-/* ==========================================================================
-   Blood Pressure Chart
-   ========================================================================== */
+    color: var(--patient-text-muted);
 
-.md-chart-wrap {
-    padding: 0.65rem 1rem;
+    font-size: 0.64rem;
 }
 
-.md-chart-legend {
+.appointment-status__meta {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
     flex-wrap: wrap;
 
-    gap: 0.5rem;
-
-    margin-bottom: 0.5rem;
-
-    font-size: 0.625rem;
-    color: var(--dashboard-muted-foreground);
+    gap: 0.4rem 0.9rem;
 }
 
-.md-chart-legend b {
-    color: var(--dashboard-foreground);
+.appointment-status__meta span {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 0.3rem;
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.59rem;
+    line-height: 1.3;
 }
 
-.md-chart-legend__series {
+.appointment-status__meta svg {
+    width: 0.72rem;
+    height: 0.72rem;
+
+    flex: none;
+
+    color: var(--patient-primary);
+}
+
+
+/* --------------------------------------------------------------------------
+   Appointment Action
+   -------------------------------------------------------------------------- */
+
+.appointment-status__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 0.35rem;
+
+    min-height: 2rem;
+
+    padding: 0.5rem 0.7rem;
+
+    border: 0;
+    border-radius: var(--patient-card-radius-sm);
+
+    background: var(--patient-primary);
+    color: var(--patient-primary-foreground);
+
+    font-family: inherit;
+    font-size: 0.6rem;
+    font-weight: 600;
+
+    white-space: nowrap;
+
+    cursor: pointer;
+
+    transition:
+        background var(--patient-transition-fast),
+        transform var(--patient-transition-fast);
+}
+
+.appointment-status__button svg {
+    width: 0.7rem;
+    height: 0.7rem;
+}
+
+.appointment-status__button:hover {
+    background: var(--patient-primary-hover);
+
+    transform: translateY(-1px);
+}
+
+
+/* --------------------------------------------------------------------------
+   Live Queue
+   -------------------------------------------------------------------------- */
+
+.appointment-status__queue {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1.1fr) minmax(0, 1fr);
+
+    gap: 1rem;
+
+    padding: 0.85rem;
+
+    border: 1px solid var(--patient-border);
+    border-radius: var(--patient-card-radius-md);
+
+    background: var(--patient-surface-muted);
+}
+
+.appointment-status__queue-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    min-width: 0;
+
+    gap: 1rem;
+}
+
+.appointment-status__queue-title {
     display: flex;
     align-items: center;
 
-    gap: 0.75rem;
+    min-width: 0;
+
+    gap: 0.55rem;
 }
 
-.md-chart-legend__series>span {
+.appointment-status__queue-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 1.8rem;
+    height: 1.8rem;
+
+    flex: 0 0 1.8rem;
+
+    border-radius: var(--patient-card-radius-sm);
+
+    background: var(--patient-success-soft);
+    color: var(--patient-success);
+}
+
+.appointment-status__queue-icon svg {
+    width: 0.85rem;
+    height: 0.85rem;
+}
+
+.appointment-status__queue-title h4 {
+    margin: 0;
+
+    color: var(--patient-text);
+
+    font-size: 0.7rem;
+    font-weight: 650;
+}
+
+.appointment-status__live {
     display: inline-flex;
     align-items: center;
 
     gap: 0.25rem;
+
+    margin-top: 0.15rem;
+
+    color: var(--patient-success);
+
+    font-size: 0.52rem;
+    font-weight: 600;
 }
 
-.md-chart-legend__dot {
+.appointment-status__live span {
+    width: 0.35rem;
+    height: 0.35rem;
+
+    border-radius: 50%;
+
+    background: var(--patient-success);
+}
+
+
+/* --------------------------------------------------------------------------
+   Queue Token
+   -------------------------------------------------------------------------- */
+
+.appointment-status__token {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+
+    min-width: 4rem;
+}
+
+.appointment-status__token span {
+    color: var(--patient-text-muted);
+
+    font-size: 0.52rem;
+}
+
+.appointment-status__token strong {
+    margin: 0.1rem 0;
+
+    color: var(--patient-text);
+
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.appointment-status__token small {
+    color: var(--patient-text-soft);
+
+    font-size: 0.5rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Queue Statistics
+   -------------------------------------------------------------------------- */
+
+.appointment-status__queue-stats {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    min-width: 0;
+
+    gap: 0.5rem;
+}
+
+.appointment-status__queue-stat {
+    display: flex;
+    align-items: center;
+
+    min-width: 0;
+
+    gap: 0.5rem;
+
+    padding: 0.55rem;
+
+    border-radius: var(--patient-card-radius-sm);
+
+    background: var(--patient-surface);
+}
+
+.appointment-status__queue-stat>svg {
+    width: 0.8rem;
+    height: 0.8rem;
+
+    flex: none;
+
+    color: var(--patient-primary);
+}
+
+.appointment-status__queue-stat div {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+}
+
+.appointment-status__queue-stat span {
+    color: var(--patient-text-muted);
+
+    font-size: 0.5rem;
+    line-height: 1.3;
+}
+
+.appointment-status__queue-stat strong {
+    margin-top: 0.1rem;
+
+    color: var(--patient-text);
+
+    font-size: 0.68rem;
+    font-weight: 650;
+}
+
+
+/* --------------------------------------------------------------------------
+   Queue Notification
+   -------------------------------------------------------------------------- */
+
+.appointment-status__notification {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    grid-column: 1 / -1;
+
+    gap: 0.35rem;
+
+    margin: 0;
+    padding-top: 0.55rem;
+
+    border-top: 1px solid var(--patient-border);
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.52rem;
+    line-height: 1.3;
+
+    text-align: center;
+}
+
+.appointment-status__notification svg {
+    width: 0.7rem;
+    height: 0.7rem;
+
+    flex: none;
+
+    color: var(--patient-primary);
+}
+
+
+/* ==========================================================================
+   Appointment Status — Adaptive Layout
+   ========================================================================== */
+
+@container (max-width: 700px) {
+
+    .appointment-status__queue {
+        grid-template-columns: 1fr;
+    }
+}
+
+@container (max-width: 600px) {
+
+    .appointment-status__appointment {
+        grid-template-columns:
+            auto minmax(0, 1fr);
+    }
+
+    .appointment-status__button {
+        grid-column: 1 / -1;
+
+        width: 100%;
+    }
+
+    .appointment-status__queue-main {
+        align-items: flex-start;
+    }
+}
+
+@container (max-width: 420px) {
+
+    .appointment-status {
+        padding: 0.75rem;
+    }
+
+    .appointment-status__header {
+        align-items: flex-start;
+    }
+
+    .appointment-status__link {
+        font-size: 0.56rem;
+    }
+
+    .appointment-status__doctor {
+        width: 4rem;
+        height: 4.5rem;
+    }
+
+    .appointment-status__meta {
+        flex-direction: column;
+
+        gap: 0.3rem;
+    }
+
+    .appointment-status__queue-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ==========================================================================
+   Health Metrics
+   ========================================================================== */
+
+.md-vitals-section {
+    width: 100%;
+    min-width: 0;
+
+    container-type: inline-size;
+}
+
+
+/* --------------------------------------------------------------------------
+   Metrics Grid
+   -------------------------------------------------------------------------- */
+
+.md-metrics {
+    display: grid;
+
+    grid-template-columns:
+        repeat(6, minmax(0, 1fr));
+
+    gap: var(--patient-card-gap);
+
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* --------------------------------------------------------------------------
+   Metric Card
+   -------------------------------------------------------------------------- */
+
+.md-metric-card {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    min-width: 0;
+    min-height: 7.5rem;
+
+    box-sizing: border-box;
+
+    padding: 0.85rem;
+
+    border: 1px solid var(--patient-border);
+    border-radius: var(--patient-card-radius);
+
+    background: var(--patient-surface);
+
+    box-shadow: var(--patient-card-shadow);
+
+    overflow: hidden;
+
+    transition:
+        transform var(--patient-transition-fast),
+        box-shadow var(--patient-transition-fast),
+        border-color var(--patient-transition-fast);
+}
+
+.md-metric-card:hover {
+    border-color: var(--patient-border-strong);
+
+    box-shadow: var(--patient-card-shadow-hover);
+
+    transform: translateY(-2px);
+}
+
+
+/* --------------------------------------------------------------------------
+   Metric Icon
+   -------------------------------------------------------------------------- */
+
+.md-metric-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 2rem;
+    height: 2rem;
+
+    flex: 0 0 2rem;
+
+    margin-bottom: 0.65rem;
+
+    border-radius: var(--patient-card-radius-sm);
+
+    background: var(--patient-vital-icon-bg);
+    color: var(--patient-vital-icon-color);
+
+    transition:
+        transform var(--patient-transition-fast),
+        background-color var(--patient-transition-fast);
+}
+
+.md-metric-card:hover .md-metric-card__icon {
+    background:
+        color-mix(in oklch,
+            var(--patient-vital-icon-bg) 88%,
+            var(--patient-primary));
+
+    transform: scale(1.06);
+}
+
+.md-metric-card__icon svg {
+    width: 1rem;
+    height: 1rem;
+
+    flex: none;
+}
+
+
+/* --------------------------------------------------------------------------
+   Metric Label & Value
+   -------------------------------------------------------------------------- */
+
+.md-metric-card__label {
+    margin: 0;
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.625rem;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.md-metric-card__value {
+    display: flex;
+    align-items: baseline;
+
+    min-width: 0;
+
+    margin: 0.25rem 0 0;
+
+    color: var(--patient-vital-value);
+
+    font-size: 1.15rem;
+    font-weight: 650;
+    line-height: 1.2;
+
+    overflow: hidden;
+}
+
+.md-metric-card__value span {
+    flex: none;
+
+    margin-left: 0.2rem;
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.65rem;
+    font-weight: 500;
+}
+
+
+/* --------------------------------------------------------------------------
+   Metrics — Medium Width
+   -------------------------------------------------------------------------- */
+
+@container (max-width: 900px) {
+
+    .md-metrics {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
+    .md-metric-card {
+        min-height: 7rem;
+
+        padding: 0.75rem;
+    }
+
+    .md-metric-card__icon {
+        width: 1.85rem;
+        height: 1.85rem;
+
+        flex-basis: 1.85rem;
+
+        margin-bottom: 0.55rem;
+    }
+
+    .md-metric-card__value {
+        font-size: 1.05rem;
+    }
+}
+
+
+/* --------------------------------------------------------------------------
+   Metrics — Narrow Width
+   -------------------------------------------------------------------------- */
+
+@container (max-width: 560px) {
+
+    .md-metrics {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 0.6rem;
+    }
+
+    .md-metric-card {
+        min-height: 6.75rem;
+
+        padding: 0.7rem;
+    }
+
+    .md-metric-card__icon {
+        width: 1.75rem;
+        height: 1.75rem;
+
+        flex-basis: 1.75rem;
+
+        margin-bottom: 0.5rem;
+    }
+
+    .md-metric-card__label {
+        font-size: 0.6rem;
+    }
+
+    .md-metric-card__value {
+        font-size: 1rem;
+    }
+
+    .md-metric-card__value span {
+        font-size: 0.6rem;
+    }
+}
+
+
+/* --------------------------------------------------------------------------
+   Metrics — Very Narrow Width
+   -------------------------------------------------------------------------- */
+
+@container (max-width: 320px) {
+
+    .md-metrics {
+        grid-template-columns:
+            minmax(0, 1fr);
+    }
+}
+
+
+/* ==========================================================================
+   Blood Pressure
+   ========================================================================== */
+
+/*
+   The Blood Pressure component uses .patient-card as its visual foundation.
+   Border, radius, shadow and hover behavior are intentionally inherited.
+*/
+
+.md-blood-pressure {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+
+    box-sizing: border-box;
+
+    overflow: hidden;
+}
+
+
+/* --------------------------------------------------------------------------
+   Blood Pressure Header
+   -------------------------------------------------------------------------- */
+
+.md-blood-pressure__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    gap: 1rem;
+
+    padding: 1rem;
+
+    border-bottom: 1px solid var(--patient-border);
+}
+
+.md-blood-pressure__title-group {
+    display: flex;
+    align-items: center;
+
+    min-width: 0;
+
+    gap: 0.65rem;
+}
+
+.md-blood-pressure__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 2rem;
+    height: 2rem;
+
+    flex: 0 0 2rem;
+
+    border-radius: 50%;
+
+    background: var(--patient-primary-soft);
+    color: var(--patient-primary);
+}
+
+.md-blood-pressure__icon svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.md-blood-pressure__title {
+    margin: 0;
+
+    color: var(--patient-text);
+
+    font-size: 0.875rem;
+    font-weight: 650;
+    line-height: 1.3;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* --------------------------------------------------------------------------
+   Blood Pressure Period Selector
+   -------------------------------------------------------------------------- */
+
+.md-blood-pressure__period {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    gap: 0.4rem;
+
+    min-height: 2rem;
+
+    padding: 0.45rem 0.65rem;
+
+    border: 1px solid var(--patient-border);
+    border-radius: var(--patient-card-radius-sm);
+
+    background: var(--patient-surface-muted);
+    color: var(--patient-text);
+
+    font-family: inherit;
+    font-size: 0.6rem;
+    font-weight: 500;
+
+    white-space: nowrap;
+
+    cursor: pointer;
+
+    transition:
+        background var(--patient-transition-fast),
+        border-color var(--patient-transition-fast),
+        color var(--patient-transition-fast);
+}
+
+.md-blood-pressure__period:hover {
+    border-color: var(--patient-border-strong);
+
+    background: var(--patient-surface);
+    color: var(--patient-text);
+}
+
+.md-blood-pressure__period svg {
+    width: 0.75rem;
+    height: 0.75rem;
+
+    flex: none;
+}
+
+
+/* --------------------------------------------------------------------------
+   Blood Pressure Main Layout
+   -------------------------------------------------------------------------- */
+
+.md-blood-pressure .md-chart-wrap {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 2fr) minmax(11rem, 0.85fr);
+
+    flex: 1 1 auto;
+
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    gap: var(--patient-card-gap);
+
+    padding: 1rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Chart Area
+   -------------------------------------------------------------------------- */
+
+.md-chart-area {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* --------------------------------------------------------------------------
+   Chart Legend
+   -------------------------------------------------------------------------- */
+
+.md-chart-legend {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+
+    gap: 1rem;
+
+    margin-bottom: 0.8rem;
+
+    color: var(--patient-text);
+
+    font-size: 0.62rem;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.md-chart-legend__item {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 0.4rem;
+
+    white-space: nowrap;
+}
+
+.md-chart-legend__line {
     display: inline-block;
 
-    width: 0.5rem;
-    height: 0.5rem;
+    width: 0.9rem;
+    height: 0.15rem;
+
+    flex: 0 0 0.9rem;
 
     border-radius: var(--dashboard-radius-pill);
 }
 
-.md-chart-legend__dot.systolic {
-    background: oklch(0.58 0.11 194);
+.md-chart-legend__line.systolic {
+    background: var(--patient-chart-systolic);
 }
 
-.md-chart-legend__dot.diastolic {
-    background: oklch(0.68 0.09 220);
-}
-
-.md-chart-legend__dot.hr {
-    background: oklch(0.78 0.06 186);
+.md-chart-legend__line.diastolic {
+    background: var(--patient-chart-diastolic);
 }
 
 
-/* Chart shell */
+/* --------------------------------------------------------------------------
+   Chart Canvas
+   -------------------------------------------------------------------------- */
 
 .md-chart {
     display: flex;
 
     width: 100%;
-    height: 10rem;
+    min-width: 0;
+    height: 13.75rem;
 
-    gap: 0.5rem;
+    gap: 0.6rem;
 }
 
 
-/* Y axis */
+/* --------------------------------------------------------------------------
+   Y Axis
+   -------------------------------------------------------------------------- */
 
 .md-chart__y-axis {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
 
-    width: 2rem;
+    width: 1.75rem;
 
-    padding-bottom: 1.5rem;
+    flex: 0 0 1.75rem;
 
-    flex-shrink: 0;
+    box-sizing: border-box;
+
+    padding-bottom: 1.45rem;
 }
 
 .md-chart__y-axis span {
-    font-size: 0.5625rem;
+    color: var(--patient-text-muted);
+
+    font-size: 0.55rem;
+    font-weight: 500;
     line-height: 1;
 
     text-align: right;
-
-    color: var(--dashboard-muted-foreground);
 }
 
 
-/* Chart body */
+/* --------------------------------------------------------------------------
+   Chart Body
+   -------------------------------------------------------------------------- */
 
 .md-chart__body {
     position: relative;
 
     flex: 1;
 
+    width: 100%;
     min-width: 0;
     height: 100%;
 }
 
 
-/* Grid */
+/* --------------------------------------------------------------------------
+   Chart Grid
+   -------------------------------------------------------------------------- */
 
 .md-chart__grid {
     position: absolute;
 
-    inset: 0 0 1.5rem;
+    inset: 0 0 1.45rem;
 
     display: flex;
     flex-direction: column;
@@ -493,21 +1881,34 @@
 .md-chart__grid span {
     width: 100%;
 
-    border-top: 1px dashed var(--dashboard-border);
+    border-top:
+        1px solid color-mix(in oklch,
+            var(--patient-chart-grid) 70%,
+            transparent);
 }
 
 
-/* SVG */
+/* --------------------------------------------------------------------------
+   Chart Lines
+   -------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------
+   Chart Lines
+   -------------------------------------------------------------------------- */
 
 .md-chart__svg {
     position: absolute;
 
-    inset: 0 0 1.5rem;
+    inset: 0 0 1.45rem;
 
     width: 100%;
-    height: calc(100% - 1.5rem);
+    height: calc(100% - 1.45rem);
 
     overflow: visible;
+
+    pointer-events: none;
+
+    z-index: 2;
 }
 
 .md-chart__line {
@@ -518,687 +1919,649 @@
     stroke-width: 3;
 
     vector-effect: non-scaling-stroke;
+
+    pointer-events: none;
 }
 
 .md-chart__line.systolic {
-    stroke: oklch(0.58 0.11 194);
-    stroke-width: 4;
+    stroke: var(--patient-chart-systolic);
 }
 
 .md-chart__line.diastolic {
-    stroke: oklch(0.68 0.09 220);
-    stroke-width: 3;
-}
-
-.md-chart__line.hr {
-    stroke: oklch(0.78 0.06 186);
-    stroke-width: 3;
+    stroke: var(--patient-chart-diastolic);
 }
 
 
-/* Interactive blood pressure points */
-
-.md-chart__point {
-    position: absolute;
-
-    width: 0.625rem;
-    height: 0.625rem;
-
-    transform: translate(-50%, -50%);
-
-    border: 2px solid var(--dashboard-card);
-    border-radius: 50%;
-
-    background: oklch(0.58 0.11 194);
-
-    padding: 0;
-
-    cursor: pointer;
-    pointer-events: auto;
-
-    transition:
-        transform 160ms ease,
-        box-shadow 160ms ease;
-}
-
-
-/* Tooltip */
-
-.md-chart__point::after {
-    content: attr(data-tooltip);
-
-    position: absolute;
-
-    left: 50%;
-    bottom: calc(100% + 0.6rem);
-
-    transform: translateX(-50%) translateY(4px);
-
-    white-space: nowrap;
-
-    padding: 0.45rem 0.65rem;
-
-    border-radius: 0.4rem;
-
-    background: var(--dashboard-foreground);
-    color: var(--dashboard-card);
-
-    font-size: 0.625rem;
-    font-weight: 500;
-    line-height: 1.2;
-
-    box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
-
-    opacity: 0;
-    visibility: hidden;
-
-    pointer-events: none;
-
-    transition:
-        opacity 140ms ease,
-        transform 140ms ease,
-        visibility 140ms ease;
-
-    z-index: 20;
-}
-
-
-/* Tooltip arrow */
-
-.md-chart__point::before {
-    content: "";
-
-    position: absolute;
-
-    left: 50%;
-    bottom: calc(100% + 0.25rem);
-
-    width: 0.45rem;
-    height: 0.45rem;
-
-    background: var(--dashboard-foreground);
-
-    transform: translateX(-50%) rotate(45deg);
-
-    opacity: 0;
-    visibility: hidden;
-
-    pointer-events: none;
-
-    z-index: 19;
-
-    transition:
-        opacity 140ms ease,
-        visibility 140ms ease;
-}
-
-
-/* Hover */
-
-.md-chart__point:hover::after {
-    opacity: 1;
-    visibility: visible;
-}
-
-.md-chart__point:hover::before {
-    opacity: 1;
-    visibility: visible;
-}
-
-
-/* First 2 points — tooltip opens toward the right */
-
-.md-chart__point.tooltip-right::after {
-    left: 0;
-    right: auto;
-
-    transform: translateX(0) translateY(4px);
-}
-
-.md-chart__point.tooltip-right::before {
-    left: 0.45rem;
-    right: auto;
-
-    transform: translateX(-50%) rotate(45deg);
-}
-
-.md-chart__point.tooltip-right:hover::after {
-    transform: translateX(0) translateY(0);
-}
-
-
-/* Last 2 points — tooltip opens toward the left */
-
-.md-chart__point.tooltip-left::after {
-    left: auto;
-    right: 0;
-
-    transform: translateX(0) translateY(4px);
-}
-
-.md-chart__point.tooltip-left::before {
-    left: auto;
-    right: 0.45rem;
-
-    transform: translateX(50%) rotate(45deg);
-}
-
-.md-chart__point.tooltip-left:hover::after {
-    transform: translateX(0) translateY(0);
-}
-
-
-/* Month labels */
+/* --------------------------------------------------------------------------
+   Chart Months
+   -------------------------------------------------------------------------- */
 
 .md-chart__months {
     position: absolute;
 
-    left: 0;
     right: 0;
     bottom: 0;
-
-    height: 1.5rem;
+    left: 0;
 
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
+
+    height: 1.45rem;
 }
 
 .md-chart__months span {
-    font-size: 0.5625rem;
+    color: var(--patient-text-muted);
 
-    color: var(--dashboard-muted-foreground);
-
-    text-align: center;
-}
-
-
-/* ==========================================================================
-   Reports
-   ========================================================================== */
-
-.md-two-col {
-    display: grid;
-
-    gap: 1rem;
-}
-
-.md-reports {
-    display: flex;
-    flex-direction: column;
-
-    gap: 0.25rem;
-
-    padding: 0.5rem;
-}
-
-.md-report-item {
-    display: flex;
-    align-items: center;
-
-    gap: 0.5rem;
-
-    border-radius: var(--dashboard-radius-md);
-
-    padding: 0.5rem;
-}
-
-.md-report-item:hover {
-    background: var(--dashboard-muted);
-}
-
-.md-report-item svg {
-    flex: none;
-
-    color: var(--dashboard-primary);
-}
-
-.md-report-item__name {
-    margin: 0;
-
-    overflow: hidden;
-
-    font-size: 0.625rem;
+    font-size: 0.55rem;
     font-weight: 500;
-
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.md-report-item__meta {
-    margin: 0;
-
-    font-size: 0.5625rem;
-
-    color: var(--dashboard-muted-foreground);
-}
-
-
-/* ==========================================================================
-   Patient Note
-   ========================================================================== */
-
-.md-note {
-    padding: 1rem;
-}
-
-.md-note__author {
-    margin: 0;
-
-    font-size: 0.625rem;
-    font-weight: 600;
-}
-
-.md-note__date {
-    margin: 0.25rem 0 0;
-
-    font-size: 0.5625rem;
-
-    color: var(--dashboard-muted-foreground);
-}
-
-.md-note__body {
-    margin: 0.75rem 0 0;
-
-    font-size: 0.625rem;
-    line-height: 1.25rem;
-
-    color: var(--dashboard-muted-foreground);
-}
-
-
-/* ==========================================================================
-   Medical Information
-   ========================================================================== */
-
-.md-content-grid>.md-col:first-child>.panel:last-child {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-}
-
-
-/* Medical Information */
-
-.md-medinfo-grid {
-    display: grid;
-
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-
-    gap: 0.75rem;
-
-    border-bottom: 1px solid var(--dashboard-border);
-
-    padding: 1rem;
-
-    min-width: 0;
-    min-height: 0;
-
-    flex: 1;
-
-    align-items: stretch;
-}
-
-.md-medinfo-section {
-    display: flex;
-    flex-direction: column;
-
-    min-width: 0;
-    min-height: 0;
-
-    border: 1px solid var(--dashboard-border);
-
-    border-radius: var(--dashboard-radius-md);
-
-    padding: 0.75rem;
-
-    overflow: hidden;
-}
-
-.md-medinfo-section p {
-    flex-shrink: 0;
-
-    margin: 0 0 0.5rem;
-
-    font-size: 0.625rem;
-    font-weight: 600;
-
-    color: var(--dashboard-foreground);
+    line-height: 1;
 
     text-align: center;
 }
 
 
-/* Conditions / Allergies */
+/* --------------------------------------------------------------------------
+   Latest Blood Pressure Reading
+   -------------------------------------------------------------------------- */
 
-.md-tag-group {
+.md-latest-reading {
     display: flex;
-    flex-wrap: wrap;
-    align-content: flex-start;
+    flex-direction: column;
 
-    gap: 0.5rem 1rem;
-
-    min-width: 0;
-    min-height: 0;
-
-    overflow-y: auto;
-    overflow-x: hidden;
-
-    padding-right: 0.25rem;
-
-    scrollbar-width: thin;
-
-    -webkit-overflow-scrolling: touch;
-}
-
-.md-tag-group span {
-    display: inline-flex;
-    align-items: center;
-
-    max-width: 100%;
-
-    gap: 0.25rem;
-
-    font-size: 0.625rem;
-}
-
-.md-tag-group span::before {
-    content: "";
-
-    width: 0.375rem;
-    height: 0.375rem;
-
-    flex: 0 0 0.375rem;
-
-    border-radius: var(--dashboard-radius-pill);
-
-    background: var(--dashboard-primary);
-}
-
-
-/* ==========================================================================
-   Tables
-   ========================================================================== */
-
-.md-table-wrap {
-    overflow-x: auto;
-
-    padding: 1rem;
-    padding-top: 0.5rem;
-}
-
-.md-table {
     width: 100%;
-
-    text-align: left;
-
-    font-size: 0.625rem;
-}
-
-.md-table th.checkbox-col,
-.md-table td.checkbox-col {
-    width: 1.75rem;
-}
-
-.table-head {
-    background: var(--dashboard-muted);
-
-    padding: 0.65rem 0.7rem;
-
-    font-weight: 600;
-
-    white-space: nowrap;
-}
-
-.table-cell {
-    padding: 0.75rem 0.7rem;
-
-    color: var(--dashboard-muted-foreground);
-}
-
-.table-cell.strong {
-    font-weight: 500;
-}
-
-.md-table tbody tr {
-    border-bottom: 1px solid var(--dashboard-border);
-}
-
-.md-table tbody tr:last-child {
-    border-bottom: none;
-}
-
-.table-sub {
-    color: var(--dashboard-muted-foreground);
-}
-
-
-/* Status */
-
-.status-success {
-    display: inline-flex;
-
-    border-radius: var(--dashboard-radius-pill);
-
-    background: oklch(0.94 0.045 169);
-
-    padding: 0.22rem 0.5rem;
-
-    color: oklch(0.61 0.13 166);
-
-    font-size: 0.58rem;
-    font-weight: 700;
-}
-
-.status-neutral {
-    display: inline-flex;
-
-    border-radius: var(--dashboard-radius-pill);
-
-    background: var(--dashboard-muted);
-
-    padding: 0.22rem 0.5rem;
-
-    color: var(--dashboard-muted-foreground);
-
-    font-size: 0.58rem;
-    font-weight: 700;
-}
-
-.md-prescriptions-table,
-.md-appointments-table {
-    max-height: 13rem;
-
-    overflow-y: auto;
-    overflow-x: auto;
-
     min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 1rem;
+
+    border: 1px solid var(--patient-border);
+    border-radius: var(--patient-card-radius-md);
+
+    background: var(--patient-surface-muted);
 }
 
-/* ==========================================================================
-   Appointment Tabs
-   ========================================================================== */
+.md-latest-reading__label {
+    margin: 0;
 
-.md-tabs {
-    display: flex;
+    color: var(--patient-text-muted);
 
-    border-bottom: 1px solid var(--dashboard-border);
-
-    padding: 0 1rem;
-}
-
-.tab,
-.tab-active {
-    min-width: 6rem;
-
-    border-bottom: 2px solid transparent;
-
-    padding: 0.7rem 1rem;
-
-    color: var(--dashboard-muted-foreground);
-
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     font-weight: 600;
+    line-height: 1.3;
+
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
 }
 
-.tab-active {
-    border-bottom-color: var(--dashboard-primary);
+.md-latest-reading__value {
+    margin: 0.55rem 0 0;
 
-    color: var(--dashboard-primary);
+    color: var(--patient-text);
 
+    font-size: clamp(1.7rem, 3vw, 2.15rem);
     font-weight: 700;
+    line-height: 1;
+
+    letter-spacing: -0.035em;
 }
 
-.tab:hover {
-    color: var(--dashboard-foreground);
+.md-latest-reading__status {
+    align-self: flex-start;
+
+    display: inline-flex;
+    align-items: center;
+
+    margin-top: 0.8rem;
+
+    padding: 0.25rem 0.65rem;
+
+    border-radius: var(--dashboard-radius-pill);
+
+    background: var(--patient-success-soft);
+    color: var(--patient-success);
+
+    font-size: 0.58rem;
+    font-weight: 600;
+    line-height: 1.3;
 }
 
 
-/* ==========================================================================
-   Profile Completion Popup
-   ========================================================================== */
+/* --------------------------------------------------------------------------
+   Last Checked
+   -------------------------------------------------------------------------- */
 
-
-.profile-completion-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 999999;
-
+.md-latest-reading__checked {
     display: flex;
     align-items: center;
-    justify-content: center;
 
-    background: var(--dashboard-overlay);
+    min-width: 0;
+
+    gap: 0.65rem;
+
+    margin-top: auto;
+    padding-top: 1rem;
+
+    border-top: 1px solid var(--patient-border);
 }
 
-.profile-completion-popup {
-    position: relative;
-
-    width: 420px;
-    max-width: calc(100% - 40px);
-
-    padding: 2rem;
-
-    background: var(--dashboard-card);
-    border: 1px solid var(--dashboard-border);
-    border-radius: var(--dashboard-radius);
-
-    box-shadow:
-        0 20px 60px oklch(0.2 0.02 214 / 30%);
-
-    color: var(--dashboard-foreground);
-    text-align: center;
-
-    z-index: 1000000;
-}
-
-.profile-completion-close {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-
-    z-index: 1000001;
-
-    display: flex;
+.md-latest-reading__calendar {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
 
     width: 2rem;
     height: 2rem;
 
-    padding: 0;
+    flex: 0 0 2rem;
 
-    border: none;
-    border-radius: var(--dashboard-radius-pill);
+    border-radius: var(--patient-card-radius-sm);
 
-    background: transparent;
-    color: var(--dashboard-muted-foreground);
-
-    font-size: 1.5rem;
-    line-height: 1;
-
-    cursor: pointer;
+    background: var(--patient-primary-soft);
+    color: var(--patient-primary);
 }
 
-.profile-completion-close:hover {
-    background: var(--dashboard-muted);
-    color: var(--dashboard-foreground);
+.md-latest-reading__calendar svg {
+    width: 0.9rem;
+    height: 0.9rem;
 }
+
+.md-latest-reading__date {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+
+    gap: 0.15rem;
+}
+
+.md-latest-reading__date-label {
+    color: var(--patient-text-muted);
+
+    font-size: 0.55rem;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.md-latest-reading__date-value {
+    color: var(--patient-text);
+
+    font-size: 0.65rem;
+    font-weight: 600;
+    line-height: 1.3;
+
+    overflow-wrap: anywhere;
+}
+
 
 /* --------------------------------------------------------------------------
-   Profile Completion Buttons
+   Blood Pressure — Container Responsive
    -------------------------------------------------------------------------- */
 
-.profile-completion-button,
-.profile-completion-later {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+@container (max-width: 700px) {
 
-    width: 100%;
-    padding: 0.75rem 1rem;
+    .md-blood-pressure .md-chart-wrap {
+        grid-template-columns: 1fr;
+    }
 
-    border-radius: var(--dashboard-radius);
+    .md-latest-reading {
+        min-height: 7rem;
+    }
+}
 
-    font-size: 0.9rem;
-    font-weight: 600;
-    line-height: 1.25;
+@container (max-width: 500px) {
 
-    text-decoration: none;
+    .md-blood-pressure__header {
+        align-items: flex-start;
+    }
 
-    cursor: pointer;
+    .md-blood-pressure__title-group {
+        min-width: 0;
+    }
 
-    transition:
-        background-color 0.2s ease,
-        border-color 0.2s ease,
-        color 0.2s ease;
+    .md-blood-pressure__period {
+        font-size: 0.55rem;
+    }
+
+    .md-blood-pressure .md-chart-wrap {
+        gap: 0.75rem;
+
+        padding: 0.75rem;
+    }
+
+    .md-chart-legend {
+        justify-content: flex-start;
+
+        gap: 0.75rem;
+
+        margin-bottom: 0.65rem;
+    }
+
+    .md-chart {
+        height: 10rem;
+    }
+
+    .md-latest-reading {
+        min-height: 7rem;
+
+        padding: 0.85rem;
+    }
+
+    .md-latest-reading__value {
+        font-size: 1.6rem;
+    }
 }
 
 
-/* Complete Profile — Primary */
+/* --------------------------------------------------------------------------
+   Blood Pressure — Small Screens
+   -------------------------------------------------------------------------- */
 
-.profile-completion-button {
-    margin-top: 1.5rem;
+@media (max-width: 639px) {
 
-    border: 1px solid var(--dashboard-primary);
-    background: var(--dashboard-primary);
-    color: var(--dashboard-primary-foreground);
-}
+    .md-blood-pressure__header {
+        padding: 0.75rem;
+    }
 
-.profile-completion-button:hover {
-    background: color-mix(in oklch,
-            var(--dashboard-primary) 95%,
-            black);
-
-    border-color: color-mix(in oklch,
-            var(--dashboard-primary) 95%,
-            black);
-}
-
-
-/* Maybe Later — Secondary */
-
-.profile-completion-later {
-    margin-top: 0.75rem;
-
-    border: 1px solid var(--dashboard-border);
-    background: var(--dashboard-muted);
-    color: var(--dashboard-foreground);
-}
-
-.profile-completion-later:hover {
-    background: var(--dashboard-border);
+    .md-blood-pressure .md-chart-wrap {
+        padding: 0.75rem;
+    }
 }
 
 
 /* ==========================================================================
-   Patient Profile Form
+   Insurance
    ========================================================================== */
 
-.profile-form-panel {
+.md-insurance {
+    display: flex;
+    flex-direction: column;
+
     width: 100%;
     min-width: 0;
-    max-width: 100%;
+    height: 100%;
+
+    box-sizing: border-box;
+}
+
+
+/* --------------------------------------------------------------------------
+   Insurance Header
+   -------------------------------------------------------------------------- */
+
+.md-insurance__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    gap: 0.75rem;
+
+    padding: 0.85rem 1rem;
+
+    border-bottom: 1px solid var(--patient-border);
+}
+
+.md-insurance__header-left {
+    display: flex;
+    align-items: center;
+
+    min-width: 0;
+
+    gap: 0.6rem;
+}
+
+.md-insurance__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 2rem;
+    height: 2rem;
+
+    flex: 0 0 2rem;
+
+    border-radius: var(--dashboard-radius-pill);
+
+    background: var(--patient-primary-soft);
+    color: var(--patient-primary);
+}
+
+.md-insurance__icon svg {
+    width: 0.95rem;
+    height: 0.95rem;
+}
+
+.md-insurance__title {
+    min-width: 0;
+
+    margin: 0;
+
+    color: var(--patient-text);
+
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.md-insurance__view {
+    flex: 0 0 auto;
+
+    margin: 0;
+    padding: 0;
+
+    border: 0;
+
+    background: transparent;
+    color: var(--patient-primary);
+
+    font: inherit;
+    font-size: 0.6rem;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        color var(--patient-transition-fast),
+        opacity var(--patient-transition-fast);
+}
+
+.md-insurance__view:hover {
+    opacity: 0.75;
+}
+
+
+/* --------------------------------------------------------------------------
+   Insurance Content
+   -------------------------------------------------------------------------- */
+
+.md-insurance__content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 1rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Insurance Policy Card
+   -------------------------------------------------------------------------- */
+
+.md-insurance__card {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    justify-content: space-between;
+
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    gap: 1.5rem;
+
+    padding: 1rem;
+
+    border: 1px solid var(--patient-border);
+    border-radius: var(--patient-card-radius-md);
+
+    background: var(--patient-surface-muted);
+}
+
+
+/* --------------------------------------------------------------------------
+   Policy Header
+   -------------------------------------------------------------------------- */
+
+.md-insurance__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    width: 100%;
+    min-width: 0;
+
+    gap: 1rem;
+}
+
+.md-insurance__plan {
+    min-width: 0;
+}
+
+.md-insurance__plan h3 {
+    margin: 0 0 0.25rem;
+
+    color: var(--patient-text);
+
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.3;
+
+    overflow-wrap: anywhere;
+}
+
+.md-insurance__plan p {
+    margin: 0;
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.65rem;
+    font-weight: 500;
+    line-height: 1.3;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* --------------------------------------------------------------------------
+   Provider
+   -------------------------------------------------------------------------- */
+
+.md-insurance__provider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 2.5rem;
+    height: 2.5rem;
+
+    flex: 0 0 auto;
+
+    border-radius: var(--patient-card-radius-sm);
+
+    background: var(--patient-surface);
+    color: var(--patient-primary);
+
+    box-shadow:
+        inset 0 0 0 1px var(--patient-border);
+}
+
+.md-insurance__provider svg {
+    width: 1.15rem;
+    height: 1.15rem;
+}
+
+.md-insurance__logo {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    box-sizing: border-box;
+
+    padding: 0.45rem;
+
+    object-fit: contain;
+}
+
+.md-insurance__logo-placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    height: 100%;
+
+    color: var(--patient-primary);
+
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+
+/* --------------------------------------------------------------------------
+   Policy Information
+   -------------------------------------------------------------------------- */
+
+.md-insurance__bottom {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1.15fr) minmax(0, 1fr) minmax(4rem, auto);
+
+    align-items: start;
+
+    width: 100%;
+    min-width: 0;
+
+    gap: 0.75rem;
+}
+
+.md-insurance__info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+
+    min-width: 0;
+    min-height: 2.75rem;
+
+    gap: 0.3rem;
+
+    text-align: left;
+}
+
+.md-insurance__label {
+    display: block;
+
+    margin: 0;
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.55rem;
+    font-weight: 600;
+    line-height: 1.2;
+
+    text-align: left;
+}
+
+.md-insurance__value {
+    display: block;
+
+    margin: 0;
+
+    color: var(--patient-text);
+
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1.3;
+
+    text-align: left;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* --------------------------------------------------------------------------
+   Insurance Status
+   -------------------------------------------------------------------------- */
+
+.md-insurance__status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: fit-content;
+
+    margin: 0;
+    padding: 0.35rem 0.65rem;
+
+    border-radius: var(--dashboard-radius-pill);
+
+    background: var(--patient-surface-muted);
+    color: var(--patient-text-muted);
+
+    font-size: 0.55rem;
+    font-weight: 700;
+    line-height: 1;
+
+    white-space: nowrap;
+}
+
+.md-insurance__status.is-active {
+    background:
+        color-mix(in oklch,
+            var(--patient-success) 15%,
+            var(--patient-surface));
+
+    color: var(--patient-success);
+}
+
+
+/* --------------------------------------------------------------------------
+   Insurance — Container Responsive
+   -------------------------------------------------------------------------- */
+
+@container (max-width: 500px) {
+
+    .md-insurance__bottom {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .md-insurance__info {
+        min-height: 2.75rem;
+    }
+
+    .md-insurance__info:last-child {
+        grid-column: 1 / -1;
+    }
+}
+
+@container (max-width: 350px) {
+
+    .md-insurance__bottom {
+        grid-template-columns: 1fr;
+    }
+
+    .md-insurance__info:last-child {
+        grid-column: auto;
+    }
+}
+
+
+/* ==========================================================================
+   Prescriptions
+   ========================================================================== */
+
+.md-prescriptions {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    min-width: 0;
+    height: 100%;
 
     box-sizing: border-box;
 
@@ -1206,913 +2569,839 @@
 }
 
 
-/* ==========================================================================
-   Profile Panel Header
-   ========================================================================== */
+/* --------------------------------------------------------------------------
+   Prescriptions Header
+   -------------------------------------------------------------------------- */
 
-.profile-form-panel__header {
+.md-prescriptions__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    flex: 0 0 auto;
+
     width: 100%;
     min-width: 0;
-
-    height: auto;
-    min-height: 4.25rem;
 
     box-sizing: border-box;
 
-    padding: 0.85rem 1.1rem;
+    padding: 0.85rem 1rem;
+
+    border-bottom: 1px solid var(--patient-border);
 }
 
-.profile-form-panel__heading {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-}
-
-.profile-form-panel__heading h2 {
+.md-prescriptions__title {
     margin: 0;
 
-    color: var(--dashboard-foreground);
+    color: var(--patient-text);
 
-    font-size: 0.95rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.md-prescriptions__menu {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 1.75rem;
+    height: 1.75rem;
+
+    flex: 0 0 1.75rem;
+
+    margin: 0;
+    padding: 0;
+
+    border: 0;
+    border-radius: var(--patient-card-radius-sm);
+
+    background: transparent;
+    color: var(--patient-text-muted);
+
+    cursor: pointer;
+
+    transition:
+        background var(--patient-transition-fast),
+        color var(--patient-transition-fast);
+}
+
+.md-prescriptions__menu:hover {
+    background: var(--patient-surface-muted);
+    color: var(--patient-text);
+}
+
+.md-prescriptions__menu svg {
+    width: 0.9rem;
+    height: 0.9rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Prescription Tabs
+   -------------------------------------------------------------------------- */
+
+.md-prescriptions__tabs {
+    display: flex;
+    align-items: stretch;
+
+    flex: 0 0 auto;
+
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 0 1rem;
+
+    border-bottom: 1px solid var(--patient-border);
+
+    overflow-x: auto;
+
+    scrollbar-width: none;
+}
+
+.md-prescriptions__tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.md-prescriptions__tab {
+    position: relative;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    min-width: 5rem;
+
+    margin: 0;
+    padding: 0.65rem 0.75rem;
+
+    border: 0;
+    border-bottom: 2px solid transparent;
+
+    background: transparent;
+    color: var(--patient-text-muted);
+
+    font: inherit;
+    font-size: 0.6rem;
     font-weight: 600;
-    line-height: 1.35;
+    line-height: 1.2;
 
-    overflow-wrap: break-word;
+    cursor: pointer;
+
+    transition:
+        color var(--patient-transition-fast),
+        border-color var(--patient-transition-fast);
 }
 
-.profile-form-panel__heading p {
-    margin: 0.2rem 0 0;
+.md-prescriptions__tab:hover {
+    color: var(--patient-text);
+}
 
-    color: var(--dashboard-muted-foreground);
+.md-prescriptions__tab.is-active {
+    border-bottom-color: var(--patient-primary);
 
-    font-size: 0.65rem;
-    line-height: 1.4;
+    color: var(--patient-primary);
 
-    overflow-wrap: break-word;
+    font-weight: 700;
 }
 
 
-/* ==========================================================================
-   Profile Panel Body
-   ========================================================================== */
+/* --------------------------------------------------------------------------
+   Prescription Table — Scroll Container
+   -------------------------------------------------------------------------- */
 
-.profile-form-panel__body {
+.md-prescriptions__table-wrap {
+    flex: 1 1 auto;
+
     width: 100%;
     min-width: 0;
-    max-width: 100%;
+    min-height: 0;
 
     box-sizing: border-box;
 
-    padding: 0 1.1rem;
+    padding: 0.5rem 1rem 1rem;
+
+    overflow-x: auto;
+    overflow-y: auto;
+
+    scrollbar-width: thin;
+
+    -webkit-overflow-scrolling: touch;
 }
 
 
-/* ==========================================================================
-   Form
-   ========================================================================== */
+/* --------------------------------------------------------------------------
+   Prescription Table
+   -------------------------------------------------------------------------- */
 
-.profile-form {
+.md-prescriptions__table {
     width: 100%;
-    min-width: 0;
-    max-width: 100%;
+    min-width: 38rem;
 
-    box-sizing: border-box;
+    border-collapse: collapse;
+
+    text-align: left;
+
+    font-size: 0.6rem;
+}
+
+.md-prescriptions__table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+
+    padding: 0.6rem 0.65rem;
+
+    background: var(--patient-surface-muted);
+    color: var(--patient-text);
+
+    font-size: 0.57rem;
+    font-weight: 700;
+    line-height: 1.2;
+
+    white-space: nowrap;
+}
+
+.md-prescriptions__table td {
+    padding: 0.65rem;
+
+    border-bottom: 1px solid var(--patient-border);
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.6rem;
+    line-height: 1.3;
+
+    vertical-align: middle;
+}
+
+.md-prescriptions__table tbody tr {
+    transition: background var(--patient-transition-fast);
+}
+
+.md-prescriptions__table tbody tr:hover {
+    background: var(--patient-surface-muted);
+}
+
+.md-prescriptions__table tbody tr:last-child td {
+    border-bottom: 0;
 }
 
 
-/* ==========================================================================
-   Form Sections
-   ========================================================================== */
+/* --------------------------------------------------------------------------
+   Prescription Selection
+   -------------------------------------------------------------------------- */
 
-.profile-form__section {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
+.md-prescriptions__checkbox {
+    width: 1.75rem;
 
-    box-sizing: border-box;
+    padding-right: 0.25rem !important;
+    padding-left: 0.25rem !important;
 
-    padding: 1.1rem 0;
-
-    border-bottom: 1px solid var(--dashboard-border);
+    text-align: center;
 }
 
-.profile-form__section:first-child {
-    padding-top: 1rem;
-}
+.md-prescriptions__checkbox input {
+    width: 0.8rem;
+    height: 0.8rem;
 
-.profile-form__section:last-of-type {
-    border-bottom: none;
-}
-
-
-/* ==========================================================================
-   Section Header
-   ========================================================================== */
-
-.profile-form__section-header {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-
-    margin: 0 0 0.75rem;
-
-    box-sizing: border-box;
-}
-
-.profile-form__section-header h3 {
     margin: 0;
 
-    color: var(--dashboard-foreground);
+    accent-color: var(--patient-primary);
 
-    font-size: 0.72rem;
+    cursor: pointer;
+}
+
+
+/* --------------------------------------------------------------------------
+   Prescription Name
+   -------------------------------------------------------------------------- */
+
+.md-prescriptions__name {
+    color: var(--patient-text) !important;
+
     font-weight: 600;
-    line-height: 1.35;
 }
 
-.profile-form__section-header p {
-    margin: 0.2rem 0 0;
 
-    color: var(--dashboard-muted-foreground);
+/* --------------------------------------------------------------------------
+   Prescription Status
+   -------------------------------------------------------------------------- */
 
-    font-size: 0.58rem;
-    line-height: 1.35;
+.md-prescriptions__status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 
-    overflow-wrap: break-word;
+    width: fit-content;
+
+    padding: 0.25rem 0.5rem;
+
+    border-radius: var(--dashboard-radius-pill);
+
+    background: var(--patient-surface-muted);
+    color: var(--patient-text-muted);
+
+    font-size: 0.52rem;
+    font-weight: 700;
+    line-height: 1;
+
+    white-space: nowrap;
+}
+
+.md-prescriptions__status.is-success {
+    background:
+        color-mix(in oklch,
+            var(--patient-success) 14%,
+            var(--patient-surface));
+
+    color: var(--patient-success);
+}
+
+
+/* --------------------------------------------------------------------------
+   Prescription Empty State
+   -------------------------------------------------------------------------- */
+
+.md-prescriptions__empty td {
+    padding: 2rem 1rem;
+
+    border-bottom: 0;
+
+    color: var(--patient-text-muted);
+
+    text-align: center;
+}
+
+
+/* --------------------------------------------------------------------------
+   Prescriptions — Small Screens
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+
+    .md-prescriptions__header {
+        padding: 0.8rem 0.75rem;
+    }
+
+    .md-prescriptions__tabs {
+        padding: 0 0.75rem;
+    }
+
+    .md-prescriptions__table-wrap {
+        padding: 0.5rem 0.75rem 0.75rem;
+    }
+
+    .md-prescriptions__table {
+        min-width: 36rem;
+    }
+
+    .md-prescriptions__table th {
+        padding: 0.55rem 0.6rem;
+    }
+
+    .md-prescriptions__table td {
+        padding: 0.6rem;
+    }
+}
+
+@media (max-width: 400px) {
+
+    .md-prescriptions__title {
+        font-size: 0.75rem;
+    }
+
+    .md-prescriptions__tab {
+        min-width: auto;
+
+        padding-right: 0.65rem;
+        padding-left: 0.65rem;
+    }
 }
 
 
 /* ==========================================================================
-   Field Grid
+   Appointments
    ========================================================================== */
 
-.profile-form__fields {
-    display: grid;
-
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-
-    box-sizing: border-box;
-
-    grid-template-columns: minmax(0, 1fr);
-
-    gap: 0.7rem 0.75rem;
-}
-
-.profile-form__fields--two {
-    grid-template-columns:
-        minmax(0, 1fr)
-        minmax(0, 1fr);
-}
-
-.profile-form__fields--three {
-    grid-template-columns:
-        minmax(0, 1fr)
-        minmax(0, 1fr)
-        minmax(0, 1fr);
-}
-
-
-/* ==========================================================================
-   Individual Field
-   ========================================================================== */
-
-.profile-form__field {
+.md-appointments {
     display: flex;
     flex-direction: column;
 
     width: 100%;
     min-width: 0;
-    max-width: 100%;
+    height: 100%;
 
     box-sizing: border-box;
 
-    gap: 0.3rem;
-}
-
-.profile-form__field--full {
-    grid-column: 1 / -1;
+    overflow: hidden;
 }
 
 
-/* ==========================================================================
-   Labels
-   ========================================================================== */
+/* --------------------------------------------------------------------------
+   Appointments Header
+   -------------------------------------------------------------------------- */
 
-.profile-form__field label {
-    display: block;
-
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-
-    box-sizing: border-box;
-
-    color: var(--dashboard-foreground);
-
-    font-size: 0.61rem;
-    font-weight: 600;
-    line-height: 1.3;
-
-    overflow-wrap: break-word;
-}
-
-
-/* ==========================================================================
-   Inputs / Selects / Textareas
-   ========================================================================== */
-
-.profile-form__field input,
-.profile-form__field select,
-.profile-form__field textarea {
-    display: block;
-
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-
-    box-sizing: border-box;
-
-    margin: 0;
-
-    border: 1px solid var(--dashboard-border);
-    border-radius: 0.45rem;
-
-    background: var(--dashboard-muted);
-    color: var(--dashboard-foreground);
-
-    font-family: inherit;
-    font-size: 0.65rem;
-    line-height: 1.35;
-
-    outline: none;
-
-    transition:
-        border-color 160ms ease,
-        background-color 160ms ease,
-        box-shadow 160ms ease;
-}
-
-
-/* ==========================================================================
-   Input Padding
-   ========================================================================== */
-
-.profile-form__field input,
-.profile-form__field select {
-    min-height: 2rem;
-
-    padding: 0.45rem 0.6rem;
-}
-
-.profile-form__field textarea {
-    min-height: 4.5rem;
-
-    padding: 0.55rem 0.6rem;
-
-    resize: vertical;
-}
-
-
-/* ==========================================================================
-   Placeholder
-   ========================================================================== */
-
-.profile-form__field input::placeholder,
-.profile-form__field textarea::placeholder {
-    color: var(--dashboard-muted-foreground);
-
-    opacity: 0.7;
-}
-
-
-/* ==========================================================================
-   Focus
-   ========================================================================== */
-
-.profile-form__field input:focus,
-.profile-form__field select:focus,
-.profile-form__field textarea:focus {
-    border-color: var(--dashboard-primary);
-
-    background: var(--dashboard-card);
-
-    box-shadow:
-        0 0 0 2px
-        color-mix(
-            in oklch,
-            var(--dashboard-primary) 12%,
-            transparent
-        );
-}
-
-
-/* ==========================================================================
-   Select
-   ========================================================================== */
-
-.profile-form__field select {
-    cursor: pointer;
-}
-
-
-/* ==========================================================================
-   Form Actions
-   ========================================================================== */
-
-.profile-form__actions {
+.md-appointments__header {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
+
+    flex: 0 0 auto;
 
     width: 100%;
     min-width: 0;
-    max-width: 100%;
 
     box-sizing: border-box;
 
-    padding: 1rem 0;
+    padding: 0.85rem 1rem;
+
+    border-bottom: 1px solid var(--patient-border);
 }
 
+.md-appointments__title {
+    margin: 0;
 
-/* ==========================================================================
-   Submit Button
-   ========================================================================== */
+    color: var(--patient-text);
 
-.profile-form__submit {
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.md-appointments__menu {
     display: inline-flex;
     align-items: center;
     justify-content: center;
 
-    min-width: 7rem;
-    max-width: 100%;
-    min-height: 2.1rem;
+    width: 1.75rem;
+    height: 1.75rem;
 
-    box-sizing: border-box;
+    flex: 0 0 1.75rem;
 
-    padding: 0.5rem 0.85rem;
+    margin: 0;
+    padding: 0;
 
-    border: 1px solid var(--dashboard-primary);
-    border-radius: 0.45rem;
+    border: 0;
+    border-radius: var(--patient-card-radius-sm);
 
-    background: var(--dashboard-primary);
-    color: var(--dashboard-primary-foreground);
-
-    font-family: inherit;
-    font-size: 0.65rem;
-    font-weight: 600;
-    line-height: 1.3;
+    background: transparent;
+    color: var(--patient-text-muted);
 
     cursor: pointer;
 
     transition:
-        background-color 160ms ease,
-        border-color 160ms ease,
-        transform 160ms ease;
+        background var(--patient-transition-fast),
+        color var(--patient-transition-fast);
 }
 
-.profile-form__submit:hover {
-    background: color-mix(
-        in oklch,
-        var(--dashboard-primary) 95%,
-        black
-    );
-
-    border-color: color-mix(
-        in oklch,
-        var(--dashboard-primary) 95%,
-        black
-    );
+.md-appointments__menu:hover {
+    background: var(--patient-surface-muted);
+    color: var(--patient-text);
 }
 
-.profile-form__submit:active {
-    transform: translateY(1px);
+.md-appointments__menu svg {
+    width: 0.9rem;
+    height: 0.9rem;
 }
 
 
-/* ==========================================================================
-   Tablet
-   ========================================================================== */
+/* --------------------------------------------------------------------------
+   Appointment Tabs
+   -------------------------------------------------------------------------- */
 
-@media (max-width: 900px) {
+.md-appointments__tabs {
+    display: flex;
+    align-items: stretch;
 
-    .profile-form__fields--three {
-        grid-template-columns:
-            minmax(0, 1fr)
-            minmax(0, 1fr);
-    }
+    flex: 0 0 auto;
 
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 0 1rem;
+
+    border-bottom: 1px solid var(--patient-border);
+
+    overflow-x: auto;
+
+    scrollbar-width: none;
+}
+
+.md-appointments__tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.md-appointments__tab {
+    position: relative;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    min-width: 5rem;
+
+    margin: 0;
+    padding: 0.65rem 0.75rem;
+
+    border: 0;
+    border-bottom: 2px solid transparent;
+
+    background: transparent;
+    color: var(--patient-text-muted);
+
+    font: inherit;
+    font-size: 0.6rem;
+    font-weight: 600;
+    line-height: 1.2;
+
+    cursor: pointer;
+
+    transition:
+        color var(--patient-transition-fast),
+        border-color var(--patient-transition-fast);
+}
+
+.md-appointments__tab:hover {
+    color: var(--patient-text);
+}
+
+.md-appointments__tab.is-active {
+    border-bottom-color: var(--patient-primary);
+
+    color: var(--patient-primary);
+
+    font-weight: 700;
 }
 
 
-/* ==========================================================================
-   Small Screens
-   ========================================================================== */
+/* --------------------------------------------------------------------------
+   Appointment Table — Scroll Container
+   -------------------------------------------------------------------------- */
+
+.md-appointments__table-wrap {
+    flex: 1 1 auto;
+
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+
+    box-sizing: border-box;
+
+    padding: 0.5rem 1rem 1rem;
+
+    overflow-x: auto;
+    overflow-y: auto;
+
+    scrollbar-width: thin;
+
+    -webkit-overflow-scrolling: touch;
+}
+
+
+/* --------------------------------------------------------------------------
+   Appointment Table
+   -------------------------------------------------------------------------- */
+
+.md-appointments__table {
+    width: 100%;
+    min-width: 42rem;
+
+    border-collapse: collapse;
+
+    text-align: left;
+
+    font-size: 0.6rem;
+}
+
+.md-appointments__table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+
+    padding: 0.6rem 0.65rem;
+
+    background: var(--patient-surface-muted);
+    color: var(--patient-text);
+
+    font-size: 0.57rem;
+    font-weight: 700;
+    line-height: 1.2;
+
+    white-space: nowrap;
+}
+
+.md-appointments__table td {
+    padding: 0.65rem;
+
+    border-bottom: 1px solid var(--patient-border);
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.6rem;
+    line-height: 1.3;
+
+    vertical-align: middle;
+}
+
+.md-appointments__table tbody tr {
+    transition: background var(--patient-transition-fast);
+}
+
+.md-appointments__table tbody tr:hover {
+    background: var(--patient-surface-muted);
+}
+
+.md-appointments__table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+
+/* --------------------------------------------------------------------------
+   Appointment Selection
+   -------------------------------------------------------------------------- */
+
+.md-appointments__checkbox {
+    width: 1.75rem;
+
+    padding-right: 0.25rem !important;
+    padding-left: 0.25rem !important;
+
+    text-align: center;
+}
+
+.md-appointments__checkbox input {
+    width: 0.8rem;
+    height: 0.8rem;
+
+    margin: 0;
+
+    accent-color: var(--patient-primary);
+
+    cursor: pointer;
+}
+
+
+/* --------------------------------------------------------------------------
+   Appointment Doctor
+   -------------------------------------------------------------------------- */
+
+.md-appointments__doctor {
+    min-width: 7rem;
+}
+
+.md-appointments__doctor-name {
+    display: block;
+
+    color: var(--patient-text);
+
+    font-size: 0.6rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.md-appointments__department {
+    display: block;
+
+    margin-top: 0.15rem;
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.52rem;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+
+/* --------------------------------------------------------------------------
+   Appointment Status
+   -------------------------------------------------------------------------- */
+
+.md-appointments__status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: fit-content;
+
+    padding: 0.25rem 0.5rem;
+
+    border-radius: var(--dashboard-radius-pill);
+
+    background: var(--patient-surface-muted);
+    color: var(--patient-text-muted);
+
+    font-size: 0.52rem;
+    font-weight: 700;
+    line-height: 1;
+
+    white-space: nowrap;
+}
+
+.md-appointments__status.is-success {
+    background:
+        color-mix(in oklch,
+            var(--patient-success) 14%,
+            var(--patient-surface));
+
+    color: var(--patient-success);
+}
+
+
+/* --------------------------------------------------------------------------
+   Appointment Empty State
+   -------------------------------------------------------------------------- */
+
+.md-appointments__empty td {
+    padding: 2rem 1rem;
+
+    border-bottom: 0;
+
+    color: var(--patient-text-muted);
+
+    text-align: center;
+}
+
+
+/* --------------------------------------------------------------------------
+   Appointments — Small Screens
+   -------------------------------------------------------------------------- */
 
 @media (max-width: 640px) {
 
-    .profile-form-panel__header {
-        min-height: 0;
-
-        padding: 0.8rem 0.85rem;
+    .md-appointments__header {
+        padding: 0.8rem 0.75rem;
     }
 
-    .profile-form-panel__body {
-        padding: 0 0.85rem;
-    }
-
-    .profile-form__fields--two,
-    .profile-form__fields--three {
-        grid-template-columns:
-            minmax(0, 1fr);
-    }
-
-    .profile-form__field--full {
-        grid-column: auto;
-    }
-
-    .profile-form__section {
-        padding: 0.9rem 0;
-    }
-
-    .profile-form__section:first-child {
-        padding-top: 0.85rem;
-    }
-
-    .profile-form__section-header {
-        margin-bottom: 0.65rem;
-    }
-
-    .profile-form__actions {
-        justify-content: stretch;
-
-        padding: 0.85rem 0;
-    }
-
-    .profile-form__submit {
-        width: 100%;
-    }
-
-}
-
-
-/* ==========================================================================
-   Very Small Screens
-   ========================================================================== */
-
-@media (max-width: 400px) {
-
-    .profile-form-panel__header {
-        padding: 0.75rem;
-    }
-
-    .profile-form-panel__body {
+    .md-appointments__tabs {
         padding: 0 0.75rem;
     }
 
-    .profile-form__fields {
-        gap: 0.6rem;
+    .md-appointments__table-wrap {
+        padding: 0.5rem 0.75rem 0.75rem;
     }
 
-    .profile-form__field input,
-    .profile-form__field select {
-        min-height: 2.1rem;
+    .md-appointments__table {
+        min-width: 40rem;
     }
 
-}
-
-/* ==========================================================================
-   Mobile Dashboard Layout
-   ========================================================================== */
-
-@media (max-width: 639px) {
-
-    /* ======================================================================
-       Patient Header
-       ====================================================================== */
-
-    .md-top-grid {
-        width: 100%;
-        min-width: 0;
-    }
-
-    .md-patient-card {
-        width: 100%;
-        min-width: 0;
-
-        padding: 0.875rem;
-    }
-
-    .md-patient-card__photo {
-        width: 5rem;
-        height: 5rem;
-    }
-
-    .md-patient-card__body {
-        width: 100%;
-        min-width: 0;
-    }
-
-    .md-patient-card__name-row {
-        margin-bottom: 0.75rem;
-    }
-
-    .md-patient-card__name-row h2 {
-        font-size: 1rem;
-    }
-
-    .md-patient-card__contacts {
-        flex-direction: column;
-
-        gap: 0.4rem;
-
-        margin-bottom: 0.75rem;
-
-        font-size: 0.6875rem;
-    }
-
-
-    /* ======================================================================
-       Patient Information
-       ====================================================================== */
-
-    .md-info-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-
-        gap: 0.5rem;
-    }
-
-    .md-info-grid__item {
-        min-width: 0;
-
-        padding: 0.5rem;
-    }
-
-    .md-info-grid__item dd {
-        overflow: hidden;
-
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-
-    /* ======================================================================
-       Patient Banner
-       ====================================================================== */
-
-    .md-banner {
-        width: 100%;
-        min-width: 0;
-
-        padding: 1rem;
-    }
-
-    .md-banner__inner {
-        min-height: 7rem;
-    }
-
-    .md-banner__meta {
-        gap: 0.5rem;
-    }
-
-
-    /* ======================================================================
-       Content
-       ====================================================================== */
-
-    .md-content-grid {
-        width: 100%;
-        min-width: 0;
-
-        grid-template-columns: minmax(0, 1fr);
-
-        gap: 0.75rem;
-    }
-
-    .md-col {
-        width: 100%;
-        min-width: 0;
-
-        gap: 0.75rem;
-
-        padding-top: 0.75rem;
-    }
-
-
-    /* ======================================================================
-       Metrics
-       ====================================================================== */
-
-    .md-metrics {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-
-        gap: 0.5rem;
-    }
-
-    .md-metric-card {
-        min-width: 0;
-
-        padding: 0.625rem;
-    }
-
-    .md-metric-card__icon {
-        width: 1.75rem;
-        height: 1.75rem;
-
-        margin-bottom: 0.5rem;
-    }
-
-    .md-metric-card__value {
-        font-size: 1rem;
-    }
-
-    .md-metric-card__value span {
-        font-size: 0.625rem;
-    }
-
-
-    /* ======================================================================
-       Panels
-       ====================================================================== */
-
-    .panel {
-        width: 100%;
-        min-width: 0;
-    }
-
-    .panel__header {
-        padding: 0 0.75rem;
-    }
-
-    .panel__header h2 {
-        font-size: 0.8125rem;
-    }
-
-
-    /* ======================================================================
-       Medical Information
-       ====================================================================== */
-
-    .md-medinfo-grid {
-        grid-template-columns: minmax(0, 1fr);
-
-        gap: 0.5rem;
-
-        padding: 0.75rem;
-    }
-
-    .md-medinfo-section {
-        padding: 0.625rem;
-    }
-
-
-    /* ======================================================================
-       Tables
-       ====================================================================== */
-
-    .md-table-wrap {
-        width: 100%;
-        min-width: 0;
-
-        padding: 0.75rem;
-        padding-top: 0.5rem;
-    }
-
-    .md-table {
-        min-width: 36rem;
-    }
-
-    .md-prescriptions-table,
-    .md-appointments-table {
-        max-height: 13rem;
-
-        overflow-y: auto;
-        overflow-x: auto;
-
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .table-head {
+    .md-appointments__table th {
         padding: 0.55rem 0.6rem;
     }
 
-    .table-cell {
-        padding: 0.65rem 0.6rem;
-    }
-
-
-    /* ======================================================================
-       Tabs
-       ====================================================================== */
-
-    .md-tabs {
-        width: 100%;
-        min-width: 0;
-
-        padding: 0 0.75rem;
-
-        overflow-x: auto;
-        scrollbar-width: none;
-    }
-
-    .md-tabs::-webkit-scrollbar {
-        display: none;
-    }
-
-    .tab,
-    .tab-active {
-        min-width: auto;
-
-        flex: 0 0 auto;
-
-        padding: 0.65rem 0.75rem;
-
-        font-size: 0.625rem;
+    .md-appointments__table td {
+        padding: 0.6rem;
     }
 }
 
+@media (max-width: 400px) {
+
+    .md-appointments__title {
+        font-size: 0.75rem;
+    }
+
+    .md-appointments__tab {
+        min-width: auto;
+
+        padding-right: 0.65rem;
+        padding-left: 0.65rem;
+    }
+}
+
+
 /* ==========================================================================
-   Responsive
+   Global Patient Dashboard Small-Screen Adjustments
    ========================================================================== */
 
 @media (max-width: 639px) {
 
-    .md-chart-wrap {
+    .patient-card__header {
         padding: 0.75rem;
     }
 
-    .md-chart {
-        height: 14rem;
+    .patient-card__body {
+        padding: 0.75rem;
     }
 
-    .md-chart__months span {
-        font-size: 0.5rem;
+    .patient-card__footer {
+        padding: 0.65rem 0.75rem;
     }
 
-    .md-chart-legend__series {
-        width: 100%;
+    .patient-summary {
+        height: auto;
 
-        justify-content: flex-start;
-    }
-}
-
-
-@media (min-width: 768px) {
-
-    .md-medinfo-grid {
-        grid-template-columns: repeat(2, 1fr);
+        padding: 0.75rem;
     }
 
-    .md-two-col {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
+    .patient-summary__profile {
+        flex: 0 0 auto;
 
-
-@media (min-width: 1024px) {
-
-    .md-info-grid {
-        grid-template-columns: repeat(6, 1fr);
-    }
-}
-
-@media (min-width: 1024px) and (max-width: 1279px) {
-
-    .md-content-grid {
-        grid-template-columns: minmax(300px, 32%) minmax(0, 1fr);
+        gap: 0.75rem;
     }
 
-    .md-top-grid {
-        grid-template-columns: minmax(0, 1fr) minmax(220px, 25%);
-    }
-}
+    .patient-summary__photo {
+        width: 4.25rem;
+        height: 4.25rem;
 
-@media (min-width: 1280px) {
-
-    .md-top-grid {
-        grid-template-columns: minmax(0, 1fr) minmax(220px, 18%);
+        flex-basis: 4.25rem;
     }
 
-
-    /* ======================================================================
-       Fixed-height dashboard content area
-       ====================================================================== */
-
-    .md-content-grid {
-        grid-template-columns: minmax(320px, 26%) minmax(0, 1fr);
-
-        height: 42rem;
-
-        align-items: stretch;
+    .patient-summary__name {
+        font-size: 1.05rem;
     }
 
+    .patient-summary__contacts {
+        flex-direction: column;
 
-    /* ======================================================================
-       Left Column
-       ====================================================================== */
-
-    .md-content-grid>.md-col:first-child {
-        display: grid;
-
-        /*
-         * Vertical distribution:
-         *
-         * Health Metrics       = 1 part
-         * Blood Pressure       = 1.5 parts
-         * Medical Information  = 2 parts
-         */
-        grid-template-rows: 1fr 2fr 1.5fr;
-
-        gap: 1rem;
-
-        min-height: 0;
-        height: 100%;
+        gap: 0.35rem;
     }
 
+    .patient-summary__details {
+        gap: 0.5rem;
 
-    /* ======================================================================
-       Right Column
-       ====================================================================== */
-
-    .md-content-grid>.md-col:last-child {
-        display: grid;
-
-        /*
-         * 50 / 50 distribution:
-         *
-         * Prescriptions = 1 part
-         * Appointments  = 1 part
-         *
-         * Examples:
-         *
-         * 1fr 1fr = 50 / 50
-         * 3fr 2fr = 60 / 40
-         * 2fr 3fr = 40 / 60
-         */
-        grid-template-rows: 1fr 1fr;
-
-        gap: 1rem;
-
-        min-height: 0;
-        height: 100%;
+        margin-top: 0;
     }
 
+    .patient-summary__detail {
+        min-height: 4rem;
 
-    /* ======================================================================
-       Cards obey the fixed column height
-       ====================================================================== */
-
-    .md-content-grid>.md-col>.panel {
-        min-height: 0;
-
-        height: 100%;
-
-        overflow: hidden;
+        padding: 0.55rem;
     }
 }
 
 
 /* ==========================================================================
-   Mobile Chart
+   Banner — Narrow View
    ========================================================================== */
 
-@media (max-width: 640px) {
+@media (max-width: 700px) {
 
-    .md-chart-wrap {
-        padding: 0.75rem;
+    .patient-page {
+        gap: 1.25rem;
     }
 
-    .md-chart {
-        height: 14rem;
+    .md-banner {
+        grid-template-columns:
+            minmax(0, 1fr) minmax(0, 0.75fr);
+
+        min-height: 10rem;
+
+        padding: 1.5rem;
     }
 
-    .md-chart__months span {
-        font-size: 0.5rem;
+    .md-banner__name {
+        font-size: 1.5rem;
     }
 
-    .md-chart-legend__series {
-        width: 100%;
-
-        justify-content: flex-start;
-    }
-}
-
-
-/* ==========================================================================
-   Patient-specific Animation
-   ========================================================================== */
-
-@keyframes scale-in {
-
-    from {
-        opacity: 0;
-
-        transform: scale(0.97);
-    }
-
-    to {
-        opacity: 1;
-
-        transform: scale(1);
+    .md-banner__doctor img {
+        height: 125%;
     }
 }

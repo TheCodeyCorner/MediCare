@@ -1,16 +1,18 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-    /*
-     * Lucide icons
-     */
+    /* ======================================================================
+       Lucide Icons
+       ====================================================================== */
+
     if (window.lucide) {
         lucide.createIcons();
     }
 
 
-    /*
-     * Sidebar
-     */
+    /* ======================================================================
+       Sidebar
+       ====================================================================== */
+
     const sidebar = document.querySelector("[data-sidebar]");
     const overlay = document.querySelector("[data-nav-overlay]");
     const openButton = document.querySelector("[data-nav-open]");
@@ -36,9 +38,10 @@ document.addEventListener("DOMContentLoaded", () => {
     overlay?.addEventListener("click", closeSidebar);
 
 
-    /*
-     * Sidebar submenus
-     */
+    /* ======================================================================
+       Sidebar Submenus
+       ====================================================================== */
+
     document
         .querySelectorAll("[data-submenu-toggle]")
         .forEach((button) => {
@@ -62,10 +65,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
 
-    /*
-     * Automatically open the group containing
-     * the currently active submenu item.
-     */
+    /* ======================================================================
+       Automatically Open Active Submenu
+       ====================================================================== */
+
     document
         .querySelectorAll(".md-nav__subitem.is-active")
         .forEach((activeItem) => {
@@ -75,5 +78,6 @@ document.addEventListener("DOMContentLoaded", () => {
             group?.classList.add("is-open");
 
         });
+
 
 });

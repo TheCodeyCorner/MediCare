@@ -1,9 +1,15 @@
 console.log("PATIENT.JS LOADED");
+
 /**
  * Medicare — Patient Details
- * Vanilla JS behaviour, converted from the React `useState` menu toggle
- * and the appointments tab list. No build step / framework required.
+ * Vanilla JavaScript behaviour.
  */
+
+
+/* ==========================================================================
+ * Core Patient Page Initialization
+ * ========================================================================== */
+
 (function () {
     "use strict";
 
@@ -14,275 +20,643 @@ console.log("PATIENT.JS LOADED");
         initSelectAllCheckboxes();
     });
 
-    /* ---------------------------------------------------------------------
-     * Icons — renders every <i data-lucide="..."> tag as an inline SVG.
-     * Requires the lucide UMD build to be loaded on the page (see the
-     * <script src="https://unpkg.com/lucide@latest/...">  tag in the HTML).
-     * ------------------------------------------------------------------- */
+
+    /* ==========================================================================
+     * Icons
+     * ========================================================================== */
+
     function initIcons() {
-        if (window.lucide && typeof window.lucide.createIcons === "function") {
+
+        if (
+            window.lucide &&
+            typeof window.lucide.createIcons === "function"
+        ) {
             window.lucide.createIcons();
-        } else {
-            // lucide loads with `defer`, so it may not be ready yet — retry once.
-            window.addEventListener("load", function () {
-                if (window.lucide) window.lucide.createIcons();
-            });
+            return;
         }
+
+        window.addEventListener("load", function () {
+
+            if (
+                window.lucide &&
+                typeof window.lucide.createIcons === "function"
+            ) {
+                window.lucide.createIcons();
+            }
+
+        });
+
     }
 
-    /* ---------------------------------------------------------------------
-     * Mobile nav drawer — mirrors: const [menuOpen, setMenuOpen] = useState(false)
-     * ------------------------------------------------------------------- */
+
+    /* ==========================================================================
+     * Mobile Navigation
+     * ========================================================================== */
+
     function initMobileNav() {
+
         var openBtn = document.querySelector("[data-nav-open]");
         var closeBtn = document.querySelector("[data-nav-close]");
         var overlay = document.querySelector("[data-nav-overlay]");
         var sidebar = document.querySelector("[data-sidebar]");
 
-        if (!sidebar) return;
+        if (!sidebar) {
+            return;
+        }
+
 
         function setOpen(isOpen) {
-            sidebar.classList.toggle("is-open", isOpen);
-            if (overlay) overlay.classList.toggle("is-open", isOpen);
-            if (openBtn) openBtn.setAttribute("aria-expanded", String(isOpen));
+
+            sidebar.classList.toggle(
+                "is-open",
+                isOpen
+            );
+
+            if (overlay) {
+                overlay.classList.toggle(
+                    "is-open",
+                    isOpen
+                );
+            }
+
+            if (openBtn) {
+                openBtn.setAttribute(
+                    "aria-expanded",
+                    String(isOpen)
+                );
+            }
+
         }
 
-        if (openBtn) openBtn.addEventListener("click", function () { setOpen(true); });
-        if (closeBtn) closeBtn.addEventListener("click", function () { setOpen(false); });
-        if (overlay) overlay.addEventListener("click", function () { setOpen(false); });
 
-        // Close the drawer automatically if the viewport grows past the
-        // desktop breakpoint (matches the lg:translate-x-0 behaviour).
-        var desktopQuery = window.matchMedia("(min-width: 1024px)");
-        function handleBreakpointChange(e) {
-            if (e.matches) setOpen(false);
+        if (openBtn) {
+            openBtn.addEventListener(
+                "click",
+                function () {
+                    setOpen(true);
+                }
+            );
         }
+
+
+        if (closeBtn) {
+            closeBtn.addEventListener(
+                "click",
+                function () {
+                    setOpen(false);
+                }
+            );
+        }
+
+
+        if (overlay) {
+            overlay.addEventListener(
+                "click",
+                function () {
+                    setOpen(false);
+                }
+            );
+        }
+
+
+        var desktopQuery = window.matchMedia(
+            "(min-width: 1024px)"
+        );
+
+
+        function handleBreakpointChange(event) {
+
+            if (event.matches) {
+                setOpen(false);
+            }
+
+        }
+
+
         if (desktopQuery.addEventListener) {
-            desktopQuery.addEventListener("change", handleBreakpointChange);
+
+            desktopQuery.addEventListener(
+                "change",
+                handleBreakpointChange
+            );
+
         } else if (desktopQuery.addListener) {
-            desktopQuery.addListener(handleBreakpointChange); // Safari <14 fallback
+
+            desktopQuery.addListener(
+                handleBreakpointChange
+            );
+
         }
 
-        // Escape key closes the drawer.
-        document.addEventListener("keydown", function (e) {
-            if (e.key === "Escape") setOpen(false);
-        });
+
+        document.addEventListener(
+            "keydown",
+            function (event) {
+
+                if (event.key === "Escape") {
+                    setOpen(false);
+                }
+
+            }
+        );
+
     }
 
-    /* ---------------------------------------------------------------------
-     * Appointments — All / Upcoming / History tabs
-     * ------------------------------------------------------------------- */
+
+    /* ==========================================================================
+     * Appointment Tabs
+     * ========================================================================== */
+
     function initAppointmentTabs() {
-        var tabLists = document.querySelectorAll("[data-tabs]");
+
+        var tabLists = document.querySelectorAll(
+            "[data-tabs]"
+        );
+
 
         tabLists.forEach(function (tabList) {
-            var tabs = tabList.querySelectorAll("[data-tab]");
-            var panelSelector = tabList.getAttribute("data-tabs");
-            var rows = panelSelector ? document.querySelectorAll(panelSelector + " [data-tab-value]") : [];
+
+            var tabs = tabList.querySelectorAll(
+                "[data-tab]"
+            );
+
+            var panelSelector =
+                tabList.getAttribute("data-tabs");
+
+
+            var rows = panelSelector
+                ? document.querySelectorAll(
+                    panelSelector +
+                    " [data-tab-value]"
+                )
+                : [];
+
 
             tabs.forEach(function (tab) {
-                tab.addEventListener("click", function () {
-                    tabs.forEach(function (t) {
-                        t.classList.remove("tab-active");
-                        t.classList.add("tab");
-                    });
-                    tab.classList.remove("tab");
-                    tab.classList.add("tab-active");
 
-                    var value = tab.getAttribute("data-tab");
-                    rows.forEach(function (row) {
-                        var matches = value === "all" || row.getAttribute("data-tab-value") === value;
-                        row.style.display = matches ? "" : "none";
-                    });
-                });
+                tab.addEventListener(
+                    "click",
+                    function () {
+
+                        tabs.forEach(function (currentTab) {
+
+                            currentTab.classList.remove(
+                                "tab-active"
+                            );
+
+                            currentTab.classList.add(
+                                "tab"
+                            );
+
+                        });
+
+
+                        tab.classList.remove(
+                            "tab"
+                        );
+
+                        tab.classList.add(
+                            "tab-active"
+                        );
+
+
+                        var value =
+                            tab.getAttribute("data-tab");
+
+
+                        rows.forEach(function (row) {
+
+                            var matches =
+                                value === "all" ||
+                                row.getAttribute(
+                                    "data-tab-value"
+                                ) === value;
+
+
+                            row.style.display =
+                                matches
+                                    ? ""
+                                    : "none";
+
+                        });
+
+                    }
+                );
+
             });
+
         });
+
     }
 
-    /* ---------------------------------------------------------------------
-     * "Select all" header checkbox for the prescriptions / appointments tables
-     * ------------------------------------------------------------------- */
+
+    /* ==========================================================================
+     * Select All Checkboxes
+     * ========================================================================== */
+
     function initSelectAllCheckboxes() {
-        var selectAlls = document.querySelectorAll("[data-select-all]");
+
+        var selectAlls = document.querySelectorAll(
+            "[data-select-all]"
+        );
+
 
         selectAlls.forEach(function (selectAll) {
-            var tableBody = selectAll.closest("table");
-            if (!tableBody) return;
-            var rowCheckboxes = tableBody.querySelectorAll("tbody [data-row-check]");
 
-            selectAll.addEventListener("change", function () {
-                rowCheckboxes.forEach(function (cb) { cb.checked = selectAll.checked; });
-            });
+            var table =
+                selectAll.closest("table");
 
-            rowCheckboxes.forEach(function (cb) {
-                cb.addEventListener("change", function () {
-                    selectAll.checked = Array.prototype.every.call(rowCheckboxes, function (c) { return c.checked; });
-                });
-            });
+
+            if (!table) {
+                return;
+            }
+
+
+            var rowCheckboxes =
+                table.querySelectorAll(
+                    "tbody [data-row-check]"
+                );
+
+
+            selectAll.addEventListener(
+                "change",
+                function () {
+
+                    rowCheckboxes.forEach(
+                        function (checkbox) {
+
+                            checkbox.checked =
+                                selectAll.checked;
+
+                        }
+                    );
+
+                }
+            );
+
+
+            rowCheckboxes.forEach(
+                function (checkbox) {
+
+                    checkbox.addEventListener(
+                        "change",
+                        function () {
+
+                            selectAll.checked =
+                                Array.prototype.every.call(
+                                    rowCheckboxes,
+                                    function (currentCheckbox) {
+                                        return currentCheckbox.checked;
+                                    }
+                                );
+
+                        }
+                    );
+
+                }
+            );
+
         });
+
     }
+
 })();
 
 
-/* ---------------------------------------------------------------------
- * Blood Pressure chart
- * ------------------------------------------------------------------- */
+/* ==========================================================================
+ * Blood Pressure Chart
+ * ========================================================================== */
 
-document.addEventListener("DOMContentLoaded", () => {
-    if (window.lucide) {
-        lucide.createIcons();
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        initBloodPressureChart();
+
     }
-
-    initBloodPressureChart();
-});
+);
 
 
 function initBloodPressureChart() {
-    const chart = document.querySelector("[data-blood-pressure-chart]");
-    const dataElement = document.getElementById("blood-pressure-data");
+
+    var chart = document.querySelector(
+        "[data-blood-pressure-chart]"
+    );
+
+    var dataElement = document.getElementById(
+        "blood-pressure-data"
+    );
+
 
     if (!chart || !dataElement) {
+
+        console.warn(
+            "Blood pressure chart or data element was not found."
+        );
+
         return;
     }
 
-    let readings;
+
+    /* ----------------------------------------------------------------------
+     * Parse Blood Pressure Data
+     * ---------------------------------------------------------------------- */
+
+    var readings;
+
 
     try {
-        readings = JSON.parse(dataElement.textContent);
+
+        readings = JSON.parse(
+            dataElement.textContent
+        );
+
     } catch (error) {
-        console.error("Unable to parse blood pressure data.", error);
+
+        console.error(
+            "Unable to parse blood pressure data.",
+            error
+        );
+
         return;
     }
 
-    if (!Array.isArray(readings) || readings.length === 0) {
+
+    if (
+        !Array.isArray(readings) ||
+        readings.length === 0
+    ) {
+
+        console.warn(
+            "No blood pressure readings available."
+        );
+
         return;
     }
 
-    const systolicLine = chart.querySelector(
-        '[data-chart-line="systolic"]'
-    );
 
-    const diastolicLine = chart.querySelector(
-        '[data-chart-line="diastolic"]'
-    );
+    /* ----------------------------------------------------------------------
+     * Locate SVG Elements
+     * ---------------------------------------------------------------------- */
 
-    const heartRateLine = chart.querySelector(
-        '[data-chart-line="heart-rate"]'
-    );
+    var systolicLine =
+        chart.querySelector(
+            '[data-chart-line="systolic"]'
+        );
 
-    const pointsContainer = chart.querySelector(
-        "[data-chart-points]"
-    );
 
-    if (!systolicLine || !diastolicLine || !heartRateLine) {
-        console.error("Blood pressure chart lines were not found.");
+    var diastolicLine =
+        chart.querySelector(
+            '[data-chart-line="diastolic"]'
+        );
+
+
+    var pointsContainer =
+        chart.querySelector(
+            "[data-chart-points]"
+        );
+
+
+    if (!systolicLine || !diastolicLine) {
+
+        console.error(
+            "Blood pressure chart lines were not found."
+        );
+
         return;
     }
 
-    const width = 1200;
-    const height = 280;
+
+    /* ----------------------------------------------------------------------
+     * Chart Dimensions
+     * ---------------------------------------------------------------------- */
+
+    var width = 1200;
+    var height = 280;
+
 
     /*
-     * Shared scale:
+     * Match the visible Y-axis:
      *
-     * 180 = high systolic range
-     * 120 = normal-ish BP middle
-     * 60  = normal-ish lower BP / heart rate range
-     * 40  = low heart rate boundary
+     * 180
+     * 140
+     * 100
+     * 60
+     * 20
      */
-    const minValue = 40;
-    const maxValue = 180;
 
+    var minValue = 20;
+    var maxValue = 180;
+
+
+    /* ----------------------------------------------------------------------
+     * Coordinate Helpers
+     * ---------------------------------------------------------------------- */
 
     function getX(index) {
+
         if (readings.length === 1) {
             return width / 2;
         }
 
+
         return (
-            index / (readings.length - 1)
+            index /
+            (readings.length - 1)
         ) * width;
+
     }
 
 
     function getY(value) {
-        const numericValue = Number(value);
+
+        var numericValue =
+            Number(value);
+
 
         if (!Number.isFinite(numericValue)) {
-            return height;
+            return null;
         }
 
-        const clamped = Math.min(
-            maxValue,
-            Math.max(minValue, numericValue)
-        );
+
+        var clamped =
+            Math.min(
+                maxValue,
+                Math.max(
+                    minValue,
+                    numericValue
+                )
+            );
+
 
         return (
             height -
             (
-                (clamped - minValue) /
-                (maxValue - minValue)
+                (
+                    clamped -
+                    minValue
+                ) /
+                (
+                    maxValue -
+                    minValue
+                )
             ) * height
         );
+
     }
 
 
-    /*
-     * Build each line independently.
-     */
+    /* ----------------------------------------------------------------------
+     * Build Systolic Line
+     * ---------------------------------------------------------------------- */
 
-    const systolicPoints = readings
-        .map((reading, index) => {
-            return `${getX(index)},${getY(reading.systolic)}`;
+    var systolicPoints = readings
+        .map(function (reading, index) {
+
+            var y =
+                getY(reading.systolic);
+
+
+            if (y === null) {
+                return null;
+            }
+
+
+            return (
+                getX(index) +
+                "," +
+                y
+            );
+
+        })
+        .filter(function (point) {
+            return point !== null;
         })
         .join(" ");
 
 
-    const diastolicPoints = readings
-        .map((reading, index) => {
-            return `${getX(index)},${getY(reading.diastolic)}`;
+    /* ----------------------------------------------------------------------
+     * Build Diastolic Line
+     * ---------------------------------------------------------------------- */
+
+    var diastolicPoints = readings
+        .map(function (reading, index) {
+
+            var y =
+                getY(reading.diastolic);
+
+
+            if (y === null) {
+                return null;
+            }
+
+
+            return (
+                getX(index) +
+                "," +
+                y
+            );
+
+        })
+        .filter(function (point) {
+            return point !== null;
         })
         .join(" ");
 
 
-    const heartRatePoints = readings
-        .map((reading, index) => {
-            return `${getX(index)},${getY(reading.heart_rate)}`;
-        })
-        .join(" ");
-
-
-    /*
-     * Render SVG lines.
-     */
+    /* ----------------------------------------------------------------------
+     * Apply SVG Points
+     * ---------------------------------------------------------------------- */
 
     systolicLine.setAttribute(
         "points",
         systolicPoints
     );
 
+
     diastolicLine.setAttribute(
         "points",
         diastolicPoints
     );
 
-    heartRateLine.setAttribute(
-        "points",
-        heartRatePoints
+
+    /* ----------------------------------------------------------------------
+     * Force SVG Line Visibility
+     * ---------------------------------------------------------------------- */
+
+    systolicLine.setAttribute(
+        "fill",
+        "none"
+    );
+
+    systolicLine.setAttribute(
+        "stroke",
+        "var(--patient-chart-systolic)"
+    );
+
+    systolicLine.setAttribute(
+        "stroke-width",
+        "3"
+    );
+
+    systolicLine.setAttribute(
+        "stroke-linecap",
+        "round"
+    );
+
+    systolicLine.setAttribute(
+        "stroke-linejoin",
+        "round"
     );
 
 
-    /*
-     * Add interactive points for blood pressure.
-     */
+    diastolicLine.setAttribute(
+        "fill",
+        "none"
+    );
 
-    if (pointsContainer) {
-        pointsContainer.innerHTML = "";
+    diastolicLine.setAttribute(
+        "stroke",
+        "var(--patient-chart-diastolic)"
+    );
 
-        readings.forEach((reading, index) => {
-            const systolic = Number(reading.systolic);
-            const diastolic = Number(reading.diastolic);
-            const heartRate = Number(reading.heart_rate);
+    diastolicLine.setAttribute(
+        "stroke-width",
+        "3"
+    );
+
+    diastolicLine.setAttribute(
+        "stroke-linecap",
+        "round"
+    );
+
+    diastolicLine.setAttribute(
+        "stroke-linejoin",
+        "round"
+    );
+
+
+    /* ----------------------------------------------------------------------
+     * Interactive Chart Points
+     * ---------------------------------------------------------------------- */
+
+    if (!pointsContainer) {
+        return;
+    }
+
+
+    pointsContainer.innerHTML = "";
+
+
+    readings.forEach(
+        function (reading, index) {
+
+            var systolic =
+                Number(reading.systolic);
+
+            var diastolic =
+                Number(reading.diastolic);
+
 
             if (
                 !Number.isFinite(systolic) ||
@@ -291,116 +665,264 @@ function initBloodPressureChart() {
                 return;
             }
 
-            const point = document.createElement("button");
+
+            var point =
+                document.createElement("button");
+
 
             point.type = "button";
-            point.className = "md-chart__point";
+
+            point.className =
+                "md-chart__point";
+
+
+            /* --------------------------------------------------------------
+             * Tooltip Direction
+             * -------------------------------------------------------------- */
 
             if (index < 3) {
-                point.classList.add("tooltip-right");
+
+                point.classList.add(
+                    "tooltip-right"
+                );
+
             }
 
-            if (index >= readings.length - 3) {
-                point.classList.add("tooltip-left");
+
+            if (
+                index >=
+                readings.length - 3
+            ) {
+
+                point.classList.add(
+                    "tooltip-left"
+                );
+
             }
 
-            const xPercent =
+
+            /* --------------------------------------------------------------
+             * Position
+             * -------------------------------------------------------------- */
+
+            var xPercent =
                 readings.length === 1
                     ? 50
-                    : (index / (readings.length - 1)) * 100;
+                    : (
+                        index /
+                        (readings.length - 1)
+                    ) * 100;
 
-            const averageBloodPressure =
-                (systolic + diastolic) / 2;
 
-            const yPercent =
-                (getY(averageBloodPressure) / height) * 100;
+            var averageBloodPressure =
+                (
+                    systolic +
+                    diastolic
+                ) / 2;
 
-            point.style.left = `${xPercent}%`;
-            point.style.top = `${yPercent}%`;
+
+            var averageY =
+                getY(
+                    averageBloodPressure
+                );
+
+
+            if (averageY === null) {
+                return;
+            }
+
+
+            var yPercent =
+                (
+                    averageY /
+                    height
+                ) * 100;
+
+
+            point.style.left =
+                xPercent + "%";
+
+
+            point.style.top =
+                yPercent + "%";
+
+
+            /* --------------------------------------------------------------
+             * Accessibility
+             * -------------------------------------------------------------- */
 
             point.setAttribute(
                 "aria-label",
-                `${reading.month}: Blood pressure ${systolic}/${diastolic} mmHg, heart rate ${heartRate} bpm`
+                reading.month +
+                ": Blood pressure " +
+                systolic +
+                "/" +
+                diastolic +
+                " mmHg"
             );
+
+
+            /* --------------------------------------------------------------
+             * Tooltip Data
+             * -------------------------------------------------------------- */
 
             point.dataset.tooltip =
-                `${reading.month}  •  ${systolic}/${diastolic} mmHg  •  ${heartRate} bpm`;
+                reading.month +
+                " • " +
+                systolic +
+                "/" +
+                diastolic +
+                " mmHg";
 
-            pointsContainer.appendChild(point);
-        });
-    }
+
+            pointsContainer.appendChild(
+                point
+            );
+
+        }
+    );
+
 }
 
-document.addEventListener("DOMContentLoaded", function () {
 
-    const popup = document.getElementById(
-        "profileCompletionPopup"
-    );
+/* ==========================================================================
+ * Profile Completion Popup
+ * ========================================================================== */
 
-    const closeButton = document.getElementById(
-        "profileCompletionClose"
-    );
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
 
-    const laterButton = document.getElementById(
-        "profileCompletionLater"
-    );
+        var popup =
+            document.getElementById(
+                "profileCompletionPopup"
+            );
 
-    console.log("Popup:", popup);
-    console.log("Close button:", closeButton);
-    console.log("Later button:", laterButton);
 
-    if (closeButton) {
-        closeButton.addEventListener("click", function () {
+        var closeButton =
+            document.getElementById(
+                "profileCompletionClose"
+            );
 
-            fetch("/api/patient/profile-popup/dismiss/", {
-                method: "POST",
-                headers: {
-                    "X-CSRFToken": getCookie("csrftoken"),
-                    "Content-Type": "application/json"
+
+        var laterButton =
+            document.getElementById(
+                "profileCompletionLater"
+            );
+
+
+        if (!popup) {
+            return;
+        }
+
+
+        /* ------------------------------------------------------------------
+         * Dismiss Popup
+         * ------------------------------------------------------------------ */
+
+        function dismissProfilePopup() {
+
+            fetch(
+                "/api/patient/profile-popup/dismiss/",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "X-CSRFToken":
+                            getCookie("csrftoken"),
+
+                        "Content-Type":
+                            "application/json"
+                    }
                 }
-            })
+            )
                 .then(function (response) {
+
                     if (response.ok) {
                         popup.style.display = "none";
                     }
+
+                })
+                .catch(function (error) {
+
+                    console.error(
+                        "Unable to dismiss profile popup.",
+                        error
+                    );
+
                 });
 
-        });
+        }
+
+
+        /* ------------------------------------------------------------------
+         * Close Button
+         * ------------------------------------------------------------------ */
+
+        if (closeButton) {
+
+            closeButton.addEventListener(
+                "click",
+                dismissProfilePopup
+            );
+
+        }
+
+
+        /* ------------------------------------------------------------------
+         * Maybe Later Button
+         * ------------------------------------------------------------------ */
+
+        if (laterButton) {
+
+            laterButton.addEventListener(
+                "click",
+                dismissProfilePopup
+            );
+
+        }
+
     }
+);
 
-    if (laterButton) {
-        laterButton.addEventListener("click", function () {
 
-            fetch("/api/patient/profile-popup/dismiss/", {
-                method: "POST",
-                headers: {
-                    "X-CSRFToken": getCookie("csrftoken"),
-                    "Content-Type": "application/json"
-                }
-            })
-                .then(function (response) {
-                    if (response.ok) {
-                        popup.style.display = "none";
-                    }
-                });
-
-        });
-    }
-
-});
+/* ==========================================================================
+ * CSRF Cookie Helper
+ * ========================================================================== */
 
 function getCookie(name) {
-    const cookies = document.cookie.split(";");
 
-    for (let cookie of cookies) {
-        cookie = cookie.trim();
+    var cookies =
+        document.cookie.split(";");
 
-        if (cookie.startsWith(name + "=")) {
+
+    for (
+        var i = 0;
+        i < cookies.length;
+        i++
+    ) {
+
+        var cookie =
+            cookies[i].trim();
+
+
+        if (
+            cookie.startsWith(
+                name + "="
+            )
+        ) {
+
             return decodeURIComponent(
-                cookie.substring(name.length + 1)
+                cookie.substring(
+                    name.length + 1
+                )
             );
+
         }
+
     }
 
+
     return null;
+
 }

@@ -1,120 +1,126 @@
-<section class="panel shadow-panel">
-    <header class="panel__header">
-        <h2>Prescriptions</h2>
+{% load static %}
 
-        <button
-            type="button"
-            class="icon-button"
-            aria-label="More Prescriptions options"
-        >
+<section class="patient-card md-prescriptions">
+
+
+    <header class="md-prescriptions__header">
+
+        <h2 class="md-prescriptions__title">
+            Prescriptions
+        </h2>
+
+        <button type="button" class="md-prescriptions__menu" aria-label="More Prescriptions options">
             <i data-lucide="more-horizontal"></i>
         </button>
+
     </header>
 
-    <div
-        class="md-tabs"
-        data-tabs=".md-prescriptions-table"
-    >
-        <button
-            type="button"
-            class="tab-active"
-            data-tab="active"
-        >
+
+    <div class="md-prescriptions__tabs" data-tabs=".md-prescriptions__table-wrap">
+
+        <button type="button" class="md-prescriptions__tab is-active" data-tab="active">
             Active
         </button>
 
-        <button
-            type="button"
-            class="tab"
-            data-tab="discontinued"
-        >
+        <button type="button" class="md-prescriptions__tab" data-tab="discontinued">
             Discontinued
         </button>
 
-        <button
-            type="button"
-            class="tab"
-            data-tab="history"
-        >
+        <button type="button" class="md-prescriptions__tab" data-tab="history">
             History
         </button>
+
     </div>
 
-    <div class="md-table-wrap md-prescriptions-table">
-        <table class="md-table">
+
+    <div class="md-prescriptions__table-wrap">
+
+        <table class="md-prescriptions__table">
+
             <thead>
                 <tr>
-                    <th class="table-head checkbox-col">
-                        <input
-                            type="checkbox"
-                            aria-label="Select all prescriptions"
-                            data-select-all
-                        />
+
+                    <th class="md-prescriptions__checkbox">
+                        <input type="checkbox" aria-label="Select all prescriptions" data-select-all>
                     </th>
 
-                    <th class="table-head">Name</th>
-                    <th class="table-head">Dosage</th>
-                    <th class="table-head">Frequency</th>
-                    <th class="table-head">Start - End Date</th>
-                    <th class="table-head">Status</th>
+                    <th>Name</th>
+                    <th>Dosage</th>
+                    <th>Frequency</th>
+                    <th>Start - End Date</th>
+                    <th>Status</th>
+
                 </tr>
             </thead>
 
+
             <tbody>
+
                 {% for prescription in prescriptions %}
-                    <tr data-tab-value="{{ prescription.category }}">
-                        <td class="table-cell checkbox-col">
-                            <input
-                                type="checkbox"
-                                aria-label="Select {{ prescription.name }}"
-                                data-row-check
-                            />
-                        </td>
 
-                        <td class="table-cell strong">
-                            {{ prescription.name }}
-                        </td>
+                <tr data-tab-value="{{ prescription.category }}">
 
-                        <td class="table-cell">
-                            {{ prescription.dosage }}
-                        </td>
+                    <td class="md-prescriptions__checkbox">
+                        <input type="checkbox" aria-label="Select {{ prescription.name }}" data-row-check>
+                    </td>
 
-                        <td class="table-cell">
-                            {{ prescription.frequency }}
-                        </td>
+                    <td class="md-prescriptions__name">
+                        {{ prescription.name }}
+                    </td>
 
-                        <td class="table-cell">
-                            {{ prescription.start_date }}
+                    <td>
+                        {{ prescription.dosage }}
+                    </td>
 
-                            {% if prescription.end_date %}
-                                - {{ prescription.end_date }}
-                            {% endif %}
-                        </td>
+                    <td>
+                        {{ prescription.frequency }}
+                    </td>
 
-                        <td class="table-cell">
-                            {% if prescription.status == "Prescribed" or prescription.status == "Active" %}
-                                <span class="status-success">
-                                    {{ prescription.status }}
-                                </span>
-                            {% else %}
-                                <span class="status-neutral">
-                                    {{ prescription.status }}
-                                </span>
-                            {% endif %}
-                        </td>
-                    </tr>
+                    <td>
+                        {{ prescription.start_date }}
+
+                        {% if prescription.end_date %}
+                        - {{ prescription.end_date }}
+                        {% endif %}
+                    </td>
+
+                    <td>
+
+                        {% if prescription.status == "Prescribed" or prescription.status == "Active" %}
+
+                        <span class="md-prescriptions__status is-success">
+                            {{ prescription.status }}
+                        </span>
+
+                        {% else %}
+
+                        <span class="md-prescriptions__status">
+                            {{ prescription.status }}
+                        </span>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
 
                 {% empty %}
-                    <tr>
-                        <td
-                            class="table-cell"
-                            colspan="6"
-                        >
-                            No prescriptions found.
-                        </td>
-                    </tr>
+
+                <tr class="md-prescriptions__empty">
+
+                    <td colspan="6">
+                        No prescriptions found.
+                    </td>
+
+                </tr>
+
                 {% endfor %}
+
             </tbody>
+
         </table>
+
     </div>
+
+
 </section>
