@@ -1396,6 +1396,19 @@
         border-color var(--patient-transition-fast);
 }
 
+.md-metric-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    width: 100%;
+    min-width: 0;
+
+    margin-bottom: 0.65rem;
+
+    gap: 0.5rem;
+}
+
 .md-metric-card:hover {
     border-color: var(--patient-border-strong);
 
@@ -1419,7 +1432,7 @@
 
     flex: 0 0 2rem;
 
-    margin-bottom: 0.65rem;
+    margin-bottom: 0;
 
     border-radius: var(--patient-card-radius-sm);
 
@@ -1451,6 +1464,47 @@
 /* --------------------------------------------------------------------------
    Metric Label & Value
    -------------------------------------------------------------------------- */
+
+.md-metric-card__status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 1.45rem;
+    padding: 0.2rem 0.5rem;
+
+    border-radius: var(--dashboard-radius-pill);
+
+    font-size: 0.5rem;
+    font-weight: 700;
+    line-height: 1;
+
+    white-space: nowrap;
+}
+
+.md-metric-card__status--high {
+    background: color-mix(in oklch, var(--patient-danger-soft) 72%, var(--patient-surface));
+    color: color-mix(in oklch, var(--patient-danger) 34%, var(--patient-text));
+    border: 1px solid color-mix(in oklch, var(--patient-danger) 18%, var(--patient-border));
+}
+
+.md-metric-card__status--low {
+    background: color-mix(in oklch, var(--patient-alert-soft) 72%, var(--patient-surface));
+    color: color-mix(in oklch, var(--patient-alert) 32%, var(--patient-text));
+    border: 1px solid color-mix(in oklch, var(--patient-alert) 18%, var(--patient-border));
+}
+
+.md-metric-card__status--normal {
+    background: color-mix(in oklch, var(--patient-success-soft) 72%, var(--patient-surface));
+    color: color-mix(in oklch, var(--patient-success) 30%, var(--patient-text));
+    border: 1px solid color-mix(in oklch, var(--patient-success) 18%, var(--patient-border));
+}
+
+.md-metric-card__status--neutral {
+    background: var(--patient-surface-muted);
+    color: var(--patient-text-muted);
+    border: 1px solid var(--patient-border);
+}
 
 .md-metric-card__label {
     margin: 0;
@@ -2344,7 +2398,7 @@
 
     color: var(--patient-text);
 
-    font-size: 0.8rem;
+    font-size: 1rem;
     font-weight: 700;
     line-height: 1.3;
 
@@ -2356,7 +2410,7 @@
 
     color: var(--patient-text-muted);
 
-    font-size: 0.65rem;
+    font-size: 0.78rem;
     font-weight: 500;
     line-height: 1.3;
 
@@ -2373,8 +2427,8 @@
     align-items: center;
     justify-content: center;
 
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 3.35rem;
+    height: 3.35rem;
 
     flex: 0 0 auto;
 
@@ -2388,8 +2442,8 @@
 }
 
 .md-insurance__provider svg {
-    width: 1.15rem;
-    height: 1.15rem;
+    width: 1.45rem;
+    height: 1.45rem;
 }
 
 .md-insurance__logo {
@@ -2415,7 +2469,7 @@
 
     color: var(--patient-primary);
 
-    font-size: 0.8rem;
+    font-size: 1rem;
     font-weight: 700;
 }
 
@@ -2459,7 +2513,7 @@
 
     color: var(--patient-text-muted);
 
-    font-size: 0.55rem;
+    font-size: 0.64rem;
     font-weight: 600;
     line-height: 1.2;
 
@@ -2473,7 +2527,7 @@
 
     color: var(--patient-text);
 
-    font-size: 0.65rem;
+    font-size: 0.78rem;
     font-weight: 700;
     line-height: 1.3;
 
@@ -2495,14 +2549,14 @@
     width: fit-content;
 
     margin: 0;
-    padding: 0.35rem 0.65rem;
+    padding: 0.38rem 0.7rem;
 
     border-radius: var(--dashboard-radius-pill);
 
     background: var(--patient-surface-muted);
     color: var(--patient-text-muted);
 
-    font-size: 0.55rem;
+    font-size: 0.64rem;
     font-weight: 700;
     line-height: 1;
 
@@ -2510,12 +2564,9 @@
 }
 
 .md-insurance__status.is-active {
-    background:
-        color-mix(in oklch,
-            var(--patient-success) 15%,
-            var(--patient-surface));
-
-    color: var(--patient-success);
+    background: color-mix(in oklch, var(--patient-success-soft) 72%, var(--patient-surface));
+    color: color-mix(in oklch, var(--patient-success) 30%, var(--patient-text));
+    border: 1px solid color-mix(in oklch, var(--patient-success) 18%, var(--patient-border));
 }
 
 
@@ -3403,5 +3454,588 @@
 
     .md-banner__doctor img {
         height: 125%;
+    }
+}
+
+/* ==========================================================================
+   Medicare — Patient Profile
+   Profile completion / editing form
+   ========================================================================== */
+
+
+/* ==========================================================================
+   Profile Card
+   ========================================================================== */
+
+.profile-form-panel {
+    width: 100%;
+    min-width: 0;
+    container-type: inline-size;
+}
+
+
+/* --------------------------------------------------------------------------
+   Profile Header
+   -------------------------------------------------------------------------- */
+
+.profile-form-panel__header {
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.profile-form-panel__heading {
+    min-width: 0;
+}
+
+.profile-form-panel__heading h2 {
+    margin: 0;
+
+    color: var(--patient-text);
+
+    font-size: 1rem;
+    font-weight: 650;
+    line-height: 1.3;
+}
+
+.profile-form-panel__heading p {
+    max-width: 42rem;
+
+    margin: 0.3rem 0 0;
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.68rem;
+    line-height: 1.5;
+}
+
+
+/* ==========================================================================
+   Form Body
+   ========================================================================== */
+
+.profile-form-panel__body {
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 1rem;
+}
+
+
+/* ==========================================================================
+   Form
+   ========================================================================== */
+
+.profile-form {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    min-width: 0;
+
+    gap: 0.85rem;
+}
+
+
+/* ==========================================================================
+   Form Sections
+   ========================================================================== */
+
+.profile-form__section {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 1rem;
+
+    border: 1px solid var(--patient-border);
+    border-radius: var(--patient-card-radius-md);
+
+    background: var(--patient-surface);
+
+    transition:
+        border-color var(--patient-transition-fast),
+        background var(--patient-transition-fast),
+        box-shadow var(--patient-transition-fast);
+}
+
+.profile-form__section:hover {
+    border-color: var(--patient-border-strong);
+}
+
+.profile-form__section:focus-within {
+    border-color: var(--patient-primary);
+
+    box-shadow:
+        0 0 0 3px
+        color-mix(
+            in oklch,
+            var(--patient-primary) 7%,
+            transparent
+        );
+}
+
+
+/* ==========================================================================
+   Section Header
+   ========================================================================== */
+
+.profile-form__section-header {
+    display: flex;
+    align-items: flex-start;
+
+    width: 100%;
+    min-width: 0;
+
+    margin-bottom: 0.9rem;
+    padding-bottom: 0.7rem;
+
+    border-bottom: 1px solid var(--patient-border);
+}
+
+.profile-form__section-header > div {
+    min-width: 0;
+}
+
+.profile-form__section-header h3 {
+    margin: 0;
+
+    color: var(--patient-text);
+
+    font-size: 0.78rem;
+    font-weight: 650;
+    line-height: 1.3;
+}
+
+.profile-form__section-header p {
+    max-width: 38rem;
+
+    margin: 0.2rem 0 0;
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.58rem;
+    line-height: 1.45;
+}
+
+
+/* ==========================================================================
+   Field Layout
+   ========================================================================== */
+
+.profile-form__fields {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr);
+
+    width: 100%;
+    min-width: 0;
+
+    gap: 0.8rem 0.85rem;
+}
+
+.profile-form__fields--two {
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+}
+
+.profile-form__fields--three {
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+}
+
+
+/* --------------------------------------------------------------------------
+   Full-width Field
+   -------------------------------------------------------------------------- */
+
+.profile-form__field--full {
+    grid-column: 1 / -1;
+}
+
+
+/* ==========================================================================
+   Individual Field
+   ========================================================================== */
+
+.profile-form__field {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+
+    gap: 0.35rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Labels
+   -------------------------------------------------------------------------- */
+
+.profile-form__field label {
+    display: flex;
+    align-items: center;
+
+    min-width: 0;
+
+    color: var(--patient-text);
+
+    font-size: 0.61rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+
+/* ==========================================================================
+   Inputs
+   ========================================================================== */
+
+.profile-form__field input,
+.profile-form__field select,
+.profile-form__field textarea {
+    display: block;
+
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    border: 1px solid var(--patient-border);
+    border-radius: var(--patient-card-radius-sm);
+
+    background: var(--patient-surface-muted);
+    color: var(--patient-text);
+
+    font-family: inherit;
+    font-size: 0.68rem;
+    line-height: 1.4;
+
+    outline: none;
+
+    transition:
+        border-color var(--patient-transition-fast),
+        background var(--patient-transition-fast),
+        box-shadow var(--patient-transition-fast);
+}
+
+
+/* --------------------------------------------------------------------------
+   Input / Select
+   -------------------------------------------------------------------------- */
+
+.profile-form__field input,
+.profile-form__field select {
+    min-height: 2.35rem;
+
+    padding: 0.55rem 0.7rem;
+}
+
+.profile-form__field select {
+    cursor: pointer;
+}
+
+
+/* --------------------------------------------------------------------------
+   Textarea
+   -------------------------------------------------------------------------- */
+
+.profile-form__field textarea {
+    min-height: 5.5rem;
+
+    padding: 0.65rem 0.7rem;
+
+    resize: vertical;
+}
+
+
+/* ==========================================================================
+   Placeholder
+   ========================================================================== */
+
+.profile-form__field input::placeholder,
+.profile-form__field textarea::placeholder {
+    color: var(--patient-text-muted);
+
+    opacity: 0.65;
+}
+
+
+/* ==========================================================================
+   Input Hover
+   ========================================================================== */
+
+.profile-form__field input:hover,
+.profile-form__field select:hover,
+.profile-form__field textarea:hover {
+    border-color: var(--patient-border-strong);
+}
+
+
+/* ==========================================================================
+   Focus State
+   ========================================================================== */
+
+.profile-form__field input:focus,
+.profile-form__field select:focus,
+.profile-form__field textarea:focus {
+    border-color: var(--patient-primary);
+
+    background: var(--patient-surface);
+
+    box-shadow:
+        0 0 0 3px
+        color-mix(
+            in oklch,
+            var(--patient-primary) 12%,
+            transparent
+        );
+}
+
+
+/* ==========================================================================
+   Disabled State
+   ========================================================================== */
+
+.profile-form__field input:disabled,
+.profile-form__field select:disabled,
+.profile-form__field textarea:disabled {
+    cursor: not-allowed;
+
+    opacity: 0.6;
+}
+
+
+/* ==========================================================================
+   Invalid State
+   ========================================================================== */
+
+.profile-form__field input:invalid:not(:placeholder-shown),
+.profile-form__field textarea:invalid:not(:placeholder-shown),
+.profile-form__field select:invalid {
+    border-color: var(--patient-danger);
+}
+
+.profile-form__field input:invalid:not(:placeholder-shown):focus,
+.profile-form__field textarea:invalid:not(:placeholder-shown):focus,
+.profile-form__field select:invalid:focus {
+    box-shadow:
+        0 0 0 3px
+        color-mix(
+            in oklch,
+            var(--patient-danger) 12%,
+            transparent
+        );
+}
+
+
+/* ==========================================================================
+   Date Input
+   ========================================================================== */
+
+.profile-form__field input[type="date"] {
+    color-scheme: light dark;
+}
+
+
+/* ==========================================================================
+   Select Arrow
+   ========================================================================== */
+
+.profile-form__field select {
+    appearance: auto;
+}
+
+
+/* ==========================================================================
+   Actions
+   ========================================================================== */
+
+.profile-form__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding-top: 0.15rem;
+}
+
+
+/* ==========================================================================
+   Submit Button
+   ========================================================================== */
+
+.profile-form__submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 2.35rem;
+
+    padding: 0.55rem 1.1rem;
+
+    border: 0;
+    border-radius: var(--patient-card-radius-sm);
+
+    background: var(--patient-primary);
+    color: var(--patient-primary-foreground);
+
+    font-family: inherit;
+    font-size: 0.65rem;
+    font-weight: 600;
+
+    white-space: nowrap;
+
+    cursor: pointer;
+
+    transition:
+        background var(--patient-transition-fast),
+        transform var(--patient-transition-fast),
+        box-shadow var(--patient-transition-fast);
+}
+
+.profile-form__submit:hover {
+    background: var(--patient-primary-hover);
+
+    transform: translateY(-1px);
+
+    box-shadow: var(--patient-card-shadow);
+}
+
+.profile-form__submit:active {
+    transform: translateY(0);
+}
+
+.profile-form__submit:focus-visible {
+    outline: none;
+
+    box-shadow:
+        0 0 0 3px
+        color-mix(
+            in oklch,
+            var(--patient-primary) 18%,
+            transparent
+        );
+}
+
+
+/* ==========================================================================
+   Responsive Form Layout
+   ========================================================================== */
+
+@container (max-width: 800px) {
+
+    .profile-form__fields--three {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+}
+
+
+@container (max-width: 620px) {
+
+    .profile-form-panel__body {
+        padding: 0.85rem;
+    }
+
+    .profile-form__section {
+        padding: 0.85rem;
+    }
+
+    .profile-form__fields--two,
+    .profile-form__fields--three {
+        grid-template-columns:
+            minmax(0, 1fr);
+    }
+
+    .profile-form__field--full {
+        grid-column: auto;
+    }
+}
+
+
+@container (max-width: 460px) {
+
+    .profile-form-panel__body {
+        padding: 0.7rem;
+    }
+
+    .profile-form__section {
+        padding: 0.75rem;
+    }
+
+    .profile-form__section-header {
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.6rem;
+    }
+
+    .profile-form__section-header h3 {
+        font-size: 0.74rem;
+    }
+
+    .profile-form__section-header p {
+        font-size: 0.56rem;
+    }
+
+    .profile-form__field input,
+    .profile-form__field select {
+        min-height: 2.2rem;
+
+        padding: 0.5rem 0.6rem;
+    }
+
+    .profile-form__field textarea {
+        min-height: 5rem;
+
+        padding: 0.6rem;
+    }
+
+    .profile-form__actions {
+        justify-content: stretch;
+    }
+
+    .profile-form__submit {
+        width: 100%;
+    }
+}
+
+
+@container (max-width: 360px) {
+
+    .profile-form-panel__body {
+        padding: 0.6rem;
+    }
+
+    .profile-form__section {
+        padding: 0.7rem;
+    }
+
+    .profile-form__heading h2 {
+        font-size: 0.9rem;
+    }
+
+    .profile-form__heading p {
+        font-size: 0.59rem;
+    }
+
+    .profile-form__field label {
+        font-size: 0.59rem;
+    }
+
+    .profile-form__field input,
+    .profile-form__field select,
+    .profile-form__field textarea {
+        font-size: 0.65rem;
     }
 }

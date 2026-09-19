@@ -1,4 +1,4 @@
-{% extends "patient/base.html" %}
+{% extends "patients/base.html" %}
 
 {% block patient_title %}
 Patient Dashboard | Medicare
@@ -12,7 +12,7 @@ Patient Dashboard | Medicare
          Greeting
          ============================================================ -->
 
-    {% include "patient/sections/patient_banner.html" %}
+    {% include "patients/dashboard/banner.html" %}
 
 
     <!-- ============================================================
@@ -24,9 +24,9 @@ Patient Dashboard | Medicare
 
         <div class="md-main-details-grid md-dashboard-card-grid">
 
-            {% include "patient/sections/patient_summary.html" %}
+            {% include "patients/dashboard/summary.html" %}
 
-            {% include "patient/sections/patient_appointment_status.html" %}
+            {% include "patients/dashboard/appointment_status.html" %}
 
         </div>
 
@@ -40,7 +40,7 @@ Patient Dashboard | Medicare
 
     <section class="md-dashboard-section md-vitals-section">
 
-        {% include "patient/sections/patient_health_metrics.html" %}
+        {% include "patients/dashboard/health_metrics.html" %}
 
     </section>
 
@@ -54,9 +54,9 @@ Patient Dashboard | Medicare
 
         <div class="md-health-coverage-grid md-dashboard-card-grid">
 
-            {% include "patient/sections/patient_blood_pressure.html" %}
+            {% include "patients/dashboard/blood_pressure.html" %}
 
-            {% include "patient/sections/patient_insurance_details.html" %}
+            {% include "patients/dashboard/insurance_details.html" %}
 
         </div>
 
@@ -72,9 +72,9 @@ Patient Dashboard | Medicare
 
         <div class="md-medications-appointments-grid md-dashboard-card-grid">
 
-            {% include "patient/sections/patient_prescriptions.html" %}
+            {% include "patients/dashboard/prescriptions.html" %}
 
-            {% include "patient/sections/patient_appointments.html" %}
+            {% include "patients/dashboard/appointments.html" %}
 
         </div>
 
@@ -84,7 +84,7 @@ Patient Dashboard | Medicare
 
 
 {% if profile_incomplete %}
-{% include "patient/sections/patient_profile_completion_popup.html" %}
+{% include "patients/dashboard/profile_completion_popup.html" %}
 {% endif %}
 
 {% endblock %}

@@ -1,0 +1,44 @@
+<!-- ============================================================
+     Block 1 — Patient Demographics
+     ============================================================ -->
+
+<div class="admin-card admin-demographics-card">
+
+    <div class="admin-card__header">
+        <div class="admin-card__title-group">
+
+            <div class="admin-card__icon">
+                <i data-lucide="users-round"></i>
+            </div>
+
+            <h3 class="admin-card__title">
+                Patient Demographics
+            </h3>
+
+        </div>
+    </div>
+
+
+    <div class="admin-demographics-chart">
+
+        {% for demographic in patient_demographics %}
+
+        <div class="admin-demographics-chart__group">
+
+            <span class="admin-demographics-chart__value">
+                {{ demographic.percentage }}%
+            </span>
+
+            <div class="admin-demographics-chart__bar" style="height: {{ demographic.bar_height }}%;"></div>
+
+            <span class="admin-demographics-chart__label">
+                {{ demographic.label }}
+            </span>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>

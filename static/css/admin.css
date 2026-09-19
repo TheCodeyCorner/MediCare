@@ -1,0 +1,2765 @@
+/* ==========================================================================
+   Medicare — Admin Dashboard
+   Admin-specific theme, layout, cards and dashboard components
+   ========================================================================== */
+
+
+/* ==========================================================================
+   Admin Theme
+   ========================================================================== */
+
+:root {
+
+    /* ----------------------------------------------------------------------
+       Surfaces
+       ---------------------------------------------------------------------- */
+
+    --admin-surface:
+        var(--dashboard-card);
+
+    --admin-surface-muted:
+        var(--dashboard-muted);
+
+
+    /* ----------------------------------------------------------------------
+       Borders
+       ---------------------------------------------------------------------- */
+
+    --admin-border:
+        var(--dashboard-border);
+
+    --admin-border-strong:
+        var(--dashboard-border-strong,
+            var(--dashboard-primary));
+
+
+    /* ----------------------------------------------------------------------
+       Text
+       ---------------------------------------------------------------------- */
+
+    --admin-text:
+        var(--dashboard-foreground);
+
+    --admin-text-muted:
+        var(--dashboard-muted-foreground);
+
+    --admin-text-soft:
+        color-mix(in oklch,
+            var(--dashboard-foreground) 70%,
+            var(--dashboard-muted-foreground));
+
+
+    /* ----------------------------------------------------------------------
+       Primary
+       ---------------------------------------------------------------------- */
+
+    --admin-primary:
+        var(--dashboard-primary);
+
+    --admin-primary-hover:
+        var(--dashboard-primary-hover,
+            var(--dashboard-primary));
+
+    --admin-primary-foreground:
+        var(--dashboard-primary-foreground);
+
+    --admin-primary-soft:
+        var(--dashboard-primary-soft,
+            var(--dashboard-muted));
+
+
+    /* ----------------------------------------------------------------------
+       Status
+       ---------------------------------------------------------------------- */
+
+    --admin-success:
+        var(--dashboard-success);
+
+    --admin-success-soft:
+        var(--dashboard-success-soft,
+            var(--dashboard-muted));
+
+    --admin-alert:
+        var(--dashboard-alert);
+
+    --admin-alert-soft:
+        var(--dashboard-alert-soft,
+            var(--dashboard-muted));
+
+    --admin-danger:
+        var(--dashboard-danger,
+            var(--dashboard-alert));
+
+    --admin-danger-soft:
+        var(--dashboard-danger-soft,
+            var(--dashboard-muted));
+
+    --admin-info:
+        var(--dashboard-info,
+            var(--dashboard-primary));
+
+    --admin-info-soft:
+        var(--dashboard-info-soft,
+            var(--dashboard-muted));
+
+
+    /* ----------------------------------------------------------------------
+       Card Geometry
+       ---------------------------------------------------------------------- */
+
+    --admin-card-radius:
+        var(--dashboard-radius);
+
+    --admin-card-radius-sm:
+        var(--dashboard-radius-sm);
+
+    --admin-card-radius-md:
+        var(--dashboard-radius-md);
+
+    --admin-card-shadow:
+        var(--dashboard-shadow-sm,
+            0 4px 20px oklch(0.36 0.03 210 / 6%));
+
+    --admin-card-shadow-hover:
+        var(--dashboard-shadow-md,
+            0 8px 24px oklch(0.36 0.03 210 / 8%));
+
+
+    /* ----------------------------------------------------------------------
+       Spacing
+       ---------------------------------------------------------------------- */
+
+    --admin-section-gap:
+        1.5rem;
+
+    --admin-card-gap:
+        1rem;
+
+    --admin-content-gap:
+        0.75rem;
+
+
+    /* ----------------------------------------------------------------------
+       Motion
+       ---------------------------------------------------------------------- */
+
+    --admin-transition-fast:
+        160ms ease;
+
+    --admin-transition:
+        220ms ease;
+
+    --admin-transition-slow:
+        300ms ease;
+}
+
+
+/* ==========================================================================
+   Admin Layout
+   ========================================================================== */
+
+.admin-page {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    min-width: 0;
+
+    gap: var(--admin-section-gap);
+}
+
+
+/* --------------------------------------------------------------------------
+   Dashboard Sections
+   -------------------------------------------------------------------------- */
+
+.md-dashboard-section {
+    width: 100%;
+    min-width: 0;
+
+    container-type: inline-size;
+}
+
+
+/* Backwards-compatible admin section class */
+
+.md-admin-section {
+    width: 100%;
+    min-width: 0;
+
+    container-type: inline-size;
+}
+
+
+/* ==========================================================================
+   Admin Card Foundation
+   ========================================================================== */
+
+.admin-card {
+    position: relative;
+
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-card-radius);
+
+    background: var(--admin-surface);
+
+    box-shadow: var(--admin-card-shadow);
+
+    overflow: visible;
+
+    transition:
+        transform var(--admin-transition-fast),
+        box-shadow var(--admin-transition-fast),
+        border-color var(--admin-transition-fast);
+}
+
+.admin-card:hover {
+    border-color: var(--admin-border-strong);
+
+    box-shadow: var(--admin-card-shadow-hover);
+
+    transform: translateY(-2px);
+}
+
+
+/* ==========================================================================
+   Admin Card Header
+   ========================================================================== */
+
+.admin-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    width: 100%;
+    min-width: 0;
+
+    margin-bottom: 1rem;
+}
+
+.admin-card__title-group {
+    display: flex;
+    align-items: center;
+
+    min-width: 0;
+
+    gap: 0.5rem;
+}
+
+.admin-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 1.75rem;
+    height: 1.75rem;
+
+    flex: 0 0 1.75rem;
+
+    border-radius: var(--admin-card-radius-sm);
+
+    background: var(--admin-primary-soft);
+    color: var(--admin-primary);
+}
+
+.admin-card__icon svg {
+    width: 0.95rem;
+    height: 0.95rem;
+
+    flex: none;
+}
+
+.admin-card__title {
+    margin: 0;
+
+    color: var(--admin-text);
+
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+
+/* ==========================================================================
+   KPI Metrics — Row 1
+   ========================================================================== */
+
+.admin-kpi-section {
+    width: 100%;
+    min-width: 0;
+
+    container-type: inline-size;
+}
+
+
+/* --------------------------------------------------------------------------
+   KPI Grid
+
+   Desktop:      6
+   Medium:       3
+   Narrow:       2
+   Very narrow:  1
+
+   This keeps an equal number of cards in every row.
+   -------------------------------------------------------------------------- */
+
+.admin-kpi-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(6, minmax(0, 1fr));
+
+    align-items: stretch;
+
+    gap: var(--admin-card-gap);
+
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* --------------------------------------------------------------------------
+   KPI Card
+   -------------------------------------------------------------------------- */
+
+.admin-kpi-card {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    min-height: 7.5rem;
+
+    box-sizing: border-box;
+
+    padding: 0.85rem;
+
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-card-radius);
+
+    background: var(--admin-surface);
+
+    box-shadow: var(--admin-card-shadow);
+
+    overflow: hidden;
+
+    transition:
+        transform var(--admin-transition-fast),
+        box-shadow var(--admin-transition-fast),
+        border-color var(--admin-transition-fast);
+}
+
+.admin-kpi-card:hover {
+    border-color: var(--admin-border-strong);
+
+    box-shadow: var(--admin-card-shadow-hover);
+
+    transform: translateY(-2px);
+}
+
+
+/* --------------------------------------------------------------------------
+   KPI Icon
+   -------------------------------------------------------------------------- */
+
+.admin-kpi-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 2rem;
+    height: 2rem;
+
+    flex: 0 0 2rem;
+
+    margin-bottom: 0.65rem;
+
+    border-radius: var(--admin-card-radius-sm);
+
+    background: var(--admin-primary-soft);
+    color: var(--admin-primary);
+
+    transition:
+        transform var(--admin-transition-fast),
+        background-color var(--admin-transition-fast);
+}
+
+.admin-kpi-card:hover .admin-kpi-card__icon {
+    background:
+        color-mix(in oklch,
+            var(--admin-primary-soft) 88%,
+            var(--admin-primary));
+
+    transform: scale(1.06);
+}
+
+.admin-kpi-card__icon svg {
+    width: 1rem;
+    height: 1rem;
+
+    flex: none;
+}
+
+
+/* --------------------------------------------------------------------------
+   KPI Content
+   -------------------------------------------------------------------------- */
+
+.admin-kpi-card__content {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+}
+
+
+/* --------------------------------------------------------------------------
+   KPI Label
+   -------------------------------------------------------------------------- */
+
+.admin-kpi-card__label {
+    margin: 0;
+
+    color: var(--admin-text-muted);
+
+    font-size: 0.625rem;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+
+/* --------------------------------------------------------------------------
+   KPI Value
+   -------------------------------------------------------------------------- */
+
+.admin-kpi-card__value {
+    display: flex;
+    align-items: baseline;
+
+    min-width: 0;
+
+    margin: 0.25rem 0 0;
+
+    color: var(--admin-text);
+
+    font-size: 1.15rem;
+    font-weight: 650;
+    line-height: 1.2;
+
+    overflow: hidden;
+}
+
+.admin-kpi-card__value span {
+    flex: none;
+
+    margin-left: 0.2rem;
+
+    color: var(--admin-text-muted);
+
+    font-size: 0.65rem;
+    font-weight: 500;
+}
+
+
+/* --------------------------------------------------------------------------
+   KPI Subtext
+   -------------------------------------------------------------------------- */
+
+.admin-kpi-card__subtext {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 0.25rem;
+
+    margin-top: 0.55rem;
+
+    color: var(--admin-text-muted);
+
+    font-size: 0.56rem;
+    font-weight: 450;
+    line-height: 1.3;
+}
+
+
+/* --------------------------------------------------------------------------
+   KPI Trend
+   -------------------------------------------------------------------------- */
+
+.admin-kpi-card__trend {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 0.15rem;
+
+    font-weight: 650;
+}
+
+.admin-kpi-card__trend svg {
+    width: 0.65rem;
+    height: 0.65rem;
+
+    flex: none;
+}
+
+.admin-kpi-card__trend--positive {
+    color: var(--admin-success);
+}
+
+
+/* --------------------------------------------------------------------------
+   KPI — Medium Width
+   -------------------------------------------------------------------------- */
+
+@container (max-width: 900px) {
+
+    .admin-kpi-grid {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
+    .admin-kpi-card {
+        min-height: 7rem;
+
+        padding: 0.75rem;
+    }
+
+    .admin-kpi-card__icon {
+        width: 1.85rem;
+        height: 1.85rem;
+
+        flex-basis: 1.85rem;
+
+        margin-bottom: 0.55rem;
+    }
+
+    .admin-kpi-card__value {
+        font-size: 1.05rem;
+    }
+}
+
+
+/* --------------------------------------------------------------------------
+   KPI — Narrow Width
+   -------------------------------------------------------------------------- */
+
+@container (max-width: 560px) {
+
+    .admin-kpi-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 0.6rem;
+    }
+
+    .admin-kpi-card {
+        min-height: 6.75rem;
+
+        padding: 0.7rem;
+    }
+
+    .admin-kpi-card__icon {
+        width: 1.75rem;
+        height: 1.75rem;
+
+        flex-basis: 1.75rem;
+
+        margin-bottom: 0.5rem;
+    }
+
+    .admin-kpi-card__label {
+        font-size: 0.6rem;
+    }
+
+    .admin-kpi-card__value {
+        font-size: 1rem;
+    }
+
+    .admin-kpi-card__value span {
+        font-size: 0.6rem;
+    }
+}
+
+
+/* --------------------------------------------------------------------------
+   KPI — Very Narrow Width
+   -------------------------------------------------------------------------- */
+
+@container (max-width: 320px) {
+
+    .admin-kpi-grid {
+        grid-template-columns:
+            minmax(0, 1fr);
+    }
+}
+
+
+/* ==========================================================================
+   Row 2
+   ========================================================================== */
+
+.admin-row-2-grid {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.8fr);
+
+    align-items: stretch;
+
+    gap: var(--admin-card-gap);
+
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* ==========================================================================
+   Patient Demographics
+   ========================================================================== */
+
+.admin-demographics-card {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+
+    padding: 1rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Demographics Chart
+   -------------------------------------------------------------------------- */
+
+.admin-demographics-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+
+    width: 100%;
+    height: 10rem;
+
+    min-width: 0;
+
+    margin-top: auto;
+    margin-bottom: auto;
+
+    padding: 0 0.5rem;
+
+    box-sizing: border-box;
+}
+
+.admin-demographics-chart__group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+
+    width: 2rem;
+    height: 100%;
+
+    min-width: 0;
+}
+
+.admin-demographics-chart__value {
+    margin-bottom: 0.35rem;
+
+    color: var(--admin-text);
+
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.admin-demographics-chart__bar {
+    width: 100%;
+
+    min-height: 0.25rem;
+
+    margin-bottom: 0.4rem;
+
+    border-radius:
+        var(--admin-card-radius-sm) var(--admin-card-radius-sm) 0 0;
+
+    background: var(--admin-primary);
+
+    transition:
+        height var(--admin-transition),
+        opacity var(--admin-transition-fast);
+}
+
+.admin-demographics-chart__group:hover .admin-demographics-chart__bar {
+    opacity: 0.8;
+}
+
+.admin-demographics-chart__label {
+    color: var(--admin-text-muted);
+
+    font-size: 0.625rem;
+    line-height: 1;
+
+    white-space: nowrap;
+}
+
+
+/* ==========================================================================
+   Row 2 Responsive Layout
+   ========================================================================== */
+
+@container (max-width: 1200px) {
+
+    .admin-row-2-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+}
+
+@container (max-width: 700px) {
+
+    .admin-row-2-grid {
+        grid-template-columns:
+            minmax(0, 1fr);
+    }
+}
+
+
+/* --------------------------------------------------------------------------
+   Demographics Responsive
+   -------------------------------------------------------------------------- */
+
+@container (max-width: 400px) {
+
+    .admin-demographics-card {
+        padding: 0.9rem;
+    }
+
+    .admin-demographics-chart {
+        padding: 0 0.25rem;
+    }
+
+    .admin-demographics-chart__group {
+        width: 1.75rem;
+    }
+}
+
+
+/* ==========================================================================
+   Department-wise Appointments
+   ========================================================================== */
+
+.admin-department-card {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+
+    padding: 1rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Department Content
+   -------------------------------------------------------------------------- */
+
+.admin-department-content {
+    display: flex;
+    align-items: center;
+
+    flex: 1 1 auto;
+
+    gap: 1.5rem;
+
+    width: 100%;
+    min-width: 0;
+
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+
+/* --------------------------------------------------------------------------
+   Donut Chart
+   -------------------------------------------------------------------------- */
+
+.admin-department-chart-wrapper {
+    position: relative;
+
+    width: 7.5rem;
+    height: 7.5rem;
+
+    flex: 0 0 7.5rem;
+}
+
+.admin-department-chart {
+    width: 100%;
+    height: 100%;
+
+    border-radius: 50%;
+
+    background:
+        conic-gradient(var(--admin-primary) 0% 28%,
+            oklch(0.72 0.12 170) 28% 46%,
+            oklch(0.72 0.12 300) 46% 60%,
+            oklch(0.78 0.08 245) 60% 72%,
+            oklch(0.72 0.12 350) 72% 82%,
+            oklch(0.68 0.12 310) 82% 91%,
+            var(--admin-border) 91% 100%);
+}
+
+
+/* --------------------------------------------------------------------------
+   Donut Center
+   -------------------------------------------------------------------------- */
+
+.admin-department-chart__inner {
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    width: 4.7rem;
+    height: 4.7rem;
+
+    transform: translate(-50%, -50%);
+
+    border-radius: 50%;
+
+    background: var(--admin-surface);
+}
+
+.admin-department-chart__total {
+    color: var(--admin-text);
+
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.admin-department-chart__label {
+    margin-top: 0.15rem;
+
+    color: var(--admin-text-muted);
+
+    font-size: 0.625rem;
+    line-height: 1.2;
+}
+
+
+/* --------------------------------------------------------------------------
+   Legend
+   -------------------------------------------------------------------------- */
+
+.admin-department-legend {
+    display: flex;
+    flex-direction: column;
+
+    flex: 1;
+
+    min-width: 0;
+
+    gap: 0.4rem;
+}
+
+.admin-department-legend__item {
+    display: flex;
+    align-items: center;
+
+    min-width: 0;
+
+    color: var(--admin-text-soft);
+
+    font-size: 0.625rem;
+    line-height: 1.2;
+}
+
+.admin-department-legend__item>span:nth-child(2) {
+    min-width: 0;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-department-legend__dot {
+    width: 0.5rem;
+    height: 0.5rem;
+
+    flex: 0 0 0.5rem;
+
+    margin-right: 0.5rem;
+
+    border-radius: 50%;
+}
+
+.admin-department-legend__percentage {
+    margin-left: auto;
+    padding-left: 0.5rem;
+
+    color: var(--admin-text);
+
+    font-weight: 600;
+}
+
+
+/* --------------------------------------------------------------------------
+   Department Colors
+   -------------------------------------------------------------------------- */
+
+.admin-department-legend__dot.general {
+    background: var(--admin-primary);
+}
+
+.admin-department-legend__dot.cardiology {
+    background: oklch(0.72 0.12 170);
+}
+
+.admin-department-legend__dot.dermatology {
+    background: oklch(0.72 0.12 300);
+}
+
+.admin-department-legend__dot.orthopedics {
+    background: oklch(0.78 0.08 245);
+}
+
+.admin-department-legend__dot.pediatrics {
+    background: oklch(0.72 0.12 350);
+}
+
+.admin-department-legend__dot.gynecology {
+    background: oklch(0.68 0.12 310);
+}
+
+.admin-department-legend__dot.others {
+    background: var(--admin-border);
+}
+
+
+/* --------------------------------------------------------------------------
+   Department Responsive
+   -------------------------------------------------------------------------- */
+
+@container (max-width: 700px) {
+
+    .admin-department-content {
+        gap: 1rem;
+    }
+
+    .admin-department-chart-wrapper {
+        width: 6.5rem;
+        height: 6.5rem;
+
+        flex-basis: 6.5rem;
+    }
+
+    .admin-department-chart__inner {
+        width: 4rem;
+        height: 4rem;
+    }
+}
+
+@container (max-width: 500px) {
+
+    .admin-department-content {
+        align-items: flex-start;
+        flex-direction: column;
+
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .admin-department-chart-wrapper {
+        align-self: center;
+    }
+
+    .admin-department-legend {
+        width: 100%;
+    }
+}
+
+
+/* ==========================================================================
+   Today's Appointments
+   ========================================================================== */
+
+.admin-appointments-card {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+
+    padding: 1rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Header
+   -------------------------------------------------------------------------- */
+
+.admin-appointments-card__header {
+    margin-bottom: 1rem;
+}
+
+.admin-appointments-card__view-all {
+    flex: 0 0 auto;
+
+    color: var(--admin-primary);
+
+    font-size: 0.625rem;
+    font-weight: 600;
+
+    text-decoration: none;
+
+    transition:
+        color var(--admin-transition-fast),
+        opacity var(--admin-transition-fast);
+}
+
+.admin-appointments-card__view-all:hover {
+    color: var(--admin-primary-hover);
+    opacity: 0.8;
+}
+
+
+/* --------------------------------------------------------------------------
+   Table Wrapper
+   -------------------------------------------------------------------------- */
+
+.admin-appointments-table-wrapper {
+    width: 100%;
+    min-width: 0;
+
+    overflow-x: auto;
+}
+
+
+/* --------------------------------------------------------------------------
+   Appointments Table
+   -------------------------------------------------------------------------- */
+
+.admin-appointments-table {
+    width: 100%;
+    min-width: 0;
+
+    border-collapse: collapse;
+
+    table-layout: auto;
+
+    text-align: left;
+}
+
+.admin-appointments-table th {
+    padding: 0 0.5rem 0.75rem 0;
+
+    border-bottom: 1px solid var(--admin-border);
+
+    color: var(--admin-text-muted);
+
+    font-size: 0.5625rem;
+    font-weight: 600;
+    line-height: 1.2;
+
+    text-align: left;
+
+    white-space: nowrap;
+}
+
+.admin-appointments-table td {
+    padding: 0.625rem 0.5rem 0.625rem 0;
+
+    border-bottom:
+        1px solid color-mix(in oklch,
+            var(--admin-border) 55%,
+            transparent);
+
+    color: var(--admin-text-soft);
+
+    font-size: 0.625rem;
+    line-height: 1.3;
+
+    text-align: left;
+
+    white-space: nowrap;
+}
+
+.admin-appointments-table th:last-child,
+.admin-appointments-table td:last-child {
+    padding-right: 0;
+
+    text-align: left;
+}
+
+.admin-appointments-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+
+/* --------------------------------------------------------------------------
+   Status Badges
+   -------------------------------------------------------------------------- */
+
+.admin-status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0.25rem 0.6rem;
+
+    border-radius: var(--dashboard-radius-pill);
+
+    font-size: 0.5625rem;
+    font-weight: 650;
+    line-height: 1;
+
+    white-space: nowrap;
+}
+
+.admin-status-badge.completed {
+    background: var(--admin-success-soft);
+    color: var(--admin-success);
+}
+
+.admin-status-badge.consultation {
+    background: var(--admin-info-soft);
+    color: var(--admin-info);
+}
+
+.admin-status-badge.waiting {
+    background: var(--admin-alert-soft);
+    color: var(--admin-alert);
+}
+
+.admin-status-badge.scheduled {
+    background: var(--admin-primary-soft);
+    color: var(--admin-primary);
+}
+
+
+/* --------------------------------------------------------------------------
+   Appointments Responsive
+   -------------------------------------------------------------------------- */
+
+@container (max-width: 700px) {
+
+    .admin-appointments-card {
+        padding: 0.9rem;
+    }
+}
+
+@container (max-width: 500px) {
+
+    .admin-appointments-card__header {
+        align-items: flex-start;
+    }
+
+    .admin-appointments-card__view-all {
+        font-size: 0.6rem;
+    }
+}
+
+
+/* ==========================================================================
+   Row 3 — Live Queue
+   ========================================================================== */
+
+/*
+   IMPORTANT:
+
+   The queue table and queue summary are separate siblings inside:
+
+       .admin-row-3-grid
+
+   Therefore the 2:1 layout belongs HERE, not inside
+   .admin-live-queue-card or .admin-live-queue-body.
+*/
+
+.admin-row-3-grid {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 2fr) minmax(0, 1fr);
+
+    align-items: stretch;
+
+    gap: var(--admin-card-gap);
+
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* ==========================================================================
+   Live Queue Overview
+   ========================================================================== */
+
+.admin-live-queue-card {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+
+    padding: 1rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Header
+   -------------------------------------------------------------------------- */
+
+.admin-live-queue-card__header {
+    margin-bottom: 1rem;
+}
+
+.admin-live-queue-card__view-all {
+    flex: 0 0 auto;
+
+    color: var(--admin-primary);
+
+    font-size: 0.625rem;
+    font-weight: 600;
+
+    text-decoration: none;
+
+    transition:
+        color var(--admin-transition-fast),
+        opacity var(--admin-transition-fast);
+}
+
+.admin-live-queue-card__view-all:hover {
+    color: var(--admin-primary-hover);
+
+    opacity: 0.8;
+}
+
+
+/* --------------------------------------------------------------------------
+   Queue Body
+
+   Table-only container.
+   Do NOT make this a grid.
+   -------------------------------------------------------------------------- */
+
+.admin-live-queue-body {
+    display: block;
+
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* ==========================================================================
+   Queue Table
+   ========================================================================== */
+
+.admin-live-queue-table-wrapper {
+    width: 100%;
+    min-width: 0;
+
+    height: 14rem;
+    max-height: 14rem;
+
+    overflow-x: auto;
+    overflow-y: auto;
+
+    scrollbar-width: thin;
+}
+
+.admin-live-queue-table {
+    width: 100%;
+    min-width: 0;
+
+    border-collapse: collapse;
+
+    table-layout: fixed;
+
+    text-align: left;
+}
+
+
+/* --------------------------------------------------------------------------
+   Queue Table Column Ratios
+   -------------------------------------------------------------------------- */
+
+.admin-live-queue-table th,
+.admin-live-queue-table td {
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+}
+
+.admin-live-queue-table th:nth-child(1),
+.admin-live-queue-table td:nth-child(1) {
+    width: 28%;
+}
+
+.admin-live-queue-table th:nth-child(2),
+.admin-live-queue-table td:nth-child(2) {
+    width: 17%;
+}
+
+.admin-live-queue-table th:nth-child(3),
+.admin-live-queue-table td:nth-child(3) {
+    width: 12%;
+}
+
+.admin-live-queue-table th:nth-child(4),
+.admin-live-queue-table td:nth-child(4) {
+    width: 16%;
+}
+
+.admin-live-queue-table th:nth-child(5),
+.admin-live-queue-table td:nth-child(5) {
+    width: 27%;
+}
+
+
+/* --------------------------------------------------------------------------
+   Queue Table Header
+   -------------------------------------------------------------------------- */
+
+.admin-live-queue-table thead {
+    position: sticky;
+    top: 0;
+
+    z-index: 2;
+
+    background: var(--admin-surface);
+}
+
+.admin-live-queue-table th {
+    padding: 0 0.75rem 0.75rem 0;
+
+    border-bottom: 1px solid var(--admin-border);
+
+    color: var(--admin-text-muted);
+
+    font-size: 0.5625rem;
+    font-weight: 600;
+    line-height: 1.2;
+
+    text-align: left;
+
+    white-space: nowrap;
+}
+
+
+/* --------------------------------------------------------------------------
+   Queue Table Rows
+   -------------------------------------------------------------------------- */
+
+.admin-live-queue-table td {
+    padding: 0.625rem 0.75rem 0.625rem 0;
+
+    border-bottom:
+        1px solid color-mix(in oklch,
+            var(--admin-border) 55%,
+            transparent);
+
+    color: var(--admin-text-soft);
+
+    font-size: 0.625rem;
+    line-height: 1.3;
+
+    text-align: left;
+
+    white-space: nowrap;
+}
+
+.admin-live-queue-table th:last-child,
+.admin-live-queue-table td:last-child {
+    padding-right: 0;
+}
+
+.admin-live-queue-table__right {
+    text-align: left !important;
+}
+
+.admin-live-queue-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+
+/* ==========================================================================
+   Queue Status
+   ========================================================================== */
+
+.admin-queue-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0.25rem 0.6rem;
+
+    border-radius: var(--dashboard-radius-pill);
+
+    font-size: 0.5625rem;
+    font-weight: 650;
+    line-height: 1;
+
+    white-space: nowrap;
+}
+
+.admin-queue-status.active {
+    background: var(--admin-success-soft);
+    color: var(--admin-success);
+}
+
+.admin-queue-status.busy {
+    background: var(--admin-alert-soft);
+    color: var(--admin-alert);
+}
+
+
+/* ==========================================================================
+   Queue Details
+   ========================================================================== */
+
+.admin-live-queue-summary {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    gap: 1rem;
+
+    padding: 1rem;
+
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-card-radius);
+
+    background: var(--admin-surface);
+
+    box-shadow: var(--admin-card-shadow);
+
+    overflow: hidden;
+
+    transition:
+        transform var(--admin-transition-fast),
+        box-shadow var(--admin-transition-fast),
+        border-color var(--admin-transition-fast);
+}
+
+.admin-live-queue-summary:hover {
+    border-color: var(--admin-border-strong);
+
+    box-shadow: var(--admin-card-shadow-hover);
+
+    transform: translateY(-2px);
+}
+
+
+/* --------------------------------------------------------------------------
+   Summary Cards
+   -------------------------------------------------------------------------- */
+
+.admin-live-queue-summary-card {
+    display: flex;
+    align-items: flex-start;
+
+    flex: 1 1 0;
+
+    gap: 1rem;
+
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 1rem;
+
+    border-radius: var(--admin-card-radius-md);
+}
+
+.admin-live-queue-summary-card--blue {
+    background:
+        color-mix(in oklch,
+            var(--admin-primary-soft) 65%,
+            var(--admin-surface));
+}
+
+.admin-live-queue-summary-card--green {
+    background:
+        color-mix(in oklch,
+            var(--admin-success-soft) 65%,
+            var(--admin-surface));
+}
+
+
+/* --------------------------------------------------------------------------
+   Summary Icons
+   -------------------------------------------------------------------------- */
+
+.admin-live-queue-summary-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 2.25rem;
+    height: 2.25rem;
+
+    flex: 0 0 2.25rem;
+
+    border-radius: 50%;
+
+    background: var(--admin-surface);
+}
+
+.admin-live-queue-summary-card--blue .admin-live-queue-summary-card__icon {
+    color: var(--admin-primary);
+}
+
+.admin-live-queue-summary-card--green .admin-live-queue-summary-card__icon {
+    color: var(--admin-success);
+}
+
+.admin-live-queue-summary-card__icon svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Summary Information
+   -------------------------------------------------------------------------- */
+
+.admin-live-queue-summary-card__info {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+}
+
+.admin-live-queue-summary-card__title {
+    margin-bottom: 0.25rem;
+
+    color: var(--admin-text-soft);
+
+    font-size: 0.625rem;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.admin-live-queue-summary-card__value {
+    margin-bottom: 0.15rem;
+
+    color: var(--admin-text);
+
+    font-size: 1.375rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.admin-live-queue-summary-card__sub {
+    color: var(--admin-text-muted);
+
+    font-size: 0.625rem;
+    line-height: 1.3;
+}
+
+
+/* ==========================================================================
+   Row 3 Responsive
+   ========================================================================== */
+
+@container (max-width: 700px) {
+
+    .admin-row-3-grid {
+        grid-template-columns:
+            minmax(0, 1fr);
+    }
+
+    .admin-live-queue-card {
+        height: auto;
+    }
+
+    .admin-live-queue-summary {
+        height: auto;
+    }
+}
+
+@container (max-width: 500px) {
+
+    .admin-live-queue-card {
+        padding: 0.9rem;
+    }
+
+    .admin-live-queue-summary {
+        gap: 0.75rem;
+    }
+
+    .admin-live-queue-summary-card {
+        padding: 0.85rem;
+    }
+}
+
+/* ==========================================================================
+   Row 4
+   Recent Registrations + Upcoming Doctor Schedule
+   ========================================================================== */
+
+.admin-row-4 {
+    width: 100%;
+    min-width: 0;
+}
+
+.admin-row-4-grid {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr) minmax(0, 1fr);
+
+    align-items: stretch;
+
+    gap: var(--admin-card-gap);
+
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* ==========================================================================
+   Recent Registrations Card
+   ========================================================================== */
+
+.admin-registrations-card,
+.admin-schedule-card {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 1rem;
+
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-card-radius);
+
+    background: var(--admin-surface);
+
+    box-shadow: var(--admin-card-shadow);
+
+    overflow: hidden;
+
+    transition:
+        transform var(--admin-transition-fast),
+        box-shadow var(--admin-transition-fast),
+        border-color var(--admin-transition-fast);
+}
+
+.admin-registrations-card:hover,
+.admin-schedule-card:hover {
+    border-color: var(--admin-border-strong);
+
+    box-shadow: var(--admin-card-shadow-hover);
+
+    transform: translateY(-2px);
+}
+
+
+/* --------------------------------------------------------------------------
+   Registrations Header
+   -------------------------------------------------------------------------- */
+
+.admin-registrations-card__header {
+    flex: 0 0 auto;
+
+    margin-bottom: 0.25rem;
+}
+
+.admin-registrations-card__view-all {
+    flex: 0 0 auto;
+
+    color: var(--admin-primary);
+
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1.2;
+
+    text-decoration: none;
+
+    transition:
+        color var(--admin-transition-fast),
+        opacity var(--admin-transition-fast);
+}
+
+.admin-registrations-card__view-all:hover {
+    color: var(--admin-primary-hover);
+    opacity: 0.8;
+}
+
+
+/* --------------------------------------------------------------------------
+   Registrations Table Wrapper
+   -------------------------------------------------------------------------- */
+
+.admin-registrations-table-wrapper {
+    flex: 1 1 auto;
+
+    width: 100%;
+    min-width: 0;
+    height: 14rem;
+    max-height: 14rem;
+
+    box-sizing: border-box;
+
+    padding: 0 1rem 1rem;
+
+    overflow-x: auto;
+    overflow-y: auto;
+
+    scrollbar-width: thin;
+}
+
+
+/* --------------------------------------------------------------------------
+   Registrations Table
+   -------------------------------------------------------------------------- */
+
+.admin-registrations-table {
+    width: 100%;
+    min-width: 42rem;
+
+    border-collapse: collapse;
+
+    table-layout: auto;
+
+    text-align: left;
+}
+
+.admin-registrations-table th {
+    padding: 0 0.5rem 0.75rem 0;
+
+    border-bottom: 1px solid var(--admin-border);
+
+    color: var(--admin-text-muted);
+
+    font-size: 0.5625rem;
+    font-weight: 600;
+    line-height: 1.2;
+
+    text-align: left;
+
+    white-space: nowrap;
+}
+
+.admin-registrations-table td {
+    padding: 0.625rem 0.5rem 0.625rem 0;
+
+    border-bottom:
+        1px solid color-mix(in oklch,
+            var(--admin-border) 55%,
+            transparent);
+
+    color: var(--admin-text-soft);
+
+    font-size: 0.625rem;
+    line-height: 1.3;
+
+    text-align: left;
+
+    white-space: nowrap;
+}
+
+.admin-registrations-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.admin-registrations-table th:last-child,
+.admin-registrations-table td:last-child {
+    padding-right: 0;
+
+    text-align: left;
+}
+
+
+/* --------------------------------------------------------------------------
+   Registration User
+   -------------------------------------------------------------------------- */
+
+.admin-registration-user {
+    display: flex;
+    align-items: center;
+
+    gap: 0.5rem;
+
+    min-width: 0;
+
+    color: var(--admin-text);
+
+    font-weight: 600;
+}
+
+.admin-registration-avatar {
+    display: block;
+
+    width: 1.5rem;
+    height: 1.5rem;
+
+    flex: 0 0 1.5rem;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+}
+
+
+/* ==========================================================================
+   Upcoming Doctor Schedule Card
+   ========================================================================== */
+
+/* card shell styling is shared above with .admin-registrations-card */
+
+
+/* --------------------------------------------------------------------------
+   Schedule Header
+   -------------------------------------------------------------------------- */
+
+.admin-schedule-card__header {
+    flex: 0 0 auto;
+
+    margin-bottom: 0.25rem;
+}
+
+.admin-schedule-card__view-all {
+    flex: 0 0 auto;
+
+    color: var(--admin-primary);
+
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1.2;
+
+    text-decoration: none;
+
+    transition:
+        color var(--admin-transition-fast),
+        opacity var(--admin-transition-fast);
+}
+
+.admin-schedule-card__view-all:hover {
+    color: var(--admin-primary-hover);
+    opacity: 0.8;
+}
+
+
+/* --------------------------------------------------------------------------
+   Schedule Table Wrapper
+   -------------------------------------------------------------------------- */
+
+.admin-schedule-table-wrapper {
+    flex: 1 1 auto;
+
+    width: 100%;
+    min-width: 0;
+    height: 14rem;
+    max-height: 14rem;
+
+    box-sizing: border-box;
+
+    padding: 0 1rem 1rem;
+
+    overflow-x: auto;
+    overflow-y: auto;
+
+    scrollbar-width: thin;
+}
+
+
+/* --------------------------------------------------------------------------
+   Schedule Table
+   -------------------------------------------------------------------------- */
+
+.admin-schedule-table {
+    width: 100%;
+    min-width: 34rem;
+
+    border-collapse: collapse;
+
+    table-layout: auto;
+
+    text-align: left;
+}
+
+.admin-schedule-table th {
+    padding: 0 0.5rem 0.75rem 0;
+
+    border-bottom: 1px solid var(--admin-border);
+
+    color: var(--admin-text-muted);
+
+    font-size: 0.5625rem;
+    font-weight: 600;
+    line-height: 1.2;
+
+    text-align: left;
+
+    white-space: nowrap;
+}
+
+.admin-schedule-table td {
+    padding: 0.625rem 0.5rem 0.625rem 0;
+
+    border-bottom:
+        1px solid color-mix(in oklch,
+            var(--admin-border) 55%,
+            transparent);
+
+    color: var(--admin-text-soft);
+
+    font-size: 0.625rem;
+    line-height: 1.3;
+
+    text-align: left;
+
+    white-space: nowrap;
+}
+
+.admin-schedule-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.admin-schedule-table th:last-child,
+.admin-schedule-table td:last-child {
+    padding-right: 0;
+
+    text-align: left;
+}
+
+
+/* --------------------------------------------------------------------------
+   Doctor User
+   -------------------------------------------------------------------------- */
+
+.admin-schedule-user {
+    display: flex;
+    align-items: center;
+
+    gap: 0.5rem;
+
+    min-width: 0;
+
+    color: var(--admin-text);
+
+    font-weight: 600;
+}
+
+.admin-schedule-avatar {
+    display: block;
+
+    width: 1.5rem;
+    height: 1.5rem;
+
+    flex: 0 0 1.5rem;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+}
+
+
+/* --------------------------------------------------------------------------
+   Schedule Status
+   -------------------------------------------------------------------------- */
+
+.admin-schedule-status {
+    display: inline-flex;
+    align-items: center;
+
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1.3;
+
+    white-space: nowrap;
+}
+
+.admin-schedule-status.is-on-duty {
+    color: var(--admin-success);
+}
+
+.admin-schedule-status.is-on-leave {
+    color: var(--admin-danger);
+}
+
+
+/* ==========================================================================
+   Row 4 Responsive
+   ========================================================================== */
+
+@container (max-width: 900px) {
+
+    .admin-row-4-grid {
+        grid-template-columns:
+            minmax(0, 1fr);
+    }
+
+    .admin-schedule-table {
+        min-width: 34rem;
+    }
+}
+
+
+@container (max-width: 700px) {
+
+    .admin-registrations-card,
+    .admin-schedule-card {
+        height: auto;
+    }
+
+    .admin-registrations-table-wrapper,
+    .admin-schedule-table-wrapper {
+        padding:
+            0 0.85rem 0.85rem;
+    }
+}
+
+
+@container (max-width: 500px) {
+
+    .admin-registrations-card__header,
+    .admin-schedule-card__header {
+        align-items: flex-start;
+    }
+
+    .admin-registrations-table-wrapper,
+    .admin-schedule-table-wrapper {
+        padding:
+            0 0.75rem 0.75rem;
+    }
+
+    .admin-registrations-table {
+        min-width: 38rem;
+    }
+
+    .admin-schedule-table {
+        min-width: 32rem;
+    }
+}
+
+css
+/* ==========================================================================
+   Medicare — Add Doctor
+   Admin doctor creation / profile form
+   ========================================================================== */
+
+
+/* ==========================================================================
+   Add Doctor Card
+   ========================================================================== */
+
+.add-doctor-form-panel {
+
+    width: 100%;
+
+    min-width: 0;
+
+    container-type: inline-size;
+}
+
+
+/* ==========================================================================
+   Add Doctor Header
+   ========================================================================== */
+
+.add-doctor-form__header {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 1rem;
+
+    width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 0 1rem 1rem;
+
+    border-bottom: 1px solid var(--patient-border);
+}
+
+.add-doctor-form__heading {
+
+    min-width: 0;
+}
+
+.add-doctor-form__heading h2 {
+
+    margin: 0;
+
+    color: var(--patient-text);
+
+    font-size: 1rem;
+
+    font-weight: 650;
+
+    line-height: 1.3;
+}
+
+.add-doctor-form__heading p {
+
+    max-width: 42rem;
+
+    margin: 0.3rem 0 0;
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.68rem;
+
+    line-height: 1.5;
+}
+
+
+/* ==========================================================================
+   Form Body
+   ========================================================================== */
+
+.add-doctor-form__body {
+
+    width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 1rem;
+}
+
+
+/* ==========================================================================
+   Form
+   ========================================================================== */
+
+.add-doctor-form {
+
+    display: flex;
+
+    flex-direction: column;
+
+    width: 100%;
+
+    min-width: 0;
+
+    gap: 0.85rem;
+}
+
+
+/* ==========================================================================
+   Form Sections
+   ========================================================================== */
+
+.add-doctor-form__section {
+
+    position: relative;
+
+    display: flex;
+
+    flex-direction: column;
+
+    width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 1rem;
+
+    border: 1px solid var(--patient-border);
+
+    border-radius: var(--patient-card-radius-md);
+
+    background: var(--patient-surface);
+
+    transition:
+        border-color var(--patient-transition-fast),
+        background var(--patient-transition-fast),
+        box-shadow var(--patient-transition-fast);
+}
+
+.add-doctor-form__section:hover {
+
+    border-color: var(--patient-border-strong);
+}
+
+.add-doctor-form__section:focus-within {
+
+    border-color: var(--patient-primary);
+
+    box-shadow:
+        0 0 0 3px color-mix(in oklch,
+            var(--patient-primary) 7%,
+            transparent);
+}
+
+
+/* ==========================================================================
+   Section Header
+   ========================================================================== */
+
+.add-doctor-form__section-header {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    width: 100%;
+
+    min-width: 0;
+
+    margin-bottom: 0.9rem;
+
+    padding-bottom: 0.7rem;
+
+    border-bottom: 1px solid var(--patient-border);
+}
+
+.add-doctor-form__section-header>div {
+
+    min-width: 0;
+}
+
+.add-doctor-form__section-header h3 {
+
+    margin: 0;
+
+    color: var(--patient-text);
+
+    font-size: 0.78rem;
+
+    font-weight: 650;
+
+    line-height: 1.3;
+}
+
+.add-doctor-form__section-header p {
+
+    max-width: 38rem;
+
+    margin: 0.2rem 0 0;
+
+    color: var(--patient-text-muted);
+
+    font-size: 0.58rem;
+
+    line-height: 1.45;
+}
+
+
+/* ==========================================================================
+   Field Layout
+   ========================================================================== */
+
+.add-doctor-form__fields {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr);
+
+    width: 100%;
+
+    min-width: 0;
+
+    gap: 0.8rem 0.85rem;
+}
+
+.add-doctor-form__fields--two {
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+}
+
+
+/* --------------------------------------------------------------------------
+   Full-width Field
+   -------------------------------------------------------------------------- */
+
+.add-doctor-form__field--full {
+
+    grid-column: 1 / -1;
+}
+
+
+/* ==========================================================================
+   Individual Field
+   ========================================================================== */
+
+.add-doctor-form__field {
+
+    display: flex;
+
+    flex-direction: column;
+
+    min-width: 0;
+
+    gap: 0.35rem;
+}
+
+
+/* ==========================================================================
+   Labels
+   ========================================================================== */
+
+.add-doctor-form__field label {
+
+    display: flex;
+
+    align-items: center;
+
+    min-width: 0;
+
+    color: var(--patient-text);
+
+    font-size: 0.61rem;
+
+    font-weight: 600;
+
+    line-height: 1.3;
+}
+
+
+/* ==========================================================================
+   Inputs
+   ========================================================================== */
+
+.add-doctor-form__field input,
+.add-doctor-form__field select,
+.add-doctor-form__field textarea {
+
+    display: block;
+
+    width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    border: 1px solid var(--patient-border);
+
+    border-radius: var(--patient-card-radius-sm);
+
+    background: var(--patient-surface-muted);
+
+    color: var(--patient-text);
+
+    font-family: inherit;
+
+    font-size: 0.68rem;
+
+    line-height: 1.4;
+
+    outline: none;
+
+    transition:
+        border-color var(--patient-transition-fast),
+        background var(--patient-transition-fast),
+        box-shadow var(--patient-transition-fast);
+}
+
+
+/* --------------------------------------------------------------------------
+   Input / Select
+   -------------------------------------------------------------------------- */
+
+.add-doctor-form__field input,
+.add-doctor-form__field select {
+
+    min-height: 2.35rem;
+
+    padding: 0.55rem 0.7rem;
+}
+
+.add-doctor-form__field select {
+
+    cursor: pointer;
+}
+
+
+/* --------------------------------------------------------------------------
+   Textarea
+   -------------------------------------------------------------------------- */
+
+.add-doctor-form__field textarea {
+
+    min-height: 5.5rem;
+
+    padding: 0.65rem 0.7rem;
+
+    resize: vertical;
+}
+
+
+/* ==========================================================================
+   Placeholder
+   ========================================================================== */
+
+.add-doctor-form__field input::placeholder,
+.add-doctor-form__field textarea::placeholder {
+
+    color: var(--patient-text-muted);
+
+    opacity: 0.65;
+}
+
+
+/* ==========================================================================
+   Input Hover
+   ========================================================================== */
+
+.add-doctor-form__field input:hover,
+.add-doctor-form__field select:hover,
+.add-doctor-form__field textarea:hover {
+
+    border-color: var(--patient-border-strong);
+}
+
+
+/* ==========================================================================
+   Focus State
+   ========================================================================== */
+
+.add-doctor-form__field input:focus,
+.add-doctor-form__field select:focus,
+.add-doctor-form__field textarea:focus {
+
+    border-color: var(--patient-primary);
+
+    background: var(--patient-surface);
+
+    box-shadow:
+        0 0 0 3px color-mix(in oklch,
+            var(--patient-primary) 12%,
+            transparent);
+}
+
+
+/* ==========================================================================
+   Disabled State
+   ========================================================================== */
+
+.add-doctor-form__field input:disabled,
+.add-doctor-form__field select:disabled,
+.add-doctor-form__field textarea:disabled {
+
+    cursor: not-allowed;
+
+    opacity: 0.6;
+}
+
+
+/* ==========================================================================
+   Invalid State
+   ========================================================================== */
+
+.add-doctor-form__field input:invalid:not(:placeholder-shown),
+.add-doctor-form__field textarea:invalid:not(:placeholder-shown),
+.add-doctor-form__field select:invalid {
+
+    border-color: var(--patient-danger);
+}
+
+.add-doctor-form__field input:invalid:not(:placeholder-shown):focus,
+.add-doctor-form__field textarea:invalid:not(:placeholder-shown):focus,
+.add-doctor-form__field select:invalid:focus {
+
+    box-shadow:
+        0 0 0 3px color-mix(in oklch,
+            var(--patient-danger) 12%,
+            transparent);
+}
+
+
+/* ==========================================================================
+   Date Input
+   ========================================================================== */
+
+.add-doctor-form__field input[type="date"] {
+
+    color-scheme: light dark;
+}
+
+
+/* ==========================================================================
+   File Input
+   ========================================================================== */
+
+.add-doctor-form__field input[type="file"] {
+
+    min-height: 2.35rem;
+
+    padding: 0.4rem 0.55rem;
+
+    cursor: pointer;
+}
+
+.add-doctor-form__field input[type="file"]::file-selector-button {
+
+    margin-right: 0.55rem;
+
+    padding: 0.35rem 0.6rem;
+
+    border: 0;
+
+    border-radius: var(--patient-card-radius-sm);
+
+    background: var(--patient-primary-soft);
+
+    color: var(--patient-primary);
+
+    font-family: inherit;
+
+    font-size: 0.6rem;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background var(--patient-transition-fast),
+        color var(--patient-transition-fast);
+}
+
+.add-doctor-form__field input[type="file"]::file-selector-button:hover {
+
+    background: var(--patient-primary);
+
+    color: var(--patient-primary-foreground);
+}
+
+
+/* ==========================================================================
+   Actions
+   ========================================================================== */
+
+.add-doctor-form__actions {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: flex-end;
+
+    width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding-top: 0.15rem;
+}
+
+
+/* ==========================================================================
+   Submit Button
+   ========================================================================== */
+
+.add-doctor-form__submit {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    min-height: 2.35rem;
+
+    padding: 0.55rem 1.1rem;
+
+    border: 0;
+
+    border-radius: var(--patient-card-radius-sm);
+
+    background: var(--patient-primary);
+
+    color: var(--patient-primary-foreground);
+
+    font-family: inherit;
+
+    font-size: 0.65rem;
+
+    font-weight: 600;
+
+    white-space: nowrap;
+
+    cursor: pointer;
+
+    transition:
+        background var(--patient-transition-fast),
+        transform var(--patient-transition-fast),
+        box-shadow var(--patient-transition-fast);
+}
+
+.add-doctor-form__submit:hover {
+
+    background: var(--patient-primary-hover);
+
+    transform: translateY(-1px);
+
+    box-shadow: var(--patient-card-shadow);
+}
+
+.add-doctor-form__submit:active {
+
+    transform: translateY(0);
+}
+
+.add-doctor-form__submit:focus-visible {
+
+    outline: none;
+
+    box-shadow:
+        0 0 0 3px color-mix(in oklch,
+            var(--patient-primary) 18%,
+            transparent);
+}
+
+
+/* ==========================================================================
+   Responsive Form Layout
+   ========================================================================== */
+
+@container (max-width: 620px) {
+
+    .add-doctor-form__body {
+
+        padding: 0.85rem;
+    }
+
+    .add-doctor-form__section {
+
+        padding: 0.85rem;
+    }
+
+    .add-doctor-form__fields--two {
+
+        grid-template-columns:
+            minmax(0, 1fr);
+    }
+
+    .add-doctor-form__field--full {
+
+        grid-column: auto;
+    }
+}
+
+
+@container (max-width: 460px) {
+
+    .add-doctor-form__body {
+
+        padding: 0.7rem;
+    }
+
+    .add-doctor-form__section {
+
+        padding: 0.75rem;
+    }
+
+    .add-doctor-form__section-header {
+
+        margin-bottom: 0.75rem;
+
+        padding-bottom: 0.6rem;
+    }
+
+    .add-doctor-form__section-header h3 {
+
+        font-size: 0.74rem;
+    }
+
+    .add-doctor-form__section-header p {
+
+        font-size: 0.56rem;
+    }
+
+    .add-doctor-form__field input,
+    .add-doctor-form__field select {
+
+        min-height: 2.2rem;
+
+        padding: 0.5rem 0.6rem;
+    }
+
+    .add-doctor-form__field textarea {
+
+        min-height: 5rem;
+
+        padding: 0.6rem;
+    }
+
+    .add-doctor-form__actions {
+
+        justify-content: stretch;
+    }
+
+    .add-doctor-form__submit {
+
+        width: 100%;
+    }
+}
+
+
+@container (max-width: 360px) {
+
+    .add-doctor-form__body {
+
+        padding: 0.6rem;
+    }
+
+    .add-doctor-form__section {
+
+        padding: 0.7rem;
+    }
+
+    .add-doctor-form__heading h2 {
+
+        font-size: 0.9rem;
+    }
+
+    .add-doctor-form__heading p {
+
+        font-size: 0.59rem;
+    }
+
+    .add-doctor-form__field label {
+
+        font-size: 0.59rem;
+    }
+
+    .add-doctor-form__field input,
+    .add-doctor-form__field select,
+    .add-doctor-form__field textarea {
+
+        font-size: 0.65rem;
+    }
+}

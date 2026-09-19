@@ -11,6 +11,8 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from django.db import connection
+from django.contrib import messages
 
 from dotenv import load_dotenv
 
@@ -146,7 +148,7 @@ def login_patient(request):
 
         if user.access_level == "Admin":
 
-            redirect_url = "/admin-dashboard/"
+            redirect_url = "/admin/"
 
         elif user.access_level == "Doctor":
 
@@ -794,35 +796,113 @@ def patient_dashboard(request):
     # Latest health metrics
     # =========================================================================
 
+    def _metric_status(value, low=None, high=None, *, low_label="Low", high_label="High", normal_label="Normal", fallback_label="Last recorded"):
+        if value is None:
+            return {
+                "text": fallback_label,
+                "tone": "neutral",
+            }
+
+        if low is not None and value < low:
+            return {
+                "text": low_label,
+                "tone": "low",
+            }
+
+        if high is not None and value > high:
+            return {
+                "text": high_label,
+                "tone": "high",
+            }
+
+        return {
+            "text": normal_label,
+            "tone": "normal",
+        }
+
+    def _bmi_status(value, *, fallback_label="Last recorded"):
+        if value is None:
+            return {
+                "text": fallback_label,
+                "tone": "neutral",
+            }
+
+        if value < 18.5:
+            return {
+                "text": "Underweight",
+                "tone": "low",
+            }
+
+        if value < 25:
+            return {
+                "text": "Healthy",
+                "tone": "normal",
+            }
+
+        if value < 30:
+            return {
+                "text": "Overweight",
+                "tone": "high",
+            }
+
+        return {
+            "text": "Obese",
+            "tone": "high",
+        }
+
     health_metrics = {
         "height": {
             "value": None,
             "unit": "cm",
+            "status": {
+                "text": "Last recorded",
+                "tone": "neutral",
+            },
         },
 
         "weight": {
             "value": None,
             "unit": "kg",
+            "status": {
+                "text": "Last recorded",
+                "tone": "neutral",
+            },
         },
 
         "bmi": {
             "value": None,
             "unit": "kg/m²",
+            "status": {
+                "text": "Last recorded",
+                "tone": "neutral",
+            },
         },
 
         "blood_sugar": {
             "value": None,
             "unit": "mg/dL",
+            "status": {
+                "text": "Last recorded",
+                "tone": "neutral",
+            },
         },
 
         "spo2": {
             "value": None,
             "unit": "%",
+            "status": {
+                "text": "Last recorded",
+                "tone": "neutral",
+            },
         },
 
         "heart_rate": {
             "value": None,
             "unit": "bpm",
+            "status": {
+                "text": "Last recorded",
+                "tone": "neutral",
+            },
         },
     }
 
@@ -866,6 +946,37 @@ def patient_dashboard(request):
         health_metrics["spo2"]["value"] = spo2
         health_metrics["heart_rate"]["value"] = heart_rate_bpm
 
+        health_metrics["height"]["status"] = {
+            "text": "Last recorded",
+            "tone": "neutral",
+        }
+        health_metrics["weight"]["status"] = {
+            "text": "Last recorded",
+            "tone": "neutral",
+        }
+        health_metrics["blood_sugar"]["status"] = _metric_status(
+            blood_sugar,
+            low=70,
+            high=140,
+            low_label="Low",
+            high_label="High",
+            normal_label="Normal"
+        )
+        health_metrics["spo2"]["status"] = _metric_status(
+            spo2,
+            low=95,
+            low_label="Low",
+            normal_label="Normal"
+        )
+        health_metrics["heart_rate"]["status"] = _metric_status(
+            heart_rate_bpm,
+            low=60,
+            high=100,
+            low_label="Low",
+            high_label="High",
+            normal_label="Stable"
+        )
+
         # ---------------------------------------------------------------------
         # BMI
         # ---------------------------------------------------------------------
@@ -882,6 +993,15 @@ def patient_dashboard(request):
                     bmi,
                     1
                 )
+                health_metrics["bmi"]["status"] = _bmi_status(
+                    bmi
+                )
+
+        else:
+            health_metrics["bmi"]["status"] = {
+                "text": "Last recorded",
+                "tone": "neutral",
+            }
 
         # ---------------------------------------------------------------------
         # Blood pressure
@@ -1337,7 +1457,7 @@ def patient_dashboard(request):
 
     return render(
         request,
-        "patient/dashboard.html",
+        "patients/dashboard.html",
         {
             "page_title": "Patient Dashboard",
             "breadcrumb": "Patient / Dashboard",
@@ -1363,7 +1483,7 @@ def patient_appointments(request):
 
     return render(
         request,
-        "patient/appointments.html",
+        "patients/appointments.html",
         {
             "page_title": "Appointments",
             "breadcrumb": "Patient / Appointments",
@@ -1380,7 +1500,7 @@ def patient_medical_records(request):
 
     return render(
         request,
-        "patient/medical_records.html",
+        "patients/medical_records.html",
         {
             "page_title": "Medical Records",
             "breadcrumb": "Patient / Medical Records",
@@ -1641,7 +1761,7 @@ def patient_profile(request):
 
     return render(
         request,
-        "patient/profile.html",
+        "patients/profile.html",
         {
             "page_title": "My Profile",
             "breadcrumb": "Patient / Profile",
@@ -1678,8 +1798,12 @@ def doctor_dashboard(request):
 
     return render(
         request,
-        "doctor/dashboard.html"
+        "doctors/dashboard.html"
     )
+
+
+
+
 
 
 # ============================================================================
@@ -1691,7 +1815,290 @@ def admin_dashboard(request):
 
     return render(
         request,
-        "admin/dashboard.html"
+        "admins/dashboard.html"
+    )
+
+
+# ============================================================================
+# Admin — Manage Doctors
+# ============================================================================
+
+@role_required("Admin")
+def admin_doctors(request):
+
+    return render(
+        request,
+        "admins/doctors/manage_doctor.html"
+    )
+
+
+# ============================================================================
+# Admin — Add Doctor
+# ============================================================================
+
+@role_required("Admin")
+def admin_add_doctor(request):
+
+    # ------------------------------------------------------------------------
+    # Get Supabase / QueueCare user ID from Django session
+    # ------------------------------------------------------------------------
+
+    user_id = request.session.get("supabase_user_id")
+
+    if not user_id:
+        return redirect("login")
+
+
+    # ------------------------------------------------------------------------
+    # Connect directly to Supabase PostgreSQL
+    # ------------------------------------------------------------------------
+
+    database_url = os.getenv("DATABASE_URL")
+
+    if not database_url:
+        raise ValueError("DATABASE_URL is missing")
+
+    connection = psycopg2.connect(database_url)
+
+
+    try:
+
+        with connection.cursor() as cursor:
+
+            # =================================================================
+            # POST — Save doctor profile
+            # =================================================================
+
+            if request.method == "POST":
+
+                first_name = request.POST.get(
+                    "first_name",
+                    ""
+                ).strip()
+
+                last_name = request.POST.get(
+                    "last_name",
+                    ""
+                ).strip()
+
+                dob = request.POST.get("dob") or None
+
+                contact = request.POST.get(
+                    "contact",
+                    ""
+                ).strip()
+
+                blood_group = request.POST.get(
+                    "blood_group"
+                ) or None
+
+                address = request.POST.get(
+                    "address",
+                    ""
+                ).strip()
+
+                state = request.POST.get(
+                    "state",
+                    ""
+                ).strip()
+
+                country = request.POST.get(
+                    "country",
+                    ""
+                ).strip()
+
+                experience = request.POST.get(
+                    "experience"
+                ) or 0
+
+                consultation_fee = request.POST.get(
+                    "consultation_fees"
+                ) or 0
+
+                # -------------------------------------------------------------
+                # Convert comma-separated specializations into PostgreSQL
+                # text[] format.
+                # -------------------------------------------------------------
+
+                specializations_input = request.POST.get(
+                    "specializations",
+                    ""
+                ).strip()
+
+                specializations = [
+                    item.strip()
+                    for item in specializations_input.split(",")
+                    if item.strip()
+                ]
+
+
+                # =============================================================
+                # Verify that this user's staff record is a Doctor
+                # =============================================================
+
+                cursor.execute(
+                    """
+                    SELECT
+                        s.staff_id
+
+                    FROM "QueueCare".staff s
+
+                    JOIN "QueueCare".staff_levels sl
+                        ON sl.staff_level_id = s.staff_level_id
+
+                    WHERE s.user_id = %s
+                      AND LOWER(sl.staff_level) = 'doctor'
+
+                    LIMIT 1;
+                    """,
+                    (user_id,)
+                )
+
+                doctor_row = cursor.fetchone()
+
+
+                if doctor_row is None:
+
+                    messages.error(
+                        request,
+                        "No doctor staff record exists for this account."
+                    )
+
+                    return redirect("admin_add_doctor")
+
+
+                staff_id = doctor_row[0]
+
+
+                # =============================================================
+                # Update Doctor
+                # =============================================================
+
+                cursor.execute(
+                    """
+                    UPDATE "QueueCare".staff
+
+                    SET
+                        first_name = %s,
+                        last_name = %s,
+                        dob = %s,
+                        contact = %s,
+                        blood_group = %s,
+                        specializations = %s,
+                        experience = %s,
+                        consultation_fee = %s,
+                        address = %s,
+                        state = %s,
+                        country = %s
+
+                    WHERE staff_id = %s
+                      AND user_id = %s;
+                    """,
+                    (
+                        first_name or None,
+                        last_name or None,
+                        dob,
+                        contact or None,
+                        blood_group,
+                        specializations,
+                        experience,
+                        consultation_fee,
+                        address or None,
+                        state or None,
+                        country or None,
+                        staff_id,
+                        user_id,
+                    )
+                )
+
+
+                connection.commit()
+
+
+                messages.success(
+                    request,
+                    "Doctor profile updated successfully."
+                )
+
+                return redirect("admin_add_doctor")
+
+
+            # =================================================================
+            # GET — Load existing doctor profile
+            # =================================================================
+
+            cursor.execute(
+                """
+                SELECT
+                    s.staff_id,
+                    s.user_id,
+                    s.first_name,
+                    s.last_name,
+                    s.dob,
+                    s.contact,
+                    s.blood_group,
+                    s.specializations,
+                    s.experience,
+                    s.consultation_fee,
+                    s.department_id,
+                    d.department_name,
+                    s.active,
+                    s.address,
+                    s.state,
+                    s.country,
+                    s.status
+
+                FROM "QueueCare".staff s
+
+                JOIN "QueueCare".staff_levels sl
+                    ON sl.staff_level_id = s.staff_level_id
+
+                LEFT JOIN "QueueCare".department d
+                    ON d.department_id = s.department_id
+
+                WHERE s.user_id = %s
+                  AND LOWER(sl.staff_level) = 'doctor'
+
+                LIMIT 1;
+                """,
+                (user_id,)
+            )
+
+
+            row = cursor.fetchone()
+
+
+            if row is not None:
+
+                columns = [
+                    column[0]
+                    for column in cursor.description
+                ]
+
+                doctor = dict(
+                    zip(columns, row)
+                )
+
+            else:
+
+                doctor = None
+
+
+    finally:
+
+        connection.close()
+
+
+    # ========================================================================
+    # Render Doctor Form
+    # ========================================================================
+
+    return render(
+        request,
+        "admins/doctors/add_doctor.html",
+        {
+            "doctor": doctor,
+        },
     )
 
 

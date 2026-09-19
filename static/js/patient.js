@@ -201,21 +201,29 @@ console.log("PATIENT.JS LOADED");
                         tabs.forEach(function (currentTab) {
 
                             currentTab.classList.remove(
+                                "is-active"
+                            );
+
+                            currentTab.classList.remove(
                                 "tab-active"
                             );
 
-                            currentTab.classList.add(
+                            currentTab.classList.remove(
                                 "tab"
                             );
 
                         });
 
 
+                        tab.classList.add(
+                            "is-active"
+                        );
+
                         tab.classList.remove(
                             "tab"
                         );
 
-                        tab.classList.add(
+                        tab.classList.remove(
                             "tab-active"
                         );
 

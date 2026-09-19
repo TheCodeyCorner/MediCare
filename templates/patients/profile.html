@@ -1,0 +1,464 @@
+{% extends "patients/base.html" %}
+
+{% block patient_title %}
+
+My Profile | Medlink
+
+{% endblock %}
+
+{% block content %}
+
+<section class="patient-card profile-form-panel">
+
+
+    <!--  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == 
+     Header
+      ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  -->
+
+    <header class="patient-card__header profile-form-panel__header">
+
+        <div class="profile-form-panel__heading">
+
+            <h2>
+                Complete Your Profile
+            </h2>
+
+            <p>
+                Add your personal and medical information to keep your
+                patient record up to date.
+            </p>
+
+        </div>
+
+    </header>
+
+
+    <!--  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == 
+     Form Body
+      ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  -->
+
+    <div class="patient-card__body profile-form-panel__body">
+
+        <form method="POST" action="{% url 'patient_profile' %}" class="profile-form">
+
+            {% csrf_token %}
+
+
+            <!--  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == 
+             Personal Information
+              ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  -->
+
+            <section class="profile-form__section">
+
+                <header class="profile-form__section-header">
+
+                    <div>
+
+                        <h3>Personal Information</h3>
+
+                        <p>
+                            Basic information about the patient.
+                        </p>
+
+                    </div>
+
+                </header>
+
+
+                <div class="profile-form__fields profile-form__fields--two">
+
+                    <div class="profile-form__field">
+
+                        <label for="first_name">
+                            First Name
+                        </label>
+
+                        <input type="text" id="first_name" name="first_name" value="{{ patient.first_name|default:'' }}"
+                            placeholder="Enter first name" autocomplete="given-name" required>
+
+                    </div>
+
+
+                    <div class="profile-form__field">
+
+                        <label for="last_name">
+                            Last Name
+                        </label>
+
+                        <input type="text" id="last_name" name="last_name" value="{{ patient.last_name|default:'' }}"
+                            placeholder="Enter last name" autocomplete="family-name" required>
+
+                    </div>
+
+
+                    <div class="profile-form__field">
+
+                        <label for="dob">
+                            Date of Birth
+                        </label>
+
+                        <input type="date" id="dob" name="dob" value="{{ patient.dob|date:'Y-m-d' }}">
+
+                    </div>
+
+
+                    <div class="profile-form__field">
+
+                        <label for="gender">
+                            Gender
+                        </label>
+
+                        <select id="gender" name="gender" required>
+
+                            <option value="">
+                                Select gender
+                            </option>
+
+                            <option value="Male" {% if patient.gender  ==  "Male" %}selected{% endif %}>
+                                Male
+                            </option>
+
+                            <option value="Female" {% if patient.gender  ==  "Female" %}selected{% endif %}>
+                                Female
+                            </option>
+
+                            <option value="Other" {% if patient.gender  ==  "Other" %}selected{% endif %}>
+                                Other
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!--  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == 
+             Contact Information
+              ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  -->
+
+            <section class="profile-form__section">
+
+                <header class="profile-form__section-header">
+
+                    <div>
+
+                        <h3>Contact Information</h3>
+
+                        <p>
+                            Your primary contact information.
+                        </p>
+
+                    </div>
+
+                </header>
+
+
+                <div class="profile-form__fields">
+
+                    <div class="profile-form__field">
+
+                        <label for="contact">
+                            Contact Number
+                        </label>
+
+                        <input type="tel" id="contact" name="contact" value="{{ patient.contact|default:'' }}"
+                            placeholder="Enter contact number" autocomplete="tel" required>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!--  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == 
+             Address
+              ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  -->
+
+            <section class="profile-form__section">
+
+                <header class="profile-form__section-header">
+
+                    <div>
+
+                        <h3>Address</h3>
+
+                        <p>
+                            Your current residential address.
+                        </p>
+
+                    </div>
+
+                </header>
+
+
+                <div class="profile-form__fields profile-form__fields--two">
+
+                    <div class="profile-form__field profile-form__field--full">
+
+                        <label for="address">
+                            Address
+                        </label>
+
+                        <textarea id="address" name="address" rows="3" placeholder="Enter your full address"
+                            autocomplete="street-address" required>{{ patient.address|default:'' }}</textarea>
+
+                    </div>
+
+
+                    <div class="profile-form__field">
+
+                        <label for="state">
+                            State
+                        </label>
+
+                        <input type="text" id="state" name="state" value="{{ patient.state|default:'' }}"
+                            placeholder="Enter state" autocomplete="address-level1" required>
+
+                    </div>
+
+
+                    <div class="profile-form__field">
+
+                        <label for="country">
+                            Country
+                        </label>
+
+                        <input type="text" id="country" name="country" value="{{ patient.country|default:'' }}"
+                            placeholder="Enter country" autocomplete="country-name" required>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!--  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == 
+             Medical Information
+              ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  -->
+
+            <section class="profile-form__section">
+
+                <header class="profile-form__section-header">
+
+                    <div>
+
+                        <h3>Medical Information</h3>
+
+                        <p>
+                            Important information about your health.
+                        </p>
+
+                    </div>
+
+                </header>
+
+
+                <div class="profile-form__fields profile-form__fields--two">
+
+                    <div class="profile-form__field">
+
+                        <label for="blood_group">
+                            Blood Group
+                        </label>
+
+                        <select id="blood_group" name="blood_group" required>
+
+                            <option value="">
+                                Select blood group
+                            </option>
+
+                            <option value="A+" {% if patient.blood_group == "A+" %}selected{% endif %}>
+                                A+
+                            </option>
+
+                            <option value="A-" {% if patient.blood_group == "A-" %}selected{% endif %}>
+                                A-
+                            </option>
+
+                            <option value="B+" {% if patient.blood_group == "B+" %}selected{% endif %}>
+                                B+
+                            </option>
+
+                            <option value="B-" {% if patient.blood_group == "B-" %}selected{% endif %}>
+                                B-
+                            </option>
+
+                            <option value="AB+" {% if patient.blood_group == "AB+" %}selected{% endif %}>
+                                AB+
+                            </option>
+
+                            <option value="AB-" {% if patient.blood_group == "AB-" %}selected{% endif %}>
+                                AB-
+                            </option>
+
+                            <option value="O+" {% if patient.blood_group == "O+" %}selected{% endif %}>
+                                O+
+                            </option>
+
+                            <option value="O-" {% if patient.blood_group == "O-" %}selected{% endif %}>
+                                O-
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="profile-form__field">
+
+                        <label for="allergies">
+                            Allergies
+                        </label>
+
+                        <input type="text" id="allergies" name="allergies" value="{{ patient.allergies|default:'' }}"
+                            placeholder="e.g. Penicillin, Peanuts">
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!--  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == 
+             Emergency Contact
+              ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  -->
+
+            <section class="profile-form__section">
+
+                <header class="profile-form__section-header">
+
+                    <div>
+
+                        <h3>Emergency Contact</h3>
+
+                        <p>
+                            Someone we can contact during an emergency.
+                        </p>
+
+                    </div>
+
+                </header>
+
+
+                <div class="profile-form__fields profile-form__fields--three">
+
+                    <div class="profile-form__field">
+
+                        <label for="emergency_contact">
+                            Contact Number
+                        </label>
+
+                        <input type="tel" id="emergency_contact" name="emergency_contact"
+                            value="{{ patient.emergency_contact|default:'' }}" placeholder="Contact number">
+
+                    </div>
+
+
+                    <div class="profile-form__field">
+
+                        <label for="emergency_name">
+                            Name
+                        </label>
+
+                        <input type="text" id="emergency_name" name="emergency_name"
+                            value="{{ patient.emergency_name|default:'' }}" placeholder="Full name">
+
+                    </div>
+
+
+                    <div class="profile-form__field">
+
+                        <label for="emergency_relation">
+                            Relation
+                        </label>
+
+                        <input type="text" id="emergency_relation" name="emergency_relation"
+                            value="{{ patient.emergency_relation|default:'' }}" placeholder="e.g. Parent">
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!--  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == 
+             Insurance
+              ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  -->
+
+            <section class="profile-form__section">
+
+                <header class="profile-form__section-header">
+
+                    <div>
+
+                        <h3>Insurance</h3>
+
+                        <p>
+                            Select your active health insurance policy.
+                        </p>
+
+                    </div>
+
+                </header>
+
+
+                <div class="profile-form__fields">
+
+                    <div class="profile-form__field">
+
+                        <label for="insurance_id">
+                            Insurance Policy
+                        </label>
+
+                        <select id="insurance_id" name="insurance_id">
+
+                            <option value="">
+                                No insurance / Select policy
+                            </option>
+
+                            {% for policy in insurance_policies %}
+
+                                <option
+                                    value="{{ policy.insurance_id }}"
+                                    {% if patient.insurance_id == policy.insurance_id %}selected{% endif %}
+                                >
+                                    {{ policy.plan_name }}
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!--  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == 
+             Actions
+              ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  -->
+
+            <footer class="profile-form__actions">
+
+                <button type="submit" class="profile-form__submit">
+                    Save Profile
+                </button>
+
+            </footer>
+
+        </form>
+
+    </div>
+
+</section>
+
+{% endblock %}

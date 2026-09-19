@@ -1,0 +1,186 @@
+{% load static %}
+
+<!-- ============================================================
+     Total Appointments
+     ============================================================ -->
+
+<article class="admin-card admin-kpi-card">
+
+    <div class="admin-kpi-card__icon" aria-hidden="true">
+        <i data-lucide="calendar-days"></i>
+    </div>
+
+    <div class="admin-kpi-card__content">
+
+        <span class="admin-kpi-card__value">
+            {{ total_appointments }}
+        </span>
+
+        <span class="admin-kpi-card__label">
+            Total Appointments
+        </span>
+
+        <span class="admin-kpi-card__subtext">
+            <strong class="admin-kpi-card__trend admin-kpi-card__trend--{{ appointments_trend_tone }}">
+                <i data-lucide="trending-{{ appointments_trend_direction }}"></i>
+                {{ appointments_trend }}%
+            </strong>
+            <span>from yesterday</span>
+        </span>
+
+    </div>
+
+</article>
+
+
+<!-- ============================================================
+     Patients Visited
+     ============================================================ -->
+
+<article class="admin-card admin-kpi-card">
+
+    <div class="admin-kpi-card__icon" aria-hidden="true">
+        <i data-lucide="users"></i>
+    </div>
+
+    <div class="admin-kpi-card__content">
+
+        <span class="admin-kpi-card__value">
+            {{ patients_visited }}
+        </span>
+
+        <span class="admin-kpi-card__label">
+            Patients Visited
+        </span>
+
+        <span class="admin-kpi-card__subtext">
+            <strong class="admin-kpi-card__trend admin-kpi-card__trend--{{ patients_visited_trend_tone }}">
+                <i data-lucide="trending-{{ patients_visited_trend_direction }}"></i>
+                {{ patients_visited_trend }}%
+            </strong>
+            <span>from yesterday</span>
+        </span>
+
+    </div>
+
+</article>
+
+
+<!-- ============================================================
+     Average Waiting Time
+     ============================================================ -->
+
+<article class="admin-card admin-kpi-card">
+
+    <div class="admin-kpi-card__icon" aria-hidden="true">
+        <i data-lucide="clock-3"></i>
+    </div>
+
+    <div class="admin-kpi-card__content">
+
+        <span class="admin-kpi-card__value">
+            {{ average_waiting_time }} {{ average_waiting_time_unit }}
+        </span>
+
+        <span class="admin-kpi-card__label">
+            Avg. Waiting Time
+        </span>
+
+        <span class="admin-kpi-card__subtext">
+            <strong class="admin-kpi-card__trend admin-kpi-card__trend--{{ waiting_time_trend_tone }}">
+                <i data-lucide="trending-{{ waiting_time_trend_direction }}"></i>
+                {{ waiting_time_trend }}%
+            </strong>
+            <span>from yesterday</span>
+        </span>
+
+    </div>
+
+</article>
+
+
+<!-- ============================================================
+     Active Doctors
+     ============================================================ -->
+
+<article class="admin-card admin-kpi-card">
+
+    <div class="admin-kpi-card__icon" aria-hidden="true">
+        <i data-lucide="stethoscope"></i>
+    </div>
+
+    <div class="admin-kpi-card__content">
+
+        <span class="admin-kpi-card__value">
+            {{ active_doctors }}
+        </span>
+
+        <span class="admin-kpi-card__label">
+            Active Doctors
+        </span>
+
+        <span class="admin-kpi-card__subtext">
+            <span>of {{ scheduled_doctors }} scheduled</span>
+        </span>
+
+    </div>
+
+</article>
+
+
+<!-- ============================================================
+     Support Staff
+     ============================================================ -->
+
+<article class="admin-card admin-kpi-card">
+
+    <div class="admin-kpi-card__icon" aria-hidden="true">
+        <i data-lucide="user-plus"></i>
+    </div>
+
+    <div class="admin-kpi-card__content">
+
+        <span class="admin-kpi-card__value">
+            {{ support_staff }}
+        </span>
+
+        <span class="admin-kpi-card__label">
+            Support Staff
+        </span>
+
+        <span class="admin-kpi-card__subtext">
+            <span>of {{ scheduled_support_staff }} scheduled</span>
+        </span>
+
+    </div>
+
+</article>
+
+
+<!-- ============================================================
+     Rooms in Use
+     ============================================================ -->
+
+<article class="admin-card admin-kpi-card">
+
+    <div class="admin-kpi-card__icon" aria-hidden="true">
+        <i data-lucide="layout-grid"></i>
+    </div>
+
+    <div class="admin-kpi-card__content">
+
+        <span class="admin-kpi-card__value">
+            {{ rooms_in_use }}
+        </span>
+
+        <span class="admin-kpi-card__label">
+            Rooms in Use
+        </span>
+
+        <span class="admin-kpi-card__subtext">
+            <span>of {{ total_rooms }} total</span>
+        </span>
+
+    </div>
+
+</article>
