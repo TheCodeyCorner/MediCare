@@ -2064,78 +2064,57 @@
     }
 }
 
-css
+
+
 /* ==========================================================================
-   Medicare — Add Doctor
-   Admin doctor creation / profile form
+   Medicare — Add / Update Staff
+   Admin staff creation / profile form
    ========================================================================== */
 
 
 /* ==========================================================================
-   Add Doctor Card
+   Add Staff Card
    ========================================================================== */
 
-.add-doctor-form-panel {
-
+.add-staff-form-panel {
     width: 100%;
-
     min-width: 0;
-
     container-type: inline-size;
 }
 
 
 /* ==========================================================================
-   Add Doctor Header
+   Add Staff Header
    ========================================================================== */
 
-.add-doctor-form__header {
-
+.add-staff-form__header {
     display: flex;
-
     align-items: flex-start;
-
     gap: 1rem;
-
     width: 100%;
-
     min-width: 0;
-
     box-sizing: border-box;
-
-    padding: 0 1rem 1rem;
-
-    border-bottom: 1px solid var(--patient-border);
+    padding: 1rem;
+    border-bottom: 1px solid var(--admin-border);
 }
 
-.add-doctor-form__heading {
-
+.add-staff-form__heading {
     min-width: 0;
 }
 
-.add-doctor-form__heading h2 {
-
+.add-staff-form__heading h2 {
     margin: 0;
-
-    color: var(--patient-text);
-
+    color: var(--admin-text);
     font-size: 1rem;
-
     font-weight: 650;
-
     line-height: 1.3;
 }
 
-.add-doctor-form__heading p {
-
+.add-staff-form__heading p {
     max-width: 42rem;
-
     margin: 0.3rem 0 0;
-
-    color: var(--patient-text-muted);
-
+    color: var(--admin-text-muted);
     font-size: 0.68rem;
-
     line-height: 1.5;
 }
 
@@ -2144,14 +2123,10 @@ css
    Form Body
    ========================================================================== */
 
-.add-doctor-form__body {
-
+.add-staff-form__body {
     width: 100%;
-
     min-width: 0;
-
     box-sizing: border-box;
-
     padding: 1rem;
 }
 
@@ -2160,16 +2135,11 @@ css
    Form
    ========================================================================== */
 
-.add-doctor-form {
-
+.add-staff-form {
     display: flex;
-
     flex-direction: column;
-
     width: 100%;
-
     min-width: 0;
-
     gap: 0.85rem;
 }
 
@@ -2178,47 +2148,35 @@ css
    Form Sections
    ========================================================================== */
 
-.add-doctor-form__section {
-
+.add-staff-form__section {
     position: relative;
-
     display: flex;
-
     flex-direction: column;
-
     width: 100%;
-
     min-width: 0;
-
     box-sizing: border-box;
-
     padding: 1rem;
-
-    border: 1px solid var(--patient-border);
-
-    border-radius: var(--patient-card-radius-md);
-
-    background: var(--patient-surface);
-
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-card-radius-md);
+    background: var(--admin-surface);
     transition:
-        border-color var(--patient-transition-fast),
-        background var(--patient-transition-fast),
-        box-shadow var(--patient-transition-fast);
+        border-color var(--admin-transition-fast),
+        background var(--admin-transition-fast),
+        box-shadow var(--admin-transition-fast);
 }
 
-.add-doctor-form__section:hover {
-
-    border-color: var(--patient-border-strong);
+.add-staff-form__section:hover {
+    border-color: var(--admin-border-strong);
 }
 
-.add-doctor-form__section:focus-within {
-
-    border-color: var(--patient-primary);
-
+.add-staff-form__section:focus-within {
+    border-color: var(--admin-primary);
     box-shadow:
-        0 0 0 3px color-mix(in oklch,
-            var(--patient-primary) 7%,
-            transparent);
+        0 0 0 3px color-mix(
+            in oklch,
+            var(--admin-primary) 7%,
+            transparent
+        );
 }
 
 
@@ -2226,51 +2184,33 @@ css
    Section Header
    ========================================================================== */
 
-.add-doctor-form__section-header {
-
+.add-staff-form__section-header {
     display: flex;
-
     align-items: flex-start;
-
     width: 100%;
-
     min-width: 0;
-
     margin-bottom: 0.9rem;
-
     padding-bottom: 0.7rem;
-
-    border-bottom: 1px solid var(--patient-border);
+    border-bottom: 1px solid var(--admin-border);
 }
 
-.add-doctor-form__section-header>div {
-
+.add-staff-form__section-header > div {
     min-width: 0;
 }
 
-.add-doctor-form__section-header h3 {
-
+.add-staff-form__section-header h3 {
     margin: 0;
-
-    color: var(--patient-text);
-
+    color: var(--admin-text);
     font-size: 0.78rem;
-
     font-weight: 650;
-
     line-height: 1.3;
 }
 
-.add-doctor-form__section-header p {
-
+.add-staff-form__section-header p {
     max-width: 38rem;
-
     margin: 0.2rem 0 0;
-
-    color: var(--patient-text-muted);
-
+    color: var(--admin-text-muted);
     font-size: 0.58rem;
-
     line-height: 1.45;
 }
 
@@ -2279,24 +2219,16 @@ css
    Field Layout
    ========================================================================== */
 
-.add-doctor-form__fields {
-
+.add-staff-form__fields {
     display: grid;
-
-    grid-template-columns:
-        minmax(0, 1fr);
-
+    grid-template-columns: minmax(0, 1fr);
     width: 100%;
-
     min-width: 0;
-
     gap: 0.8rem 0.85rem;
 }
 
-.add-doctor-form__fields--two {
-
-    grid-template-columns:
-        repeat(2, minmax(0, 1fr));
+.add-staff-form__fields--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 
@@ -2304,8 +2236,7 @@ css
    Full-width Field
    -------------------------------------------------------------------------- */
 
-.add-doctor-form__field--full {
-
+.add-staff-form__field--full {
     grid-column: 1 / -1;
 }
 
@@ -2314,14 +2245,10 @@ css
    Individual Field
    ========================================================================== */
 
-.add-doctor-form__field {
-
+.add-staff-form__field {
     display: flex;
-
     flex-direction: column;
-
     min-width: 0;
-
     gap: 0.35rem;
 }
 
@@ -2330,20 +2257,13 @@ css
    Labels
    ========================================================================== */
 
-.add-doctor-form__field label {
-
+.add-staff-form__field label {
     display: flex;
-
     align-items: center;
-
     min-width: 0;
-
-    color: var(--patient-text);
-
+    color: var(--admin-text);
     font-size: 0.61rem;
-
     font-weight: 600;
-
     line-height: 1.3;
 }
 
@@ -2352,38 +2272,25 @@ css
    Inputs
    ========================================================================== */
 
-.add-doctor-form__field input,
-.add-doctor-form__field select,
-.add-doctor-form__field textarea {
-
+.add-staff-form__field input,
+.add-staff-form__field select,
+.add-staff-form__field textarea {
     display: block;
-
     width: 100%;
-
     min-width: 0;
-
     box-sizing: border-box;
-
-    border: 1px solid var(--patient-border);
-
-    border-radius: var(--patient-card-radius-sm);
-
-    background: var(--patient-surface-muted);
-
-    color: var(--patient-text);
-
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-card-radius-sm);
+    background: var(--admin-surface-muted);
+    color: var(--admin-text);
     font-family: inherit;
-
     font-size: 0.68rem;
-
     line-height: 1.4;
-
     outline: none;
-
     transition:
-        border-color var(--patient-transition-fast),
-        background var(--patient-transition-fast),
-        box-shadow var(--patient-transition-fast);
+        border-color var(--admin-transition-fast),
+        background var(--admin-transition-fast),
+        box-shadow var(--admin-transition-fast);
 }
 
 
@@ -2391,16 +2298,13 @@ css
    Input / Select
    -------------------------------------------------------------------------- */
 
-.add-doctor-form__field input,
-.add-doctor-form__field select {
-
+.add-staff-form__field input,
+.add-staff-form__field select {
     min-height: 2.35rem;
-
     padding: 0.55rem 0.7rem;
 }
 
-.add-doctor-form__field select {
-
+.add-staff-form__field select {
     cursor: pointer;
 }
 
@@ -2409,12 +2313,9 @@ css
    Textarea
    -------------------------------------------------------------------------- */
 
-.add-doctor-form__field textarea {
-
+.add-staff-form__field textarea {
     min-height: 5.5rem;
-
     padding: 0.65rem 0.7rem;
-
     resize: vertical;
 }
 
@@ -2423,11 +2324,9 @@ css
    Placeholder
    ========================================================================== */
 
-.add-doctor-form__field input::placeholder,
-.add-doctor-form__field textarea::placeholder {
-
-    color: var(--patient-text-muted);
-
+.add-staff-form__field input::placeholder,
+.add-staff-form__field textarea::placeholder {
+    color: var(--admin-text-muted);
     opacity: 0.65;
 }
 
@@ -2436,11 +2335,10 @@ css
    Input Hover
    ========================================================================== */
 
-.add-doctor-form__field input:hover,
-.add-doctor-form__field select:hover,
-.add-doctor-form__field textarea:hover {
-
-    border-color: var(--patient-border-strong);
+.add-staff-form__field input:hover,
+.add-staff-form__field select:hover,
+.add-staff-form__field textarea:hover {
+    border-color: var(--admin-border-strong);
 }
 
 
@@ -2448,18 +2346,17 @@ css
    Focus State
    ========================================================================== */
 
-.add-doctor-form__field input:focus,
-.add-doctor-form__field select:focus,
-.add-doctor-form__field textarea:focus {
-
-    border-color: var(--patient-primary);
-
-    background: var(--patient-surface);
-
+.add-staff-form__field input:focus,
+.add-staff-form__field select:focus,
+.add-staff-form__field textarea:focus {
+    border-color: var(--admin-primary);
+    background: var(--admin-surface);
     box-shadow:
-        0 0 0 3px color-mix(in oklch,
-            var(--patient-primary) 12%,
-            transparent);
+        0 0 0 3px color-mix(
+            in oklch,
+            var(--admin-primary) 12%,
+            transparent
+        );
 }
 
 
@@ -2467,12 +2364,10 @@ css
    Disabled State
    ========================================================================== */
 
-.add-doctor-form__field input:disabled,
-.add-doctor-form__field select:disabled,
-.add-doctor-form__field textarea:disabled {
-
+.add-staff-form__field input:disabled,
+.add-staff-form__field select:disabled,
+.add-staff-form__field textarea:disabled {
     cursor: not-allowed;
-
     opacity: 0.6;
 }
 
@@ -2481,21 +2376,21 @@ css
    Invalid State
    ========================================================================== */
 
-.add-doctor-form__field input:invalid:not(:placeholder-shown),
-.add-doctor-form__field textarea:invalid:not(:placeholder-shown),
-.add-doctor-form__field select:invalid {
-
-    border-color: var(--patient-danger);
+.add-staff-form__field input:invalid:not(:placeholder-shown),
+.add-staff-form__field textarea:invalid:not(:placeholder-shown),
+.add-staff-form__field select:invalid {
+    border-color: var(--admin-danger);
 }
 
-.add-doctor-form__field input:invalid:not(:placeholder-shown):focus,
-.add-doctor-form__field textarea:invalid:not(:placeholder-shown):focus,
-.add-doctor-form__field select:invalid:focus {
-
+.add-staff-form__field input:invalid:not(:placeholder-shown):focus,
+.add-staff-form__field textarea:invalid:not(:placeholder-shown):focus,
+.add-staff-form__field select:invalid:focus {
     box-shadow:
-        0 0 0 3px color-mix(in oklch,
-            var(--patient-danger) 12%,
-            transparent);
+        0 0 0 3px color-mix(
+            in oklch,
+            var(--admin-danger) 12%,
+            transparent
+        );
 }
 
 
@@ -2503,8 +2398,7 @@ css
    Date Input
    ========================================================================== */
 
-.add-doctor-form__field input[type="date"] {
-
+.add-staff-form__field input[type="date"] {
     color-scheme: light dark;
 }
 
@@ -2513,47 +2407,31 @@ css
    File Input
    ========================================================================== */
 
-.add-doctor-form__field input[type="file"] {
-
+.add-staff-form__field input[type="file"] {
     min-height: 2.35rem;
-
     padding: 0.4rem 0.55rem;
-
     cursor: pointer;
 }
 
-.add-doctor-form__field input[type="file"]::file-selector-button {
-
+.add-staff-form__field input[type="file"]::file-selector-button {
     margin-right: 0.55rem;
-
     padding: 0.35rem 0.6rem;
-
     border: 0;
-
-    border-radius: var(--patient-card-radius-sm);
-
-    background: var(--patient-primary-soft);
-
-    color: var(--patient-primary);
-
+    border-radius: var(--admin-card-radius-sm);
+    background: var(--admin-primary-soft);
+    color: var(--admin-primary);
     font-family: inherit;
-
     font-size: 0.6rem;
-
     font-weight: 600;
-
     cursor: pointer;
-
     transition:
-        background var(--patient-transition-fast),
-        color var(--patient-transition-fast);
+        background var(--admin-transition-fast),
+        color var(--admin-transition-fast);
 }
 
-.add-doctor-form__field input[type="file"]::file-selector-button:hover {
-
-    background: var(--patient-primary);
-
-    color: var(--patient-primary-foreground);
+.add-staff-form__field input[type="file"]::file-selector-button:hover {
+    background: var(--admin-primary);
+    color: var(--admin-primary-foreground);
 }
 
 
@@ -2561,20 +2439,13 @@ css
    Actions
    ========================================================================== */
 
-.add-doctor-form__actions {
-
+.add-staff-form__actions {
     display: flex;
-
     align-items: center;
-
     justify-content: flex-end;
-
     width: 100%;
-
     min-width: 0;
-
     box-sizing: border-box;
-
     padding-top: 0.15rem;
 }
 
@@ -2583,64 +2454,185 @@ css
    Submit Button
    ========================================================================== */
 
-.add-doctor-form__submit {
-
+.add-staff-form__submit {
     display: inline-flex;
-
     align-items: center;
-
     justify-content: center;
-
     min-height: 2.35rem;
-
     padding: 0.55rem 1.1rem;
-
     border: 0;
-
-    border-radius: var(--patient-card-radius-sm);
-
-    background: var(--patient-primary);
-
-    color: var(--patient-primary-foreground);
-
+    border-radius: var(--admin-card-radius-sm);
+    background: var(--admin-primary);
+    color: var(--admin-primary-foreground);
     font-family: inherit;
-
     font-size: 0.65rem;
-
     font-weight: 600;
-
     white-space: nowrap;
-
     cursor: pointer;
-
     transition:
-        background var(--patient-transition-fast),
-        transform var(--patient-transition-fast),
-        box-shadow var(--patient-transition-fast);
+        background var(--admin-transition-fast),
+        transform var(--admin-transition-fast),
+        box-shadow var(--admin-transition-fast);
 }
 
-.add-doctor-form__submit:hover {
-
-    background: var(--patient-primary-hover);
-
+.add-staff-form__submit:hover {
+    background: var(--admin-primary-hover);
     transform: translateY(-1px);
-
-    box-shadow: var(--patient-card-shadow);
+    box-shadow: var(--admin-card-shadow);
 }
 
-.add-doctor-form__submit:active {
-
+.add-staff-form__submit:active {
     transform: translateY(0);
 }
 
-.add-doctor-form__submit:focus-visible {
-
+.add-staff-form__submit:focus-visible {
     outline: none;
-
     box-shadow:
-        0 0 0 3px color-mix(in oklch,
-            var(--patient-primary) 18%,
-            transparent);
+        0 0 0 3px color-mix(
+            in oklch,
+            var(--admin-primary) 18%,
+            transparent
+        );
+}
+
+.add-staff-form__submit:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+    box-shadow: none;
+}
+
+
+/* ==========================================================================
+   Staff Form — Fetch Button
+   ========================================================================== */
+
+.add-staff-form__fetch {
+    margin-top: 0.35rem;
+}
+
+
+/* ==========================================================================
+   Staff Form — Specializations
+   ========================================================================== */
+
+.add-staff-form__tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 0.45rem;
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-card-radius-sm);
+    background: var(--admin-surface-muted);
+    transition:
+        border-color var(--admin-transition-fast),
+        background var(--admin-transition-fast),
+        box-shadow var(--admin-transition-fast);
+}
+
+.add-staff-form__tags:focus-within {
+    border-color: var(--admin-primary);
+    background: var(--admin-surface);
+    box-shadow:
+        0 0 0 3px color-mix(
+            in oklch,
+            var(--admin-primary) 12%,
+            transparent
+        );
+}
+
+.add-staff-form__tags-list {
+    display: contents;
+}
+
+.add-staff-form__tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0.3rem 0.45rem 0.3rem 0.65rem;
+    border: 1px solid color-mix(
+        in oklch,
+        var(--admin-primary) 22%,
+        var(--admin-border)
+    );
+    border-radius: 999px;
+    background: var(--admin-primary-soft);
+    color: var(--admin-primary);
+    font-size: 0.6rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.add-staff-form__tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.05rem;
+    height: 1.05rem;
+    flex: 0 0 1.05rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--admin-primary);
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+        background var(--admin-transition-fast),
+        color var(--admin-transition-fast),
+        transform var(--admin-transition-fast);
+}
+
+.add-staff-form__tag-remove:hover {
+    background: var(--admin-primary);
+    color: var(--admin-primary-foreground);
+    transform: scale(1.05);
+}
+
+.add-staff-form__tag-remove:focus-visible {
+    outline: none;
+    box-shadow:
+        0 0 0 3px color-mix(
+            in oklch,
+            var(--admin-primary) 18%,
+            transparent
+        );
+}
+
+.add-staff-form__tags > input {
+    flex: 1 1 10rem;
+    width: auto;
+    min-width: 8rem;
+    min-height: 2rem;
+    padding: 0.4rem 0.45rem;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--admin-text);
+    font-family: inherit;
+    font-size: 0.68rem;
+    line-height: 1.4;
+}
+
+.add-staff-form__tags > input::placeholder {
+    color: var(--admin-text-muted);
+    opacity: 0.65;
+}
+
+.add-staff-form__tags > input:focus {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
 }
 
 
@@ -2649,117 +2641,89 @@ css
    ========================================================================== */
 
 @container (max-width: 620px) {
-
-    .add-doctor-form__body {
-
+    .add-staff-form__body {
         padding: 0.85rem;
     }
 
-    .add-doctor-form__section {
-
+    .add-staff-form__section {
         padding: 0.85rem;
     }
 
-    .add-doctor-form__fields--two {
-
-        grid-template-columns:
-            minmax(0, 1fr);
+    .add-staff-form__fields--two {
+        grid-template-columns: minmax(0, 1fr);
     }
 
-    .add-doctor-form__field--full {
-
+    .add-staff-form__field--full {
         grid-column: auto;
     }
 }
 
-
 @container (max-width: 460px) {
-
-    .add-doctor-form__body {
-
+    .add-staff-form__body {
         padding: 0.7rem;
     }
 
-    .add-doctor-form__section {
-
+    .add-staff-form__section {
         padding: 0.75rem;
     }
 
-    .add-doctor-form__section-header {
-
+    .add-staff-form__section-header {
         margin-bottom: 0.75rem;
-
         padding-bottom: 0.6rem;
     }
 
-    .add-doctor-form__section-header h3 {
-
+    .add-staff-form__section-header h3 {
         font-size: 0.74rem;
     }
 
-    .add-doctor-form__section-header p {
-
+    .add-staff-form__section-header p {
         font-size: 0.56rem;
     }
 
-    .add-doctor-form__field input,
-    .add-doctor-form__field select {
-
+    .add-staff-form__field input,
+    .add-staff-form__field select {
         min-height: 2.2rem;
-
         padding: 0.5rem 0.6rem;
     }
 
-    .add-doctor-form__field textarea {
-
+    .add-staff-form__field textarea {
         min-height: 5rem;
-
         padding: 0.6rem;
     }
 
-    .add-doctor-form__actions {
-
+    .add-staff-form__actions {
         justify-content: stretch;
     }
 
-    .add-doctor-form__submit {
-
+    .add-staff-form__submit {
         width: 100%;
     }
 }
 
-
 @container (max-width: 360px) {
-
-    .add-doctor-form__body {
-
+    .add-staff-form__body {
         padding: 0.6rem;
     }
 
-    .add-doctor-form__section {
-
+    .add-staff-form__section {
         padding: 0.7rem;
     }
 
-    .add-doctor-form__heading h2 {
-
+    .add-staff-form__heading h2 {
         font-size: 0.9rem;
     }
 
-    .add-doctor-form__heading p {
-
+    .add-staff-form__heading p {
         font-size: 0.59rem;
     }
 
-    .add-doctor-form__field label {
-
+    .add-staff-form__field label {
         font-size: 0.59rem;
     }
 
-    .add-doctor-form__field input,
-    .add-doctor-form__field select,
-    .add-doctor-form__field textarea {
-
+    .add-staff-form__field input,
+    .add-staff-form__field select,
+    .add-staff-form__field textarea {
         font-size: 0.65rem;
     }
 }

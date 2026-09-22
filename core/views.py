@@ -3,13 +3,14 @@ import os
 import psycopg2
 
 from datetime import date, datetime
+from decimal import Decimal, InvalidOperation
 
 from medicare.supabase_client import supabase
 
 from django.contrib.auth import authenticate
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET, require_http_methods
 from django.utils import timezone
 from django.db import connection
 from django.contrib import messages
@@ -30,8 +31,10 @@ def landing(request):
     return render(request, "landing.html")
 
 
+
 def login(request):
     return render(request, "login.html")
+
 
 
 @require_POST
@@ -150,9 +153,9 @@ def login_patient(request):
 
             redirect_url = "/admin/"
 
-        elif user.access_level == "Doctor":
+        elif user.access_level == "Staff":
 
-            redirect_url = "/doctor/"
+            redirect_url = "/staff/"
 
         elif user.access_level == "Patient":
 
@@ -184,8 +187,10 @@ def login_patient(request):
         )
 
 
+
 def register(request):
     return render(request, "register.html")
+
 
 
 @require_POST
@@ -330,6 +335,9 @@ def register_patient(request):
             {"error": str(error)},
             status=500
         )
+
+
+
 
 
 # ============================================================================
@@ -539,7 +547,7 @@ def patient_dashboard(request):
                         ' ',
                         s.first_name,
                         s.last_name
-                    ) AS doctor,
+                    ) AS staff,
 
                     COALESCE(
                         NULLIF(
@@ -1161,7 +1169,7 @@ def patient_dashboard(request):
             appointment_id,
             schedule_datetime,
             appointment_type,
-            doctor,
+            staff,
             speciality,
             department,
             status,
@@ -1246,7 +1254,7 @@ def patient_dashboard(request):
 
             "type": appointment_type,
 
-            "doctor": doctor,
+            "staff": staff,
 
             "speciality": speciality,
 
@@ -1299,10 +1307,10 @@ def patient_dashboard(request):
     # =========================================================================
 
     appointment = {
-        "doctor": {
+        "staff": {
             "name": None,
             "speciality": None,
-            "image": "images/doctor.webp",
+            "image": "images/staff.webp",
         },
 
         "date": None,
@@ -1327,14 +1335,14 @@ def patient_dashboard(request):
     if next_appointment_row:
 
         # ---------------------------------------------------------------------
-        # Doctor information
+        # Staff information
         # ---------------------------------------------------------------------
 
-        appointment["doctor"]["name"] = (
-            next_appointment_row["doctor"]
+        appointment["staff"]["name"] = (
+            next_appointment_row["staff"]
         )
 
-        appointment["doctor"]["speciality"] = (
+        appointment["staff"]["speciality"] = (
             next_appointment_row["speciality"]
             or next_appointment_row["department"]
         )
@@ -1474,9 +1482,6 @@ def patient_dashboard(request):
     )
 
 
-# ============================================================================
-# Patient Appointments
-# ============================================================================
 
 @role_required("Patient")
 def patient_appointments(request):
@@ -1491,9 +1496,6 @@ def patient_appointments(request):
     )
 
 
-# ============================================================================
-# Patient Medical Records
-# ============================================================================
 
 @role_required("Patient")
 def patient_medical_records(request):
@@ -1508,9 +1510,6 @@ def patient_medical_records(request):
     )
 
 
-# ============================================================================
-# Patient Profile
-# ============================================================================
 
 @role_required("Patient")
 def patient_profile(request):
@@ -1771,9 +1770,6 @@ def patient_profile(request):
     )
 
 
-# ============================================================================
-# Profile Popup
-# ============================================================================
 
 @require_POST
 def dismiss_profile_popup(request):
@@ -1789,18 +1785,20 @@ def dismiss_profile_popup(request):
     })
 
 
+
+
+
 # ============================================================================
-# Doctor Dashboard
+# Staff Dashboard
 # ============================================================================
 
-@role_required("Doctor")
-def doctor_dashboard(request):
+@role_required("Staff")
+def staff_dashboard(request):
 
     return render(
         request,
-        "doctors/dashboard.html"
+        "staff/dashboard.html"
     )
-
 
 
 
@@ -1819,39 +1817,32 @@ def admin_dashboard(request):
     )
 
 
-# ============================================================================
-# Admin — Manage Doctors
-# ============================================================================
 
 @role_required("Admin")
-def admin_doctors(request):
+def admin_staff(request):
 
     return render(
         request,
-        "admins/doctors/manage_doctor.html"
+        "admins/staff/manage_staff.html"
     )
 
 
-# ============================================================================
-# Admin — Add Doctor
-# ============================================================================
 
-@role_required("Admin")
-def admin_add_doctor(request):
+@require_http_methods(["GET", "POST"])
+def admin_add_staff(request):
 
-    # ------------------------------------------------------------------------
-    # Get Supabase / QueueCare user ID from Django session
-    # ------------------------------------------------------------------------
+    # ============================================================
+    # Require logged-in user
+    # ============================================================
 
-    user_id = request.session.get("supabase_user_id")
+    session_user_id = request.session.get("supabase_user_id")
 
-    if not user_id:
+    if not session_user_id:
         return redirect("login")
 
-
-    # ------------------------------------------------------------------------
-    # Connect directly to Supabase PostgreSQL
-    # ------------------------------------------------------------------------
+    # ============================================================
+    # Database connection
+    # ============================================================
 
     database_url = os.getenv("DATABASE_URL")
 
@@ -1860,246 +1851,1159 @@ def admin_add_doctor(request):
 
     connection = psycopg2.connect(database_url)
 
-
     try:
+
+        # ========================================================
+        # POST
+        # ========================================================
+
+        if request.method == "POST":
+
+            # ----------------------------------------------------
+            # Staff ID
+            #
+            # Empty = Add
+            # Present = Update
+            # ----------------------------------------------------
+
+            staff_id = request.POST.get(
+                "staff_id",
+                "",
+            ).strip()
+
+            # ----------------------------------------------------
+            # Account information
+            # ----------------------------------------------------
+
+            email = request.POST.get(
+                "email",
+                "",
+            ).strip().lower()
+
+            staff_level_id = request.POST.get(
+                "staff_level_id",
+                "",
+            ).strip()
+
+            # ----------------------------------------------------
+            # Personal information
+            # ----------------------------------------------------
+
+            first_name = request.POST.get(
+                "first_name",
+                "",
+            ).strip()
+
+            last_name = request.POST.get(
+                "last_name",
+                "",
+            ).strip()
+
+            dob = request.POST.get("dob") or None
+
+            blood_group = request.POST.get(
+                "blood_group",
+                "",
+            ).strip() or None
+
+            # ----------------------------------------------------
+            # Contact
+            # ----------------------------------------------------
+
+            contact = request.POST.get(
+                "contact",
+                "",
+            ).strip()
+
+            # ----------------------------------------------------
+            # Address
+            # ----------------------------------------------------
+
+            address = request.POST.get(
+                "address",
+                "",
+            ).strip()
+
+            country = request.POST.get(
+                "country",
+                "",
+            ).strip()
+
+            state = request.POST.get(
+                "state",
+                "",
+            ).strip()
+
+            pincode = request.POST.get(
+                "pincode",
+                "",
+            ).strip()
+
+            # ----------------------------------------------------
+            # Professional information
+            # ----------------------------------------------------
+
+            department_id = request.POST.get(
+                "department_id",
+                "",
+            ).strip()
+
+            experience_raw = request.POST.get(
+                "experience",
+                "0",
+            ).strip()
+
+            consultation_fee_raw = request.POST.get(
+                "consultation_fee",
+                "0",
+            ).strip()
+
+            specializations_raw = request.POST.get(
+                "specializations",
+                "",
+            ).strip()
+
+            # ----------------------------------------------------
+            # Basic validation
+            # ----------------------------------------------------
+
+            if not email:
+                messages.error(
+                    request,
+                    "Staff email is required.",
+                )
+                return redirect("admin_add_staff")
+
+            if not staff_level_id:
+                messages.error(
+                    request,
+                    "Staff level is required.",
+                )
+                return redirect("admin_add_staff")
+
+            if not first_name or not last_name:
+                messages.error(
+                    request,
+                    "First name and last name are required.",
+                )
+                return redirect("admin_add_staff")
+
+            if not dob:
+                messages.error(
+                    request,
+                    "Date of birth is required.",
+                )
+                return redirect("admin_add_staff")
+
+            if not blood_group:
+                messages.error(
+                    request,
+                    "Blood group is required.",
+                )
+                return redirect("admin_add_staff")
+
+            if not contact:
+                messages.error(
+                    request,
+                    "Contact number is required.",
+                )
+                return redirect("admin_add_staff")
+
+            if not address:
+                messages.error(
+                    request,
+                    "Address is required.",
+                )
+                return redirect("admin_add_staff")
+
+            if not country:
+                messages.error(
+                    request,
+                    "Country is required.",
+                )
+                return redirect("admin_add_staff")
+
+            if not state:
+                messages.error(
+                    request,
+                    "State is required.",
+                )
+                return redirect("admin_add_staff")
+
+            if not pincode or not pincode.isdigit() or len(pincode) != 6:
+                messages.error(
+                    request,
+                    "PIN code must contain exactly 6 digits.",
+                )
+                return redirect("admin_add_staff")
+
+            if not department_id:
+                messages.error(
+                    request,
+                    "Department is required.",
+                )
+                return redirect("admin_add_staff")
+
+            # ----------------------------------------------------
+            # Validate date
+            # ----------------------------------------------------
+
+            try:
+                dob_date = date.fromisoformat(dob)
+
+            except ValueError:
+                messages.error(
+                    request,
+                    "Invalid date of birth.",
+                )
+                return redirect("admin_add_staff")
+
+            if dob_date >= date.today():
+                messages.error(
+                    request,
+                    "Date of birth must be before today.",
+                )
+                return redirect("admin_add_staff")
+
+            # ----------------------------------------------------
+            # Validate experience
+            # ----------------------------------------------------
+
+            try:
+                experience = int(experience_raw)
+
+            except (TypeError, ValueError):
+                messages.error(
+                    request,
+                    "Experience must be a whole number.",
+                )
+                return redirect("admin_add_staff")
+
+            if experience < 0:
+                messages.error(
+                    request,
+                    "Experience cannot be negative.",
+                )
+                return redirect("admin_add_staff")
+
+            # ----------------------------------------------------
+            # Validate consultation fee
+            # ----------------------------------------------------
+
+            try:
+                consultation_fee = Decimal(
+                    consultation_fee_raw or "0"
+                )
+
+            except InvalidOperation:
+                messages.error(
+                    request,
+                    "Consultation fee must be a valid number.",
+                )
+                return redirect("admin_add_staff")
+
+            if consultation_fee < 0:
+                messages.error(
+                    request,
+                    "Consultation fee cannot be negative.",
+                )
+                return redirect("admin_add_staff")
+
+            # ----------------------------------------------------
+            # Parse specializations
+            # ----------------------------------------------------
+
+            specializations = []
+
+            if specializations_raw:
+
+                try:
+                    parsed_specializations = json.loads(
+                        specializations_raw
+                    )
+
+                except json.JSONDecodeError:
+                    messages.error(
+                        request,
+                        "Invalid specialization data.",
+                    )
+                    return redirect("admin_add_staff")
+
+                if not isinstance(
+                    parsed_specializations,
+                    list,
+                ):
+                    messages.error(
+                        request,
+                        "Invalid specialization data.",
+                    )
+                    return redirect("admin_add_staff")
+
+                for item in parsed_specializations:
+
+                    if not isinstance(item, str):
+                        continue
+
+                    item = item.strip()
+
+                    if item and item not in specializations:
+                        specializations.append(item)
+
+            # ----------------------------------------------------
+            # Profile image validation
+            # ----------------------------------------------------
+
+            photo = request.FILES.get("photo")
+
+            if photo:
+
+                allowed_types = {
+                    "image/jpeg",
+                    "image/png",
+                    "image/webp",
+                }
+
+                if photo.content_type not in allowed_types:
+                    messages.error(
+                        request,
+                        "Profile photo must be JPEG, PNG, or WebP.",
+                    )
+                    return redirect("admin_add_staff")
+
+                if photo.size > 100 * 1024:
+                    messages.error(
+                        request,
+                        "Profile photo must be 100 KB or smaller.",
+                    )
+                    return redirect("admin_add_staff")
+
+            # ====================================================
+            # Database transaction
+            # ====================================================
+
+            try:
+
+                with connection:
+
+                    with connection.cursor() as cursor:
+
+                        # ========================================
+                        # 1. Find user by email
+                        # ========================================
+
+                        cursor.execute(
+                            """
+                            SELECT
+                                user_id,
+                                email,
+                                access_id,
+                                status
+                            FROM "QueueCare".users
+                            WHERE LOWER(email) = LOWER(%s)
+                            LIMIT 1;
+                            """,
+                            (email,),
+                        )
+
+                        user_row = cursor.fetchone()
+
+                        if user_row is None:
+
+                            messages.error(
+                                request,
+                                "No user account exists with that email.",
+                            )
+
+                            return redirect("admin_add_staff")
+
+                        target_user_id = user_row[0]
+
+                        # ========================================
+                        # 2. Find Staff access level
+                        # ========================================
+
+                        cursor.execute(
+                            """
+                            SELECT access_id
+                            FROM "QueueCare".access_levels
+                            WHERE LOWER(access_level) = 'staff'
+                            LIMIT 1;
+                            """
+                        )
+
+                        staff_access_row = cursor.fetchone()
+
+                        if staff_access_row is None:
+
+                            messages.error(
+                                request,
+                                "The Staff access level is not configured.",
+                            )
+
+                            return redirect("admin_add_staff")
+
+                        staff_access_id = staff_access_row[0]
+
+                        # ========================================
+                        # 3. Verify staff level
+                        # ========================================
+
+                        cursor.execute(
+                            """
+                            SELECT
+                                staff_level_id,
+                                staff_level
+                            FROM "QueueCare".staff_levels
+                            WHERE staff_level_id = %s
+                            LIMIT 1;
+                            """,
+                            (staff_level_id,),
+                        )
+
+                        staff_level_row = cursor.fetchone()
+
+                        if staff_level_row is None:
+
+                            messages.error(
+                                request,
+                                "Selected staff level does not exist.",
+                            )
+
+                            return redirect("admin_add_staff")
+
+                        # ========================================
+                        # 4. Verify department
+                        # ========================================
+
+                        cursor.execute(
+                            """
+                            SELECT
+                                department_id,
+                                department_name
+                            FROM "QueueCare".department
+                            WHERE department_id = %s
+                              AND active = TRUE
+                            LIMIT 1;
+                            """,
+                            (department_id,),
+                        )
+
+                        department_row = cursor.fetchone()
+
+                        if department_row is None:
+
+                            messages.error(
+                                request,
+                                "Selected department does not exist or is inactive.",
+                            )
+
+                            return redirect("admin_add_staff")
+
+                        # ========================================
+                        # 5. Verify country/state
+                        # ========================================
+
+                        cursor.execute(
+                            """
+                            SELECT 1
+                            FROM "QueueCare".country_states
+                            WHERE country::text = %s
+                              AND state_name = %s
+                            LIMIT 1;
+                            """,
+                            (
+                                country,
+                                state,
+                            ),
+                        )
+
+                        state_row = cursor.fetchone()
+
+                        if state_row is None:
+
+                            messages.error(
+                                request,
+                                "The selected state does not belong to the selected country.",
+                            )
+
+                            return redirect("admin_add_staff")
+
+                        # ========================================
+                        # 6. ADD
+                        #
+                        # No staff_id means this is a new record.
+                        # ========================================
+
+                        if not staff_id:
+
+                            # ------------------------------------
+                            # Make sure user has no staff record
+                            # ------------------------------------
+
+                            cursor.execute(
+                                """
+                                SELECT staff_id
+                                FROM "QueueCare".staff
+                                WHERE user_id = %s
+                                LIMIT 1;
+                                """,
+                                (target_user_id,),
+                            )
+
+                            existing_staff = cursor.fetchone()
+
+                            if existing_staff is not None:
+
+                                messages.error(
+                                    request,
+                                    "This user already has a staff record.",
+                                )
+
+                                return redirect("admin_add_staff")
+
+                            # ------------------------------------
+                            # Change user's broad access to Staff
+                            # ------------------------------------
+
+                            cursor.execute(
+                                """
+                                UPDATE "QueueCare".users
+                                SET access_id = %s
+                                WHERE user_id = %s;
+                                """,
+                                (
+                                    staff_access_id,
+                                    target_user_id,
+                                ),
+                            )
+
+                            # ------------------------------------
+                            # Insert staff record
+                            # ------------------------------------
+
+                            cursor.execute(
+                                """
+                                INSERT INTO "QueueCare".staff (
+                                    user_id,
+                                    staff_level_id,
+                                    first_name,
+                                    last_name,
+                                    dob,
+                                    contact,
+                                    blood_group,
+                                    specializations,
+                                    experience,
+                                    consultation_fee,
+                                    department_id,
+                                    active,
+                                    address,
+                                    state,
+                                    country,
+                                    status,
+                                    pincode,
+                                    profile_image_path
+                                )
+                                VALUES (
+                                    %s,
+                                    %s,
+                                    %s,
+                                    %s,
+                                    %s,
+                                    %s,
+                                    %s,
+                                    %s,
+                                    %s,
+                                    %s,
+                                    %s,
+                                    TRUE,
+                                    %s,
+                                    %s,
+                                    %s,
+                                    'Off_Duty',
+                                    %s,
+                                    NULL
+                                )
+                                RETURNING staff_id;
+                                """,
+                                (
+                                    target_user_id,
+                                    staff_level_id,
+                                    first_name,
+                                    last_name,
+                                    dob_date,
+                                    contact,
+                                    blood_group,
+                                    specializations,
+                                    experience,
+                                    consultation_fee,
+                                    department_id,
+                                    address,
+                                    state,
+                                    country,
+                                    pincode,
+                                ),
+                            )
+
+                            new_staff_id = cursor.fetchone()[0]
+
+                            messages.success(
+                                request,
+                                "Staff account created successfully.",
+                            )
+
+                        # ========================================
+                        # 7. UPDATE
+                        #
+                        # staff_id means an existing record is
+                        # being updated.
+                        # ========================================
+
+                        else:
+
+                            # ------------------------------------
+                            # Find existing staff record
+                            # ------------------------------------
+
+                            cursor.execute(
+                                """
+                                SELECT
+                                    staff_id,
+                                    user_id,
+                                    active,
+                                    status,
+                                    profile_image_path
+                                FROM "QueueCare".staff
+                                WHERE staff_id = %s
+                                LIMIT 1;
+                                """,
+                                (staff_id,),
+                            )
+
+                            existing_staff_row = cursor.fetchone()
+
+                            if existing_staff_row is None:
+
+                                messages.error(
+                                    request,
+                                    "The selected staff record does not exist.",
+                                )
+
+                                return redirect("admin_add_staff")
+
+                            existing_staff_id = existing_staff_row[0]
+                            existing_staff_user_id = existing_staff_row[1]
+                            existing_profile_image_path = existing_staff_row[4]
+
+                            # ------------------------------------
+                            # Prevent assigning another user's
+                            # account to this staff record
+                            # ------------------------------------
+
+                            if existing_staff_user_id != target_user_id:
+
+                                messages.error(
+                                    request,
+                                    "The entered email does not belong to the selected staff record.",
+                                )
+
+                                return redirect("admin_add_staff")
+
+                            # ------------------------------------
+                            # Keep user's broad access as Staff
+                            # ------------------------------------
+
+                            cursor.execute(
+                                """
+                                UPDATE "QueueCare".users
+                                SET access_id = %s
+                                WHERE user_id = %s;
+                                """,
+                                (
+                                    staff_access_id,
+                                    target_user_id,
+                                ),
+                            )
+
+                            # ------------------------------------
+                            # Update staff record
+                            #
+                            # active and status are intentionally
+                            # NOT changed here.
+                            # ------------------------------------
+
+                            cursor.execute(
+                                """
+                                UPDATE "QueueCare".staff
+                                SET
+                                    staff_level_id = %s,
+                                    first_name = %s,
+                                    last_name = %s,
+                                    dob = %s,
+                                    contact = %s,
+                                    blood_group = %s,
+                                    specializations = %s,
+                                    experience = %s,
+                                    consultation_fee = %s,
+                                    department_id = %s,
+                                    address = %s,
+                                    state = %s,
+                                    country = %s,
+                                    pincode = %s
+                                WHERE staff_id = %s;
+                                """,
+                                (
+                                    staff_level_id,
+                                    first_name,
+                                    last_name,
+                                    dob_date,
+                                    contact,
+                                    blood_group,
+                                    specializations,
+                                    experience,
+                                    consultation_fee,
+                                    department_id,
+                                    address,
+                                    state,
+                                    country,
+                                    pincode,
+                                    existing_staff_id,
+                                ),
+                            )
+
+                            messages.success(
+                                request,
+                                "Staff account updated successfully.",
+                            )
+
+                # =================================================
+                # Transaction completed successfully
+                # =================================================
+
+                return redirect("admin_add_staff")
+
+            except psycopg2.Error as error:
+
+                print(
+                    "ADMIN ADD/UPDATE STAFF DATABASE ERROR:",
+                    error,
+                )
+
+                messages.error(
+                    request,
+                    "Unable to save the staff account.",
+                )
+
+                return redirect("admin_add_staff")
+
+            except Exception as error:
+
+                print(
+                    "ADMIN ADD/UPDATE STAFF ERROR:",
+                    error,
+                )
+
+                messages.error(
+                    request,
+                    "An unexpected error occurred while saving the staff account.",
+                )
+
+                return redirect("admin_add_staff")
+
+        # ========================================================
+        # GET — Load form data
+        # ========================================================
 
         with connection.cursor() as cursor:
 
-            # =================================================================
-            # POST — Save doctor profile
-            # =================================================================
-
-            if request.method == "POST":
-
-                first_name = request.POST.get(
-                    "first_name",
-                    ""
-                ).strip()
-
-                last_name = request.POST.get(
-                    "last_name",
-                    ""
-                ).strip()
-
-                dob = request.POST.get("dob") or None
-
-                contact = request.POST.get(
-                    "contact",
-                    ""
-                ).strip()
-
-                blood_group = request.POST.get(
-                    "blood_group"
-                ) or None
-
-                address = request.POST.get(
-                    "address",
-                    ""
-                ).strip()
-
-                state = request.POST.get(
-                    "state",
-                    ""
-                ).strip()
-
-                country = request.POST.get(
-                    "country",
-                    ""
-                ).strip()
-
-                experience = request.POST.get(
-                    "experience"
-                ) or 0
-
-                consultation_fee = request.POST.get(
-                    "consultation_fees"
-                ) or 0
-
-                # -------------------------------------------------------------
-                # Convert comma-separated specializations into PostgreSQL
-                # text[] format.
-                # -------------------------------------------------------------
-
-                specializations_input = request.POST.get(
-                    "specializations",
-                    ""
-                ).strip()
-
-                specializations = [
-                    item.strip()
-                    for item in specializations_input.split(",")
-                    if item.strip()
-                ]
-
-
-                # =============================================================
-                # Verify that this user's staff record is a Doctor
-                # =============================================================
-
-                cursor.execute(
-                    """
-                    SELECT
-                        s.staff_id
-
-                    FROM "QueueCare".staff s
-
-                    JOIN "QueueCare".staff_levels sl
-                        ON sl.staff_level_id = s.staff_level_id
-
-                    WHERE s.user_id = %s
-                      AND LOWER(sl.staff_level) = 'doctor'
-
-                    LIMIT 1;
-                    """,
-                    (user_id,)
-                )
-
-                doctor_row = cursor.fetchone()
-
-
-                if doctor_row is None:
-
-                    messages.error(
-                        request,
-                        "No doctor staff record exists for this account."
-                    )
-
-                    return redirect("admin_add_doctor")
-
-
-                staff_id = doctor_row[0]
-
-
-                # =============================================================
-                # Update Doctor
-                # =============================================================
-
-                cursor.execute(
-                    """
-                    UPDATE "QueueCare".staff
-
-                    SET
-                        first_name = %s,
-                        last_name = %s,
-                        dob = %s,
-                        contact = %s,
-                        blood_group = %s,
-                        specializations = %s,
-                        experience = %s,
-                        consultation_fee = %s,
-                        address = %s,
-                        state = %s,
-                        country = %s
-
-                    WHERE staff_id = %s
-                      AND user_id = %s;
-                    """,
-                    (
-                        first_name or None,
-                        last_name or None,
-                        dob,
-                        contact or None,
-                        blood_group,
-                        specializations,
-                        experience,
-                        consultation_fee,
-                        address or None,
-                        state or None,
-                        country or None,
-                        staff_id,
-                        user_id,
-                    )
-                )
-
-
-                connection.commit()
-
-
-                messages.success(
-                    request,
-                    "Doctor profile updated successfully."
-                )
-
-                return redirect("admin_add_doctor")
-
-
-            # =================================================================
-            # GET — Load existing doctor profile
-            # =================================================================
+            # ----------------------------------------------------
+            # Staff levels
+            # ----------------------------------------------------
 
             cursor.execute(
                 """
                 SELECT
-                    s.staff_id,
-                    s.user_id,
-                    s.first_name,
-                    s.last_name,
-                    s.dob,
-                    s.contact,
-                    s.blood_group,
-                    s.specializations,
-                    s.experience,
-                    s.consultation_fee,
-                    s.department_id,
-                    d.department_name,
-                    s.active,
-                    s.address,
-                    s.state,
-                    s.country,
-                    s.status
-
-                FROM "QueueCare".staff s
-
-                JOIN "QueueCare".staff_levels sl
-                    ON sl.staff_level_id = s.staff_level_id
-
-                LEFT JOIN "QueueCare".department d
-                    ON d.department_id = s.department_id
-
-                WHERE s.user_id = %s
-                  AND LOWER(sl.staff_level) = 'doctor'
-
-                LIMIT 1;
-                """,
-                (user_id,)
+                    staff_level_id,
+                    staff_level
+                FROM "QueueCare".staff_levels
+                ORDER BY staff_level ASC;
+                """
             )
 
+            staff_levels = [
+                {
+                    "staff_level_id": row[0],
+                    "staff_level": row[1],
+                }
+                for row in cursor.fetchall()
+            ]
 
-            row = cursor.fetchone()
+            # ----------------------------------------------------
+            # Active departments
+            # ----------------------------------------------------
 
+            cursor.execute(
+                """
+                SELECT
+                    department_id,
+                    department_name
+                FROM "QueueCare".department
+                WHERE active = TRUE
+                ORDER BY department_name ASC;
+                """
+            )
 
-            if row is not None:
+            departments = [
+                {
+                    "department_id": row[0],
+                    "department_name": row[1],
+                }
+                for row in cursor.fetchall()
+            ]
 
-                columns = [
-                    column[0]
-                    for column in cursor.description
-                ]
+            # ----------------------------------------------------
+            # Countries
+            #
+            # country_states is the source of truth.
+            # ----------------------------------------------------
 
-                doctor = dict(
-                    zip(columns, row)
-                )
+            cursor.execute(
+                """
+                SELECT DISTINCT
+                    country::text
+                FROM "QueueCare".country_states
+                ORDER BY country::text ASC;
+                """
+            )
 
-            else:
+            countries = [
+                row[0]
+                for row in cursor.fetchall()
+            ]
 
-                doctor = None
+        # ========================================================
+        # Render form
+        # ========================================================
 
+        return render(
+            request,
+            "admins/staff/add_staff.html",
+            {
+                "staff": {},
+                "staff_levels": staff_levels,
+                "departments": departments,
+                "countries": countries,
+            },
+        )
 
     finally:
-
         connection.close()
 
 
-    # ========================================================================
-    # Render Doctor Form
-    # ========================================================================
 
-    return render(
-        request,
-        "admins/doctors/add_doctor.html",
-        {
-            "doctor": doctor,
-        },
-    )
+@require_GET
+def admin_fetch_staff(request):
+    # ============================================================
+    # Authentication
+    # ============================================================
+
+    if not request.session.get("supabase_user_id"):
+        return JsonResponse(
+            {"error": "You must be logged in."},
+            status=401,
+        )
+
+    # ============================================================
+    # Get email
+    # ============================================================
+
+    email = request.GET.get("email", "").strip()
+
+    if not email:
+        return JsonResponse(
+            {"error": "Email is required."},
+            status=400,
+        )
+
+    # ============================================================
+    # Database
+    # ============================================================
+
+    database_url = os.getenv("DATABASE_URL")
+
+    if not database_url:
+        return JsonResponse(
+            {"error": "DATABASE_URL is missing."},
+            status=500,
+        )
+
+    connection = None
+
+    try:
+        connection = psycopg2.connect(database_url)
+
+        with connection.cursor() as cursor:
+
+            # ====================================================
+            # Find user by email
+            # ====================================================
+
+            cursor.execute(
+                """
+                SELECT
+                    user_id,
+                    email
+                FROM "QueueCare".users
+                WHERE LOWER(email) = LOWER(%s)
+                LIMIT 1;
+                """,
+                (email,),
+            )
+
+            user_row = cursor.fetchone()
+
+            if not user_row:
+                return JsonResponse(
+                    {
+                        "error": "No user account exists with that email."
+                    },
+                    status=404,
+                )
+
+            user_id, user_email = user_row
+
+            # ====================================================
+            # Find staff record belonging to this user
+            # ====================================================
+
+            cursor.execute(
+                """
+                SELECT
+                    staff_id,
+                    user_id,
+                    staff_level_id,
+                    first_name,
+                    last_name,
+                    dob,
+                    contact,
+                    blood_group,
+                    specializations,
+                    experience,
+                    consultation_fee,
+                    department_id,
+                    address,
+                    state,
+                    country,
+                    pincode,
+                    profile_image_path
+                FROM "QueueCare".staff
+                WHERE user_id = %s
+                LIMIT 1;
+                """,
+                (user_id,),
+            )
+
+            staff_row = cursor.fetchone()
+
+            # ====================================================
+            # User exists, but does not have a staff record
+            # ====================================================
+
+            if not staff_row:
+                return JsonResponse(
+                    {
+                        "exists": False,
+                        "message": (
+                            "A user account exists with this email, "
+                            "but no staff record was found."
+                        ),
+                        "user": {
+                            "user_id": str(user_id),
+                            "email": user_email,
+                        },
+                    }
+                )
+
+            # ====================================================
+            # Convert database values to JSON-safe values
+            # ====================================================
+
+            (
+                staff_id,
+                staff_user_id,
+                staff_level_id,
+                first_name,
+                last_name,
+                dob,
+                contact,
+                blood_group,
+                specializations,
+                experience,
+                consultation_fee,
+                department_id,
+                address,
+                state,
+                country,
+                pincode,
+                profile_image_path,
+            ) = staff_row
+
+            if isinstance(dob, date):
+                dob = dob.isoformat()
+
+            if isinstance(consultation_fee, Decimal):
+                consultation_fee = str(consultation_fee)
+
+            if specializations is None:
+                specializations = []
+
+            # ====================================================
+            # Return staff information
+            # ====================================================
+
+            return JsonResponse(
+                {
+                    "exists": True,
+                    "staff": {
+                        "staff_id": str(staff_id),
+                        "user_id": str(staff_user_id),
+                        "email": user_email,
+                        "staff_level_id": (
+                            str(staff_level_id)
+                            if staff_level_id
+                            else ""
+                        ),
+                        "first_name": first_name or "",
+                        "last_name": last_name or "",
+                        "dob": dob or "",
+                        "contact": contact or "",
+                        "blood_group": blood_group or "",
+                        "specializations": specializations,
+                        "experience": (
+                            experience
+                            if experience is not None
+                            else 0
+                        ),
+                        "consultation_fee": (
+                            consultation_fee
+                            if consultation_fee is not None
+                            else "0.00"
+                        ),
+                        "department_id": (
+                            str(department_id)
+                            if department_id
+                            else ""
+                        ),
+                        "address": address or "",
+                        "state": state or "",
+                        "country": country or "",
+                        "pincode": pincode or "",
+                        "profile_image_path": (
+                            profile_image_path or ""
+                        ),
+                    },
+                }
+            )
+
+    except psycopg2.Error as error:
+        print("ADMIN FETCH STAFF DATABASE ERROR:", error)
+
+        return JsonResponse(
+            {"error": "Unable to fetch staff information."},
+            status=500,
+        )
+
+    except Exception as error:
+        print("ADMIN FETCH STAFF ERROR:", error)
+
+        return JsonResponse(
+            {"error": "An unexpected error occurred."},
+            status=500,
+        )
+
+    finally:
+        if connection is not None:
+            connection.close()
+
+
+
+@require_GET
+def admin_staff_states(request):
+
+    country = request.GET.get("country", "").strip()
+
+    if not country:
+        return JsonResponse({"states": []})
+
+    database_url = os.getenv("DATABASE_URL")
+
+    if not database_url:
+        return JsonResponse(
+            {"error": "DATABASE_URL is missing"},
+            status=500,
+        )
+
+    connection = None
+
+    try:
+        connection = psycopg2.connect(database_url)
+
+        with connection.cursor() as cursor:
+
+            cursor.execute(
+                """
+                SELECT
+                    state_name
+                FROM "QueueCare".country_states
+                WHERE country::text = %s
+                ORDER BY state_name;
+                """,
+                (country,),
+            )
+
+            states = [
+                row[0]
+                for row in cursor.fetchall()
+            ]
+
+        return JsonResponse({
+            "states": states,
+        })
+
+    except psycopg2.Error as error:
+
+        print("========================================")
+        print("ADMIN STAFF STATES DATABASE ERROR")
+        print(error)
+        print("========================================")
+
+        return JsonResponse(
+            {
+                "error": "Unable to load states.",
+            },
+            status=500,
+        )
+
+    except Exception as error:
+
+        print("========================================")
+        print("ADMIN STAFF STATES ERROR")
+        print(error)
+        print("========================================")
+
+        return JsonResponse(
+            {
+                "error": "Unable to load states.",
+            },
+            status=500,
+        )
+
+    finally:
+
+        if connection is not None:
+            connection.close()
+
+
+
 
 
 # ============================================================================

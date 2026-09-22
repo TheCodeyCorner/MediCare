@@ -55,14 +55,14 @@ def get_patient_navigation():
     ]
 
 
-def get_doctor_navigation():
+def get_staff_navigation():
 
     return [
         {
             "id": "dashboard",
             "label": "Dashboard",
             "icon": "layout-dashboard",
-            "url": reverse("doctor_dashboard"),
+            "url": reverse("staff_dashboard"),
         },
     ]
 
@@ -77,18 +77,18 @@ def get_admin_navigation():
             "url": reverse("admin_dashboard"),
         },
         {
-            "id": "doctors",
-            "label": "Doctors",
+            "id": "staff",
+            "label": "Staff",
             "icon": "stethoscope",
-            "url": reverse("admin_doctors"),
+            "url": reverse("admin_staff"),
             "children": [
                 {
-                    "label": "Manage Doctors",
-                    "url": reverse("admin_doctors"),
+                    "label": "Manage Staff",
+                    "url": reverse("admin_staff"),
                 },
                 {
-                    "label": "Add Doctor",
-                    "url": reverse("admin_add_doctor"),
+                    "label": "Add/Update Staff",
+                    "url": reverse("admin_add_staff"),
                 },
             ],
         },

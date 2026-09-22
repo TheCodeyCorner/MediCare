@@ -1,0 +1,602 @@
+{% extends "admins/base.html" %}
+{% load static %}
+
+{% block staff_title %}
+Add / Update Staff | Medicare
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("staff_form");
+    const emailInput = document.getElementById("email");
+    const staffIdInput = document.getElementById("staff_id");
+    const fetchButton = document.getElementById("fetch_staff");
+    const addButton = document.getElementById("add_staff");
+    const updateButton = document.getElementById("update_staff");
+    const countrySelect = document.getElementById("country");
+    const stateSelect = document.getElementById("state");
+    const staffLevelSelect = document.getElementById("staff_level_id");
+    const firstNameInput = document.getElementById("first_name");
+    const lastNameInput = document.getElementById("last_name");
+    const dobInput = document.getElementById("dob");
+    const bloodGroupSelect = document.getElementById("blood_group");
+    const contactInput = document.getElementById("contact");
+    const addressInput = document.getElementById("address");
+    const pincodeInput = document.getElementById("pincode");
+    const departmentSelect = document.getElementById("department_id");
+    const experienceInput = document.getElementById("experience");
+    const consultationFeeInput = document.getElementById("consultation_fee");
+
+    function setAddMode() {
+        staffIdInput.value = "";
+        addButton.style.display = "";
+        updateButton.style.display = "none";
+        emailInput.readOnly = false;
+    }
+
+    function setUpdateMode(staffId) {
+        staffIdInput.value = staffId;
+        addButton.style.display = "none";
+        updateButton.style.display = "";
+        emailInput.readOnly = true;
+    }
+
+    setAddMode();
+
+    async function loadStates(country, selectedState = "") {
+        stateSelect.innerHTML = "";
+        const loadingOption = document.createElement("option");
+        loadingOption.value = "";
+        loadingOption.textContent = "Loading states...";
+        stateSelect.appendChild(loadingOption);
+        stateSelect.disabled = true;
+
+        if (!country) {
+            stateSelect.innerHTML = "";
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "Select a country first";
+            stateSelect.appendChild(option);
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                "{% url 'admin_staff_states' %}?country=" +
+                encodeURIComponent(country)
+            );
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to fetch states.");
+            }
+
+            stateSelect.innerHTML = "";
+
+            const defaultOption = document.createElement("option");
+            defaultOption.value = "";
+            defaultOption.textContent = "Select state";
+            stateSelect.appendChild(defaultOption);
+
+            data.states.forEach(function (state) {
+                const option = document.createElement("option");
+                option.value = state;
+                option.textContent = state;
+
+                if (state === selectedState) {
+                    option.selected = true;
+                }
+
+                stateSelect.appendChild(option);
+            });
+
+            stateSelect.disabled = data.states.length === 0;
+        } catch (error) {
+            console.error("Unable to load states:", error);
+            stateSelect.innerHTML = "";
+
+            const errorOption = document.createElement("option");
+            errorOption.value = "";
+            errorOption.textContent = "Unable to load states";
+            stateSelect.appendChild(errorOption);
+
+            stateSelect.disabled = true;
+        }
+    }
+
+    countrySelect.addEventListener("change", function () {
+        loadStates(this.value);
+    });
+
+    const specializationInput = document.getElementById("specializations");
+    const specializationList = document.getElementById("specializations_list");
+    const specializationData = document.getElementById("specializations_data");
+    let specializations = [];
+
+    function updateHiddenInput() {
+        specializationData.value = JSON.stringify(specializations);
+    }
+
+    function renderSpecializations() {
+        specializationList.innerHTML = "";
+
+        specializations.forEach(function (specialization, index) {
+            const tag = document.createElement("span");
+            tag.className = "add-staff-form__tag";
+            tag.textContent = specialization;
+
+            const removeButton = document.createElement("button");
+            removeButton.type = "button";
+            removeButton.className = "add-staff-form__tag-remove";
+            removeButton.setAttribute(
+                "aria-label",
+                "Remove " + specialization
+            );
+            removeButton.innerHTML = "&times;";
+
+            removeButton.addEventListener("click", function () {
+                specializations.splice(index, 1);
+                renderSpecializations();
+                updateHiddenInput();
+            });
+
+            tag.appendChild(removeButton);
+            specializationList.appendChild(tag);
+        });
+    }
+
+    function addSpecialization(value) {
+        const specialization = value.trim();
+
+        if (!specialization) {
+            return;
+        }
+
+        const exists = specializations.some(function (item) {
+            return item.toLowerCase() === specialization.toLowerCase();
+        });
+
+        if (exists) {
+            specializationInput.value = "";
+            return;
+        }
+
+        specializations.push(specialization);
+        specializationInput.value = "";
+        renderSpecializations();
+        updateHiddenInput();
+    }
+
+    specializationInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            addSpecialization(specializationInput.value);
+        }
+    });
+
+    function setSpecializations(values) {
+        specializations = [];
+
+        if (Array.isArray(values)) {
+            values.forEach(function (item) {
+                if (
+                    typeof item === "string" &&
+                    item.trim() !== ""
+                ) {
+                    specializations.push(item.trim());
+                }
+            });
+        }
+
+        renderSpecializations();
+        updateHiddenInput();
+    }
+
+    fetchButton.addEventListener("click", async function () {
+        const email = emailInput.value.trim();
+
+        if (!email) {
+            alert("Enter a staff email address first.");
+            emailInput.focus();
+            return;
+        }
+
+        fetchButton.disabled = true;
+        fetchButton.textContent = "Fetching...";
+
+        try {
+            const response = await fetch(
+                "{% url 'admin_fetch_staff' %}?email=" +
+                encodeURIComponent(email)
+            );
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.error || "Unable to fetch staff."
+                );
+            }
+
+            if (!data.exists) {
+                setAddMode();
+                alert(
+                    data.message ||
+                    "No staff record exists for this user. You can create one."
+                );
+                return;
+            }
+
+            staffIdInput.value = data.staff.staff_id;
+            staffLevelSelect.value = data.staff.staff_level_id || "";
+            firstNameInput.value = data.staff.first_name || "";
+            lastNameInput.value = data.staff.last_name || "";
+            dobInput.value = data.staff.dob || "";
+            bloodGroupSelect.value = data.staff.blood_group || "";
+            contactInput.value = data.staff.contact || "";
+            addressInput.value = data.staff.address || "";
+            countrySelect.value = data.staff.country || "";
+            pincodeInput.value = data.staff.pincode || "";
+
+            await loadStates(
+                data.staff.country || "",
+                data.staff.state || ""
+            );
+
+            departmentSelect.value = data.staff.department_id || "";
+            experienceInput.value = data.staff.experience ?? "";
+            consultationFeeInput.value = data.staff.consultation_fee ?? "";
+
+            setSpecializations(
+                data.staff.specializations || []
+            );
+
+            setUpdateMode(data.staff.staff_id);
+            alert("Existing staff record loaded.");
+        } catch (error) {
+            console.error("Unable to fetch staff:", error);
+            setAddMode();
+            alert(error.message || "Unable to fetch staff.");
+        } finally {
+            fetchButton.disabled = false;
+            fetchButton.textContent = "Fetch Staff";
+        }
+    });
+
+    const initialCountry = countrySelect.value;
+    const initialState = "{{ staff.state|default:''|escapejs }}";
+
+    if (initialCountry) {
+        loadStates(initialCountry, initialState);
+    }
+
+    form.addEventListener("submit", function (event) {
+        if (
+            updateButton.style.display !== "none" &&
+            !staffIdInput.value
+        ) {
+            event.preventDefault();
+            alert("No staff record is selected for update.");
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="admin-card add-staff-form-panel">
+    <header class="admin-card__header add-staff-form__header">
+        <div class="add-staff-form__heading">
+            <h2>Add Staff</h2>
+            <p>
+                Enter an existing user email to fetch their staff information,
+                or create a new staff record.
+            </p>
+        </div>
+    </header>
+    <div class="admin-card__body add-staff-form__body">
+        <form method="POST" action="{% url 'admin_add_staff' %}" class="add-staff-form" id="staff_form" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" id="staff_id" name="staff_id" value="">
+            <section class="add-staff-form__section">
+                <header class="add-staff-form__section-header">
+                    <div>
+                        <h3>Account Information</h3>
+                        <p>
+                            Identify the existing user account and assign its
+                            staff level.
+                        </p>
+                    </div>
+                </header>
+                <div class="add-staff-form__fields add-staff-form__fields--two">
+                    <div class="add-staff-form__field">
+                        <label for="email">Staff Email</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            value="{{ staff.email|default:'' }}"
+                            placeholder="Enter staff's email address"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+                    <div class="add-staff-form__field">
+                        <label for="staff_level_id">Staff Level</label>
+                        <select id="staff_level_id" name="staff_level_id" required>
+                            <option value="">Select staff level</option>
+                            {% for level in staff_levels %}
+                            <option
+                                value="{{ level.staff_level_id }}"
+                                {% if staff.staff_level_id == level.staff_level_id %}selected{% endif %}
+                            >
+                                {{ level.staff_level }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="add-staff-form__actions">
+                    <button type="button" id="fetch_staff" class="add-staff-form__submit add-staff-form__fetch">
+                        Fetch Staff
+                    </button>
+                </div>
+            </section>
+            <section class="add-staff-form__section">
+                <header class="add-staff-form__section-header">
+                    <div>
+                        <h3>Personal Information</h3>
+                        <p>Basic information about the staff.</p>
+                    </div>
+                </header>
+                <div class="add-staff-form__fields add-staff-form__fields--two">
+                    <div class="add-staff-form__field">
+                        <label for="first_name">First Name</label>
+                        <input
+                            type="text"
+                            id="first_name"
+                            name="first_name"
+                            value="{{ staff.first_name|default:'' }}"
+                            placeholder="Enter first name"
+                            autocomplete="given-name"
+                            required
+                        >
+                    </div>
+                    <div class="add-staff-form__field">
+                        <label for="last_name">Last Name</label>
+                        <input
+                            type="text"
+                            id="last_name"
+                            name="last_name"
+                            value="{{ staff.last_name|default:'' }}"
+                            placeholder="Enter last name"
+                            autocomplete="family-name"
+                            required
+                        >
+                    </div>
+                    <div class="add-staff-form__field">
+                        <label for="dob">Date of Birth</label>
+                        <input
+                            type="date"
+                            id="dob"
+                            name="dob"
+                            value="{{ staff.dob|date:'Y-m-d' }}"
+                            max="{% now 'Y-m-d' %}"
+                            required
+                        >
+                    </div>
+                    <div class="add-staff-form__field">
+                        <label for="blood_group">Blood Group</label>
+                        <select id="blood_group" name="blood_group" required>
+                            <option value="">Select blood group</option>
+                            <option value="A+" {% if staff.blood_group == "A+" %}selected{% endif %}>A+</option>
+                            <option value="A-" {% if staff.blood_group == "A-" %}selected{% endif %}>A-</option>
+                            <option value="B+" {% if staff.blood_group == "B+" %}selected{% endif %}>B+</option>
+                            <option value="B-" {% if staff.blood_group == "B-" %}selected{% endif %}>B-</option>
+                            <option value="AB+" {% if staff.blood_group == "AB+" %}selected{% endif %}>AB+</option>
+                            <option value="AB-" {% if staff.blood_group == "AB-" %}selected{% endif %}>AB-</option>
+                            <option value="O+" {% if staff.blood_group == "O+" %}selected{% endif %}>O+</option>
+                            <option value="O-" {% if staff.blood_group == "O-" %}selected{% endif %}>O-</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+            <section class="add-staff-form__section">
+                <header class="add-staff-form__section-header">
+                    <div>
+                        <h3>Contact Information</h3>
+                        <p>Primary contact information for the staff.</p>
+                    </div>
+                </header>
+                <div class="add-staff-form__fields">
+                    <div class="add-staff-form__field">
+                        <label for="contact">Contact Number</label>
+                        <input
+                            type="tel"
+                            id="contact"
+                            name="contact"
+                            value="{{ staff.contact|default:'' }}"
+                            placeholder="+91 98765 43210"
+                            autocomplete="tel"
+                            inputmode="tel"
+                            required
+                        >
+                    </div>
+                </div>
+            </section>
+            <section class="add-staff-form__section">
+                <header class="add-staff-form__section-header">
+                    <div>
+                        <h3>Address</h3>
+                        <p>Current residential address of the staff.</p>
+                    </div>
+                </header>
+                <div class="add-staff-form__fields add-staff-form__fields--two">
+                    <div class="add-staff-form__field add-staff-form__field--full">
+                        <label for="address">Address</label>
+                        <textarea
+                            id="address"
+                            name="address"
+                            rows="3"
+                            placeholder="Enter full address"
+                            autocomplete="street-address"
+                            required
+                        >{{ staff.address|default:'' }}</textarea>
+                    </div>
+                    <div class="add-staff-form__field">
+                        <label for="country">Country</label>
+                        <select id="country" name="country" autocomplete="country-name" required>
+                            <option value="">Select country</option>
+                            {% for country in countries %}
+                            <option
+                                value="{{ country }}"
+                                {% if staff.country == country %}selected{% endif %}
+                            >
+                                {{ country }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="add-staff-form__field">
+                        <label for="state">State</label>
+                        <select id="state" name="state" autocomplete="address-level1" disabled required>
+                            <option value="">Select a country first</option>
+                        </select>
+                    </div>
+                    <div class="add-staff-form__field">
+                        <label for="pincode">PIN Code</label>
+                        <input
+                            type="text"
+                            id="pincode"
+                            name="pincode"
+                            value="{{ staff.pincode|default:'' }}"
+                            placeholder="Enter PIN code"
+                            autocomplete="postal-code"
+                            inputmode="numeric"
+                            pattern="[0-9]{6}"
+                            maxlength="6"
+                            required
+                        >
+                    </div>
+                </div>
+            </section>
+            <section class="add-staff-form__section">
+                <header class="add-staff-form__section-header">
+                    <div>
+                        <h3>Professional Information</h3>
+                        <p>
+                            Information about the staff's medical experience,
+                            department, and specialization.
+                        </p>
+                    </div>
+                </header>
+                <div class="add-staff-form__fields add-staff-form__fields--two">
+                    <div class="add-staff-form__field">
+                        <label for="department_id">Department</label>
+                        <select id="department_id" name="department_id" required>
+                            <option value="">Select department</option>
+                            {% for department in departments %}
+                            <option
+                                value="{{ department.department_id }}"
+                                {% if staff.department_id == department.department_id %}selected{% endif %}
+                            >
+                                {{ department.department_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="add-staff-form__field">
+                        <label for="experience">Experience</label>
+                        <input
+                            type="number"
+                            id="experience"
+                            name="experience"
+                            value="{{ staff.experience|default:'' }}"
+                            placeholder="Years of experience"
+                            min="0"
+                            step="1"
+                            required
+                        >
+                    </div>
+                    <div class="add-staff-form__field">
+                        <label for="consultation_fee">Consultation Fee</label>
+                        <input
+                            type="number"
+                            id="consultation_fee"
+                            name="consultation_fee"
+                            value="{{ staff.consultation_fee|default:'' }}"
+                            placeholder="Enter consultation fee"
+                            min="0"
+                            step="0.01"
+                            inputmode="decimal"
+                            required
+                        >
+                    </div>
+                    <div class="add-staff-form__field add-staff-form__field--full">
+                        <label for="specializations">Specializations</label>
+                        <div class="add-staff-form__tags" id="specializations_container">
+                            <div class="add-staff-form__tags-list" id="specializations_list"></div>
+                            <input
+                                type="text"
+                                id="specializations"
+                                name="specializations_input"
+                                placeholder="Type a specialization and press Enter"
+                                autocomplete="off"
+                            >
+                        </div>
+                        <input
+                            type="hidden"
+                            id="specializations_data"
+                            name="specializations"
+                            value="{{ staff.specializations|default:'' }}"
+                        >
+                    </div>
+                </div>
+            </section>
+            <section class="add-staff-form__section">
+                <header class="add-staff-form__section-header">
+                    <div>
+                        <h3>Profile Photo</h3>
+                        <p>
+                            Add a professional photo for the staff's profile.
+                            JPEG, PNG, or WebP images up to 100 KB.
+                        </p>
+                    </div>
+                </header>
+                <div class="add-staff-form__fields">
+                    <div class="add-staff-form__field">
+                        <label for="photo">Photo</label>
+                        <input
+                            type="file"
+                            id="photo"
+                            name="photo"
+                            accept="image/jpeg,image/png,image/webp"
+                        >
+                    </div>
+                </div>
+            </section>
+            <footer class="add-staff-form__actions">
+                <button
+                    type="submit"
+                    id="add_staff"
+                    class="add-staff-form__submit"
+                >
+                    Add Staff
+                </button>
+                <button
+                    type="submit"
+                    id="update_staff"
+                    class="add-staff-form__submit"
+                    style="display: none;"
+                >
+                    Update Staff
+                </button>
+            </footer>
+        </form>
+    </div>
+</section>
+{% endblock %}

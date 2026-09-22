@@ -1042,3 +1042,279 @@ input:focus-visible {
     gap: 0.75rem;
   }
 }
+
+/* ==========================================================================
+   Fetch Staff Button
+   ========================================================================== */
+
+.add-doctor-form__fetch {
+    margin-top: 0.35rem;
+}
+
+
+/* ==========================================================================
+   Specialization Tags
+   ========================================================================== */
+
+.add-doctor-form__specializations {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    min-width: 0;
+    margin-top: 0.15rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Individual Specialization Tag
+   -------------------------------------------------------------------------- */
+
+.add-doctor-form__specialization-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 100%;
+    min-height: 1.8rem;
+    box-sizing: border-box;
+    padding: 0.35rem 0.5rem 0.35rem 0.65rem;
+
+    border: 1px solid color-mix(
+        in oklch,
+        var(--patient-primary) 25%,
+        var(--patient-border)
+    );
+
+    border-radius: 999px;
+
+    background: color-mix(
+        in oklch,
+        var(--patient-primary) 7%,
+        var(--patient-surface)
+    );
+
+    color: var(--patient-text);
+
+    font-family: inherit;
+    font-size: 0.6rem;
+    font-weight: 600;
+    line-height: 1.2;
+
+    transition:
+        border-color var(--patient-transition-fast),
+        background var(--patient-transition-fast),
+        color var(--patient-transition-fast),
+        box-shadow var(--patient-transition-fast),
+        transform var(--patient-transition-fast);
+}
+
+
+/* --------------------------------------------------------------------------
+   Tag Hover
+   -------------------------------------------------------------------------- */
+
+.add-doctor-form__specialization-tag:hover {
+    border-color: color-mix(
+        in oklch,
+        var(--patient-primary) 45%,
+        var(--patient-border)
+    );
+
+    background: color-mix(
+        in oklch,
+        var(--patient-primary) 11%,
+        var(--patient-surface)
+    );
+
+    box-shadow:
+        0 2px 8px color-mix(
+            in oklch,
+            var(--patient-primary) 8%,
+            transparent
+        );
+
+    transform: translateY(-1px);
+}
+
+
+/* --------------------------------------------------------------------------
+   Tag Text
+   -------------------------------------------------------------------------- */
+
+.add-doctor-form__specialization-tag span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+/* --------------------------------------------------------------------------
+   Remove Button
+   -------------------------------------------------------------------------- */
+
+.add-doctor-form__specialization-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 1.25rem;
+    height: 1.25rem;
+    flex: 0 0 1.25rem;
+
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+
+    background: color-mix(
+        in oklch,
+        var(--patient-text-muted) 10%,
+        transparent
+    );
+
+    color: var(--patient-text-muted);
+
+    font-family: inherit;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1;
+
+    cursor: pointer;
+
+    transition:
+        background var(--patient-transition-fast),
+        color var(--patient-transition-fast),
+        transform var(--patient-transition-fast);
+}
+
+
+/* --------------------------------------------------------------------------
+   Remove Button Hover
+   -------------------------------------------------------------------------- */
+
+.add-doctor-form__specialization-remove:hover {
+    background: var(--patient-danger);
+    color: var(--patient-primary-foreground);
+    transform: scale(1.05);
+}
+
+
+/* --------------------------------------------------------------------------
+   Remove Button Focus
+   -------------------------------------------------------------------------- */
+
+.add-doctor-form__specialization-remove:focus-visible {
+    outline: none;
+
+    box-shadow:
+        0 0 0 3px color-mix(
+            in oklch,
+            var(--patient-danger) 15%,
+            transparent
+        );
+}
+
+
+/* ==========================================================================
+   Specialization Input Area
+   ========================================================================== */
+
+.add-doctor-form__specialization-input {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+
+    padding: 0.45rem;
+
+    border: 1px solid var(--patient-border);
+    border-radius: var(--patient-card-radius-sm);
+
+    background: var(--patient-surface-muted);
+
+    transition:
+        border-color var(--patient-transition-fast),
+        background var(--patient-transition-fast),
+        box-shadow var(--patient-transition-fast);
+}
+
+
+/* --------------------------------------------------------------------------
+   Specialization Input Area Focus
+   -------------------------------------------------------------------------- */
+
+.add-doctor-form__specialization-input:focus-within {
+    border-color: var(--patient-primary);
+    background: var(--patient-surface);
+
+    box-shadow:
+        0 0 0 3px color-mix(
+            in oklch,
+            var(--patient-primary) 12%,
+            transparent
+        );
+}
+
+
+/* --------------------------------------------------------------------------
+   Actual Specialization Text Input
+   -------------------------------------------------------------------------- */
+
+.add-doctor-form__specialization-input input {
+    flex: 1 1 8rem;
+    width: auto;
+    min-width: 8rem;
+    min-height: 1.9rem;
+
+    padding: 0.4rem 0.45rem;
+
+    border: 0;
+    border-radius: var(--patient-card-radius-sm);
+
+    background: transparent;
+    box-shadow: none;
+}
+
+
+/* Remove the normal input focus styling because the wrapper handles it */
+
+.add-doctor-form__specialization-input input:focus {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+}
+
+
+/* ==========================================================================
+   Responsive Specialization Tags
+   ========================================================================== */
+
+@container (max-width: 460px) {
+
+    .add-doctor-form__specialization-tag {
+        min-height: 1.7rem;
+        padding: 0.3rem 0.45rem 0.3rem 0.6rem;
+        font-size: 0.58rem;
+    }
+
+    .add-doctor-form__specialization-remove {
+        width: 1.15rem;
+        height: 1.15rem;
+        flex-basis: 1.15rem;
+        font-size: 0.65rem;
+    }
+
+    .add-doctor-form__specialization-input {
+        padding: 0.4rem;
+    }
+
+    .add-doctor-form__specialization-input input {
+        min-width: 6rem;
+        min-height: 1.8rem;
+    }
+}
