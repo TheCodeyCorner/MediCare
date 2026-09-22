@@ -1,16 +1,18 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-    /*
-     * Lucide icons
-     */
+    /* ======================================================================
+       Lucide Icons
+       ====================================================================== */
+
     if (window.lucide) {
         lucide.createIcons();
     }
 
 
-    /*
-     * Sidebar
-     */
+    /* ======================================================================
+       Sidebar
+       ====================================================================== */
+
     const sidebar = document.querySelector("[data-sidebar]");
     const overlay = document.querySelector("[data-nav-overlay]");
     const openButton = document.querySelector("[data-nav-open]");
@@ -36,9 +38,10 @@ document.addEventListener("DOMContentLoaded", () => {
     overlay?.addEventListener("click", closeSidebar);
 
 
-    /*
-     * Sidebar submenus
-     */
+    /* ======================================================================
+       Sidebar Submenus
+       ====================================================================== */
+
     document
         .querySelectorAll("[data-submenu-toggle]")
         .forEach((button) => {
@@ -62,10 +65,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
 
-    /*
-     * Automatically open the group containing
-     * the currently active submenu item.
-     */
+    /* ======================================================================
+       Automatically Open Active Submenu
+       ====================================================================== */
+
     document
         .querySelectorAll(".md-nav__subitem.is-active")
         .forEach((activeItem) => {
@@ -76,4 +79,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
         });
 
+
 });
+
+// Popup Dynamic
+
+function showDashboardToast(message, type = "info") {
+    const container = document.querySelector(".dashboard-toast-container");
+
+    if (!container) {
+        return;
+    }
+
+    const toast = document.createElement("div");
+
+    toast.className = `dashboard-toast dashboard-toast--${type}`;
+
+    toast.innerHTML = `
+        <span class="dashboard-toast__message"></span>
+        <button
+            type="button"
+            class="dashboard-toast__close"
+            aria-label="Close"
+        >
+            &times;
+        </button>
+    `;
+
+    toast.querySelector(".dashboard-toast__message").textContent = message;
+
+    const closeButton = toast.querySelector(".dashboard-toast__close");
+
+    const removeToast = () => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(-0.5rem)";
+
+        setTimeout(() => {
+            toast.remove();
+        }, 200);
+    };
+
+    closeButton.addEventListener("click", removeToast);
+
+    container.appendChild(toast);
+
+    setTimeout(removeToast, 4000);
+}

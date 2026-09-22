@@ -9,6 +9,9 @@
     --register-blue: #2f6fed;
     --register-blue-light: #6ea8ff;
     --register-mint: #8de5c0;
+    --register-mint-soft: #8feeb1;
+    --register-mint-strong: #5bdc8b;
+    --register-mint-light: #b9f5d7;
 
     --register-white: #ffffff;
     --register-text: #f5f8fc;
@@ -228,9 +231,9 @@ body {
 
 .register-ring__progress {
     border: 3px solid transparent;
-    border-top-color: #8feeb1;
-    border-right-color: #5bdc8b;
-    border-bottom-color: #b9f5d7;
+    border-top-color: var(--register-mint-soft);
+    border-right-color: var(--register-mint-strong);
+    border-bottom-color: var(--register-mint-light);
     box-shadow: 0 0 10px rgba(91, 220, 139, 0.48);
     transform: rotate(-90deg);
     animation: register-ring-spin 2.8s linear infinite;
@@ -302,7 +305,7 @@ body {
             var(--register-blue-light)
         );
 
-    color: #ffffff;
+    color: var(--register-white);
 
     font-size: 22px;
 
@@ -609,7 +612,7 @@ body {
             var(--register-blue-light)
         );
 
-    color: #ffffff;
+    color: var(--register-white);
 
     font-family: inherit;
     font-size: 14px;

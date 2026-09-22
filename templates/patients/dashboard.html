@@ -1,0 +1,90 @@
+{% extends "patients/base.html" %}
+
+{% block patient_title %}
+Patient Dashboard | Medicare
+{% endblock %}
+
+{% block content %}
+
+<section class="patient-page">
+
+    <!-- ============================================================
+         Greeting
+         ============================================================ -->
+
+    {% include "patients/dashboard/banner.html" %}
+
+
+    <!-- ============================================================
+         Main Details
+         User Details + Next Appointment / Live Queue
+         ============================================================ -->
+
+    <section class="md-dashboard-section md-main-details">
+
+        <div class="md-main-details-grid md-dashboard-card-grid">
+
+            {% include "patients/dashboard/summary.html" %}
+
+            {% include "patients/dashboard/appointment_status.html" %}
+
+        </div>
+
+    </section>
+
+
+    <!-- ============================================================
+         Vitals
+         Dynamic Vital Cards
+         ============================================================ -->
+
+    <section class="md-dashboard-section md-vitals-section">
+
+        {% include "patients/dashboard/health_metrics.html" %}
+
+    </section>
+
+
+    <!-- ============================================================
+         Health & Coverage
+         Blood Pressure Chart + Insurance
+         ============================================================ -->
+
+    <section class="md-dashboard-section md-health-coverage">
+
+        <div class="md-health-coverage-grid md-dashboard-card-grid">
+
+            {% include "patients/dashboard/blood_pressure.html" %}
+
+            {% include "patients/dashboard/insurance_details.html" %}
+
+        </div>
+
+    </section>
+
+
+    <!-- ============================================================
+         Medications & Appointments
+         Prescriptions + Upcoming Appointments
+         ============================================================ -->
+
+    <section class="md-dashboard-section md-medications-appointments">
+
+        <div class="md-medications-appointments-grid md-dashboard-card-grid">
+
+            {% include "patients/dashboard/prescriptions.html" %}
+
+            {% include "patients/dashboard/appointments.html" %}
+
+        </div>
+
+    </section>
+
+</section>
+
+
+{% if profile_incomplete %}
+{% include "patients/dashboard/profile_completion_popup.html" %}
+{% endif %}
+
+{% endblock %}

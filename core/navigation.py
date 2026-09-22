@@ -55,14 +55,14 @@ def get_patient_navigation():
     ]
 
 
-def get_doctor_navigation():
+def get_staff_navigation():
 
     return [
         {
             "id": "dashboard",
             "label": "Dashboard",
             "icon": "layout-dashboard",
-            "url": reverse("doctor_dashboard"),
+            "url": reverse("staff_dashboard"),
         },
     ]
 
@@ -76,24 +76,20 @@ def get_admin_navigation():
             "icon": "layout-dashboard",
             "url": reverse("admin_dashboard"),
         },
+        {
+            "id": "staff",
+            "label": "Staff",
+            "icon": "stethoscope",
+            "url": reverse("admin_staff"),
+            "children": [
+                {
+                    "label": "Manage Staff",
+                    "url": reverse("admin_staff"),
+                },
+                {
+                    "label": "Add/Update Staff",
+                    "url": reverse("admin_add_staff"),
+                },
+            ],
+        },
     ]
-
-
-def dashboard_navigation(request):
-
-    if not request.user.is_authenticated:
-        return {"sidebar_items": get_patient_navigation()}
-
-    if request.user.access_level == "Admin":
-        navigation = get_admin_navigation()
-
-    elif request.user.access_level == "Doctor":
-        navigation = get_doctor_navigation()
-
-    elif request.user.access_level == "Patient":
-        navigation = get_patient_navigation()
-
-    else:
-        navigation = []
-
-    return {"sidebar_items": navigation}

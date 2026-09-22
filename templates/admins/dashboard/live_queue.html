@@ -1,0 +1,146 @@
+{% load static %}
+
+<!-- ============================================================
+     Live Queue Overview
+     ============================================================ -->
+
+<article class="admin-card admin-live-queue-card">
+
+<div class="admin-card__header admin-live-queue-card__header">
+
+    <div class="admin-card__title-group">
+
+        <div class="admin-card__icon">
+            <i data-lucide="bar-chart-3"></i>
+        </div>
+
+        <h3 class="admin-card__title">
+            Live Queue Overview
+        </h3>
+
+    </div>
+
+    <a href="#" class="admin-live-queue-card__view-all">
+        View All
+    </a>
+
+</div>
+
+
+<div class="admin-live-queue-body">
+
+    <!-- ========================================================
+         Queue Table
+         ======================================================== -->
+
+    <div class="admin-live-queue-table-wrapper">
+
+        <table class="admin-live-queue-table">
+
+            <thead>
+                <tr>
+                    <th>Department</th>
+                    <th>Current Token</th>
+                    <th>Waiting</th>
+                    <th>Status</th>
+                    <th class="admin-live-queue-table__right">
+                        Avg. Wait Time
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                <tr>
+                    <td>General Medicine</td>
+                    <td>G-32</td>
+                    <td>5</td>
+                    <td>
+                        <span class="admin-queue-status active">
+                            Active
+                        </span>
+                    </td>
+                    <td class="admin-live-queue-table__right">
+                        18 min
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Cardiology</td>
+                    <td>C-18</td>
+                    <td>3</td>
+                    <td>
+                        <span class="admin-queue-status active">
+                            Active
+                        </span>
+                    </td>
+                    <td class="admin-live-queue-table__right">
+                        24 min
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Dermatology</td>
+                    <td>D-11</td>
+                    <td>2</td>
+                    <td>
+                        <span class="admin-queue-status active">
+                            Active
+                        </span>
+                    </td>
+                    <td class="admin-live-queue-table__right">
+                        12 min
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Orthopedics</td>
+                    <td>O-14</td>
+                    <td>6</td>
+                    <td>
+                        <span class="admin-queue-status busy">
+                            Busy
+                        </span>
+                    </td>
+                    <td class="admin-live-queue-table__right">
+                        28 min
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Pediatrics</td>
+                    <td>P-09</td>
+                    <td>1</td>
+                    <td>
+                        <span class="admin-queue-status active">
+                            Active
+                        </span>
+                    </td>
+                    <td class="admin-live-queue-table__right">
+                        10 min
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Gynecology</td>
+                    <td>Y-07</td>
+                    <td>4</td>
+                    <td>
+                        <span class="admin-queue-status active">
+                            Active
+                        </span>
+                    </td>
+                    <td class="admin-live-queue-table__right">
+                        16 min
+                    </td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+</article>

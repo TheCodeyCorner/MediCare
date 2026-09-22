@@ -1,0 +1,88 @@
+{% load static %}
+
+<!-- ============================================================
+     Block 3 — Today's Appointments
+     ============================================================ -->
+
+<article class="admin-card admin-appointments-card">
+
+
+    <div class="admin-card__header admin-appointments-card__header">
+
+        <div class="admin-card__title-group">
+
+            <div class="admin-card__icon">
+                <i data-lucide="calendar-days"></i>
+            </div>
+
+            <h3 class="admin-card__title">
+                Today's Appointments
+            </h3>
+
+        </div>
+
+        <a href="#" class="admin-appointments-card__view-all">
+            View All
+        </a>
+
+    </div>
+
+
+    <!-- ========================================================
+     Appointments Table
+     ======================================================== -->
+
+    <div class="admin-appointments-table-wrapper">
+
+        <table class="admin-appointments-table">
+
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Patient Name</th>
+                    <th>Doctor</th>
+                    <th>Department</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for appointment in todays_appointments %}
+
+                <tr>
+
+                    <td>
+                        {{ appointment.time }}
+                    </td>
+
+                    <td>
+                        {{ appointment.patient_name }}
+                    </td>
+
+                    <td>
+                        {{ appointment.doctor_name }}
+                    </td>
+
+                    <td>
+                        {{ appointment.department }}
+                    </td>
+
+                    <td>
+                        <span class="admin-status-badge {{ appointment.status_class }}">
+                            {{ appointment.status }}
+                        </span>
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+</article>

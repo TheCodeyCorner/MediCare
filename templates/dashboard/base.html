@@ -30,15 +30,31 @@
 
 </head>
 
-
 <body>
+
+    <!-- Toast -->
+    <div class="dashboard-toast-container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="dashboard-toast dashboard-toast--{{ message.tags }}">
+                    <span class="dashboard-toast__message">{{ message }}</span>
+                    <button
+                        type="button"
+                        class="dashboard-toast__close"
+                        aria-label="Close"
+                    >
+                        &times;
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
 
     <div class="md-wrap">
 
         {% include "dashboard/header.html" %}
 
         {% include "dashboard/sidebar.html" %}
-
 
         <main class="md-main">
 
@@ -55,11 +71,30 @@
 
     </div>
 
-
     <script src="{% static 'js/dashboard.js' %}"></script>
 
     {% block extra_js %}
     {% endblock %}
+
+    <!-- Toast JavaScript -->
+    <script>
+        document.querySelectorAll(".dashboard-toast").forEach((toast) => {
+            const closeButton = toast.querySelector(".dashboard-toast__close");
+
+            const removeToast = () => {
+                toast.style.opacity = "0";
+                toast.style.transform = "translateY(-0.5rem)";
+
+                setTimeout(() => {
+                    toast.remove();
+                }, 200);
+            };
+
+            closeButton.addEventListener("click", removeToast);
+
+            setTimeout(removeToast, 4000);
+        });
+    </script>
 
 </body>
 

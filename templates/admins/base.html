@@ -1,0 +1,22 @@
+{% extends "dashboard/base.html" %}
+
+{% load static %}
+
+
+{% block title %}
+{% block admin_title %}
+Admin Dashboard | Medlink
+{% endblock %}
+{% endblock %}
+
+
+{% block extra_css %}
+
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="{% static 'js/admin.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "admins/base.html" %}
+
+{% block admin_title %}
+Admin Dashboard | Medlink
+{% endblock %}
+
+
+{% block content %}
+
+<section class="admin-page">
+
+
+    <!-- ============================================================
+         Row 1
+         KPI Metrics
+         ============================================================ -->
+
+    <section class="md-dashboard-section admin-kpi-section">
+
+        <div class="admin-kpi-grid">
+
+            {% include "admins/dashboard/kpi_metrics.html" %}
+
+        </div>
+
+    </section>
+
+
+    <!-- ============================================================
+         Row 2
+         Patient Demographics
+         ============================================================ -->
+
+    <section class="md-dashboard-section admin-row-2">
+
+        <div class="admin-row-2-grid">
+
+            {% include "admins/dashboard/patient_demographics.html" %}
+            {% include "admins/dashboard/department_appointments.html" %}
+            {% include "admins/dashboard/todays_appointments.html" %}
+
+        </div>
+
+    </section>
+
+    <!-- ============================================================
+     Row 3
+     Live Queue Overview
+     ============================================================ -->
+
+    <section class="md-dashboard-section admin-row-3">
+
+        <div class="admin-row-3-grid">
+
+            {% include "admins/dashboard/live_queue.html" %}
+            {% include "admins/dashboard/queue_summary.html" %}
+
+        </div>
+
+    </section>
+
+    <!-- ============================================================
+     Row 4
+     Recent Registrations + Upcoming Doctor Schedule
+     ============================================================ -->
+
+    <section class="md-dashboard-section admin-row-4">
+
+        <div class="admin-row-4-grid">
+
+            {% include "admins/dashboard/recent_registrations.html" %}
+            {% include "admins/dashboard/upcoming_doctor_schedule.html" %}
+
+        </div>
+
+    </section>
+
+</section>
+
+{% endblock %}

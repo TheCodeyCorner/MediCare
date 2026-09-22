@@ -1,0 +1,15 @@
+{% extends "patient/base.html" %}
+
+{% block patient_title %}
+Patient Dashboard | Medicare
+{% endblock %}
+
+{% block content %}
+
+<!-- COMMENT -->
+
+{% if profile_incomplete %}
+{% include "patient/dashboard/profile_completion_popup.html" %}
+{% endif %}
+
+{% endblock %}
