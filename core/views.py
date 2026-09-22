@@ -1,11 +1,13 @@
 import json
 import os
 import psycopg2
+import uuid
 
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
 from medicare.supabase_client import supabase
+from supabase import create_client
 
 from django.contrib.auth import authenticate
 from django.http import JsonResponse
@@ -1851,6 +1853,26 @@ def admin_add_staff(request):
 
     connection = psycopg2.connect(database_url)
 
+    # ============================================================
+    # Supabase Storage
+    # ============================================================
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+    if not supabase_url:
+        raise ValueError("SUPABASE_URL is missing")
+
+    if not supabase_key:
+        raise ValueError("SUPABASE_SERVICE_ROLE_KEY is missing")
+
+    supabase = create_client(
+        supabase_url,
+        supabase_key,
+    )
+
+    STORAGE_BUCKET = "staff-profiles"
+
     try:
 
         # ========================================================
@@ -1964,8 +1986,14 @@ def admin_add_staff(request):
             ).strip()
 
             # ----------------------------------------------------
-            # Basic validation
+            # Profile image
             # ----------------------------------------------------
+
+            photo = request.FILES.get("photo")
+
+            # ====================================================
+            # Basic validation
+            # ====================================================
 
             if not email:
                 messages.error(
@@ -2044,9 +2072,9 @@ def admin_add_staff(request):
                 )
                 return redirect("admin_add_staff")
 
-            # ----------------------------------------------------
+            # ====================================================
             # Validate date
-            # ----------------------------------------------------
+            # ====================================================
 
             try:
                 dob_date = date.fromisoformat(dob)
@@ -2065,9 +2093,9 @@ def admin_add_staff(request):
                 )
                 return redirect("admin_add_staff")
 
-            # ----------------------------------------------------
+            # ====================================================
             # Validate experience
-            # ----------------------------------------------------
+            # ====================================================
 
             try:
                 experience = int(experience_raw)
@@ -2086,9 +2114,9 @@ def admin_add_staff(request):
                 )
                 return redirect("admin_add_staff")
 
-            # ----------------------------------------------------
+            # ====================================================
             # Validate consultation fee
-            # ----------------------------------------------------
+            # ====================================================
 
             try:
                 consultation_fee = Decimal(
@@ -2109,9 +2137,9 @@ def admin_add_staff(request):
                 )
                 return redirect("admin_add_staff")
 
-            # ----------------------------------------------------
+            # ====================================================
             # Parse specializations
-            # ----------------------------------------------------
+            # ====================================================
 
             specializations = []
 
@@ -2149,21 +2177,25 @@ def admin_add_staff(request):
                     if item and item not in specializations:
                         specializations.append(item)
 
-            # ----------------------------------------------------
+            # ====================================================
             # Profile image validation
-            # ----------------------------------------------------
+            # ====================================================
 
-            photo = request.FILES.get("photo")
+            photo_content_type = None
+            photo_extension = None
+            photo_bytes = None
 
             if photo:
 
                 allowed_types = {
-                    "image/jpeg",
-                    "image/png",
-                    "image/webp",
+                    "image/jpeg": ".jpg",
+                    "image/png": ".png",
+                    "image/webp": ".webp",
                 }
 
-                if photo.content_type not in allowed_types:
+                photo_content_type = photo.content_type
+
+                if photo_content_type not in allowed_types:
                     messages.error(
                         request,
                         "Profile photo must be JPEG, PNG, or WebP.",
@@ -2176,6 +2208,26 @@ def admin_add_staff(request):
                         "Profile photo must be 100 KB or smaller.",
                     )
                     return redirect("admin_add_staff")
+
+                photo_extension = allowed_types[
+                    photo_content_type
+                ]
+
+                photo_bytes = photo.read()
+
+                if len(photo_bytes) > 100 * 1024:
+                    messages.error(
+                        request,
+                        "Profile photo must be 100 KB or smaller.",
+                    )
+                    return redirect("admin_add_staff")
+
+            # ====================================================
+            # Storage tracking
+            # ====================================================
+
+            uploaded_storage_path = None
+            old_storage_path = None
 
             # ====================================================
             # Database transaction
@@ -2330,8 +2382,6 @@ def admin_add_staff(request):
 
                         # ========================================
                         # 6. ADD
-                        #
-                        # No staff_id means this is a new record.
                         # ========================================
 
                         if not staff_id:
@@ -2419,7 +2469,7 @@ def admin_add_staff(request):
                                     %s,
                                     %s,
                                     %s,
-                                    'Off_Duty',
+                                    'On_Duty',
                                     %s,
                                     NULL
                                 )
@@ -2446,6 +2496,60 @@ def admin_add_staff(request):
 
                             new_staff_id = cursor.fetchone()[0]
 
+                            # ------------------------------------
+                            # Upload profile image
+                            # ------------------------------------
+
+                            if photo_bytes:
+
+                                uploaded_storage_path = (
+                                    f"{new_staff_id}/profile"
+                                    f"{photo_extension}"
+                                )
+
+                                try:
+
+                                    supabase.storage \
+                                        .from_(STORAGE_BUCKET) \
+                                        .upload(
+                                            path=uploaded_storage_path,
+                                            file=photo_bytes,
+                                            file_options={
+                                                "content-type": (
+                                                    photo_content_type
+                                                ),
+                                                "cache-control": "3600",
+                                                "upsert": "false",
+                                            },
+                                        )
+
+                                except Exception as storage_error:
+
+                                    print(
+                                        "STAFF PROFILE IMAGE UPLOAD ERROR:",
+                                        storage_error,
+                                    )
+
+                                    raise RuntimeError(
+                                        "Unable to upload the staff profile photo."
+                                    ) from storage_error
+
+                                # --------------------------------
+                                # Save Storage path
+                                # --------------------------------
+
+                                cursor.execute(
+                                    """
+                                    UPDATE "QueueCare".staff
+                                    SET profile_image_path = %s
+                                    WHERE staff_id = %s;
+                                    """,
+                                    (
+                                        uploaded_storage_path,
+                                        new_staff_id,
+                                    ),
+                                )
+
                             messages.success(
                                 request,
                                 "Staff account created successfully.",
@@ -2453,9 +2557,6 @@ def admin_add_staff(request):
 
                         # ========================================
                         # 7. UPDATE
-                        #
-                        # staff_id means an existing record is
-                        # being updated.
                         # ========================================
 
                         else:
@@ -2492,7 +2593,7 @@ def admin_add_staff(request):
 
                             existing_staff_id = existing_staff_row[0]
                             existing_staff_user_id = existing_staff_row[1]
-                            existing_profile_image_path = existing_staff_row[4]
+                            old_storage_path = existing_staff_row[4]
 
                             # ------------------------------------
                             # Prevent assigning another user's
@@ -2525,6 +2626,49 @@ def admin_add_staff(request):
                             )
 
                             # ------------------------------------
+                            # Upload new image first
+                            #
+                            # A unique path is used so the old
+                            # image remains available until the
+                            # database update succeeds.
+                            # ------------------------------------
+
+                            if photo_bytes:
+
+                                uploaded_storage_path = (
+                                    f"{existing_staff_id}/profile-"
+                                    f"{uuid.uuid4().hex}"
+                                    f"{photo_extension}"
+                                )
+
+                                try:
+
+                                    supabase.storage \
+                                        .from_(STORAGE_BUCKET) \
+                                        .upload(
+                                            path=uploaded_storage_path,
+                                            file=photo_bytes,
+                                            file_options={
+                                                "content-type": (
+                                                    photo_content_type
+                                                ),
+                                                "cache-control": "3600",
+                                                "upsert": "false",
+                                            },
+                                        )
+
+                                except Exception as storage_error:
+
+                                    print(
+                                        "STAFF PROFILE IMAGE UPLOAD ERROR:",
+                                        storage_error,
+                                    )
+
+                                    raise RuntimeError(
+                                        "Unable to upload the new staff profile photo."
+                                    ) from storage_error
+
+                            # ------------------------------------
                             # Update staff record
                             #
                             # active and status are intentionally
@@ -2548,7 +2692,8 @@ def admin_add_staff(request):
                                     address = %s,
                                     state = %s,
                                     country = %s,
-                                    pincode = %s
+                                    pincode = %s,
+                                    profile_image_path = COALESCE(%s, profile_image_path)
                                 WHERE staff_id = %s;
                                 """,
                                 (
@@ -2566,6 +2711,7 @@ def admin_add_staff(request):
                                     state,
                                     country,
                                     pincode,
+                                    uploaded_storage_path,
                                     existing_staff_id,
                                 ),
                             )
@@ -2576,36 +2722,74 @@ def admin_add_staff(request):
                             )
 
                 # =================================================
-                # Transaction completed successfully
+                # Database transaction completed successfully
                 # =================================================
 
-                return redirect("admin_add_staff")
+                # -------------------------------------------------
+                # Delete old image only AFTER the database update
+                # has successfully committed.
+                # -------------------------------------------------
 
-            except psycopg2.Error as error:
+                if uploaded_storage_path and old_storage_path:
 
-                print(
-                    "ADMIN ADD/UPDATE STAFF DATABASE ERROR:",
-                    error,
-                )
+                    try:
 
-                messages.error(
-                    request,
-                    "Unable to save the staff account.",
-                )
+                        supabase.storage \
+                            .from_(STORAGE_BUCKET) \
+                            .remove([old_storage_path])
+
+                    except Exception as storage_error:
+
+                        print(
+                            "OLD STAFF PROFILE IMAGE DELETE ERROR:",
+                            storage_error,
+                        )
 
                 return redirect("admin_add_staff")
 
             except Exception as error:
+
+                # ------------------------------------------------
+                # If a new image was uploaded but the database
+                # transaction failed, remove the new orphaned file.
+                # ------------------------------------------------
+
+                if uploaded_storage_path:
+
+                    try:
+
+                        supabase.storage \
+                            .from_(STORAGE_BUCKET) \
+                            .remove([uploaded_storage_path])
+
+                    except Exception as cleanup_error:
+
+                        print(
+                            "STAFF PROFILE IMAGE CLEANUP ERROR:",
+                            cleanup_error,
+                        )
 
                 print(
                     "ADMIN ADD/UPDATE STAFF ERROR:",
                     error,
                 )
 
-                messages.error(
-                    request,
-                    "An unexpected error occurred while saving the staff account.",
-                )
+                if isinstance(error, psycopg2.Error):
+
+                    messages.error(
+                        request,
+                        "Unable to save the staff account.",
+                    )
+
+                else:
+
+                    messages.error(
+                        request,
+                        str(error) or (
+                            "An unexpected error occurred "
+                            "while saving the staff account."
+                        ),
+                    )
 
                 return redirect("admin_add_staff")
 
@@ -2662,8 +2846,6 @@ def admin_add_staff(request):
 
             # ----------------------------------------------------
             # Countries
-            #
-            # country_states is the source of truth.
             # ----------------------------------------------------
 
             cursor.execute(
@@ -2863,6 +3045,7 @@ def admin_fetch_staff(request):
             return JsonResponse(
                 {
                     "exists": True,
+                    "message": "Staff information loaded successfully.",
                     "staff": {
                         "staff_id": str(staff_id),
                         "user_id": str(staff_user_id),
@@ -2908,7 +3091,9 @@ def admin_fetch_staff(request):
         print("ADMIN FETCH STAFF DATABASE ERROR:", error)
 
         return JsonResponse(
-            {"error": "Unable to fetch staff information."},
+            {
+                "error": "Unable to fetch staff information."
+            },
             status=500,
         )
 
@@ -2916,7 +3101,9 @@ def admin_fetch_staff(request):
         print("ADMIN FETCH STAFF ERROR:", error)
 
         return JsonResponse(
-            {"error": "An unexpected error occurred."},
+            {
+                "error": "An unexpected error occurred."
+            },
             status=500,
         )
 

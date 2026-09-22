@@ -81,3 +81,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 });
+
+// Popup Dynamic
+
+function showDashboardToast(message, type = "info") {
+    const container = document.querySelector(".dashboard-toast-container");
+
+    if (!container) {
+        return;
+    }
+
+    const toast = document.createElement("div");
+
+    toast.className = `dashboard-toast dashboard-toast--${type}`;
+
+    toast.innerHTML = `
+        <span class="dashboard-toast__message"></span>
+        <button
+            type="button"
+            class="dashboard-toast__close"
+            aria-label="Close"
+        >
+            &times;
+        </button>
+    `;
+
+    toast.querySelector(".dashboard-toast__message").textContent = message;
+
+    const closeButton = toast.querySelector(".dashboard-toast__close");
+
+    const removeToast = () => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(-0.5rem)";
+
+        setTimeout(() => {
+            toast.remove();
+        }, 200);
+    };
+
+    closeButton.addEventListener("click", removeToast);
+
+    container.appendChild(toast);
+
+    setTimeout(removeToast, 4000);
+}

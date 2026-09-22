@@ -201,7 +201,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const email = emailInput.value.trim();
 
         if (!email) {
-            alert("Enter a staff email address first.");
+            showDashboardToast("Enter a staff email address first.", "warning");
             emailInput.focus();
             return;
         }
@@ -224,9 +224,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (!data.exists) {
                 setAddMode();
-                alert(
+                showDashboardToast(
                     data.message ||
-                    "No staff record exists for this user. You can create one."
+                    "No staff record exists for this user. You can create one.",
+                    "info"
                 );
                 return;
             }
@@ -256,11 +257,17 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
             setUpdateMode(data.staff.staff_id);
-            alert("Existing staff record loaded.");
+            showDashboardToast(
+                data.message || "Existing staff record loaded.",
+                "success"
+            );
         } catch (error) {
             console.error("Unable to fetch staff:", error);
             setAddMode();
-            alert(error.message || "Unable to fetch staff.");
+            showDashboardToast(
+                error.message || "Unable to fetch staff.",
+                "error"
+            );
         } finally {
             fetchButton.disabled = false;
             fetchButton.textContent = "Fetch Staff";
@@ -280,7 +287,10 @@ document.addEventListener("DOMContentLoaded", function () {
             !staffIdInput.value
         ) {
             event.preventDefault();
-            alert("No staff record is selected for update.");
+            showDashboardToast(
+                "No staff record is selected for update.",
+                "warning"
+            );
         }
     });
 });
