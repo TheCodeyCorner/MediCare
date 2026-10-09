@@ -8,6 +8,7 @@
 
     --login-blue: #2f6fed;
     --login-blue-light: #6ea8ff;
+
     --login-mint: #8de5c0;
     --login-mint-soft: #8feeb1;
     --login-mint-strong: #5bdc8b;
@@ -24,6 +25,58 @@
     --login-shadow:
         0 35px 90px rgba(0, 0, 0, 0.42),
         0 10px 30px rgba(0, 0, 0, 0.22);
+
+    /* =====================================================
+       Dashboard-equivalent colors
+       ===================================================== */
+
+    --login-bg: var(--login-navy);
+
+    --login-foreground: var(--login-text);
+
+    --login-card: rgba(255, 255, 255, 0.05);
+
+    --login-muted-bg: rgba(255, 255, 255, 0.075);
+
+    --login-muted-foreground: var(--login-muted);
+
+    --login-primary: var(--login-blue);
+    --login-primary-foreground: var(--login-white);
+
+    --login-success: var(--login-mint-strong);
+
+    --login-alert: #f0a35b;
+
+    --login-danger: #ef6b73;
+
+    --login-info: var(--login-blue-light);
+
+    --login-overlay: rgba(4, 13, 28, 0.72);
+
+    --login-border-strong: rgba(110, 168, 255, 0.8);
+
+    --login-primary-hover: var(--login-blue-light);
+
+    --login-shadow-sm:
+        0 10px 25px rgba(0, 0, 0, 0.22);
+
+    --login-shadow-md:
+        0 18px 40px rgba(0, 0, 0, 0.30);
+
+    --login-shadow-lg:
+        0 35px 90px rgba(0, 0, 0, 0.42);
+
+    --login-alert-bg: rgba(240, 163, 91, 0.12);
+
+    --login-success-bg: rgba(91, 220, 139, 0.12);
+
+    --login-info-bg: rgba(110, 168, 255, 0.12);
+
+    --login-danger-bg: rgba(239, 107, 115, 0.12);
+
+    --login-radius: 0.5rem;
+
+    --login-radius-sm: calc(var(--login-radius) - 3px);
 }
 
 
@@ -946,5 +999,86 @@ body {
     .login-field input,
     .password-toggle {
         transition: none;
+    }
+}
+
+/* Popup CSS */
+
+.dashboard-toast-container {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: min(24rem, calc(100vw - 2rem));
+    pointer-events: none;
+}
+
+.dashboard-toast {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--login-border);
+    border-radius: var(--login-radius-sm);
+    background: rgba(7, 21, 35, 0.94);
+    color: var(--login-foreground);
+    box-shadow: var(--login-shadow-sm);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    pointer-events: auto;
+    animation: dashboard-toast-in 220ms ease;
+}
+
+.dashboard-toast--success {
+    border-color: var(--login-success);
+}
+
+.dashboard-toast--error {
+    border-color: var(--login-danger);
+}
+
+.dashboard-toast--warning {
+    border-color: var(--login-alert);
+}
+
+.dashboard-toast--info {
+    border-color: var(--login-primary);
+}
+
+.dashboard-toast__message {
+    flex: 1;
+    min-width: 0;
+    color: var(--login-foreground);
+    line-height: 1.4;
+}
+
+.dashboard-toast__close {
+    flex-shrink: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--login-muted-foreground);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.dashboard-toast__close:hover {
+    color: var(--login-foreground);
+}
+
+@keyframes dashboard-toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(-0.5rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

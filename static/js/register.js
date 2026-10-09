@@ -65,12 +65,12 @@ document.addEventListener("DOMContentLoaded", () => {
          * Client-side validation
          */
         if (!email || !password || !confirmPassword) {
-            alert("Please fill in all fields.");
+            showDashboardToast("Please fill in all fields.","error");
             return;
         }
 
         if (password !== confirmPassword) {
-            alert("Passwords do not match.");
+            showDashboardToast("Passwords do not match.","error");
             return;
         }
 
@@ -108,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
 
             if (!response.ok) {
-                alert(data.error || "Registration failed.");
+                showDashboardToast("Registration failed.","error");
 
                 submitButton.disabled = false;
                 submitButton.textContent = "Create Account";
@@ -116,19 +116,66 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            alert(data.message || "Account created successfully.");
+            showDashboardToast(
+                "Account created successfully.\nPlease check your inbox to verify your email address.",
+                "success"
+            );
 
-            window.location.href = "/login/";
+            setTimeout(() => {
+                window.location.href = "/login/";
+            }, 3000);
 
         } catch (error) {
             console.error("Registration error:", error);
 
-            alert(
-                "Unable to connect to the server. Please try again."
-            );
+            showDashboardToast("Unable to connect to the server. Please try again.","error")
 
             submitButton.disabled = false;
             submitButton.textContent = "Create Account";
         }
     });
 });
+
+// Popup Dynamic
+
+function showDashboardToast(message, type = "info") {
+    const container = document.querySelector(".dashboard-toast-container");
+
+    if (!container) {
+        return;
+    }
+
+    const toast = document.createElement("div");
+
+    toast.className = `dashboard-toast dashboard-toast--${type}`;
+
+    toast.innerHTML = `
+        <span class="dashboard-toast__message"></span>
+        <button
+            type="button"
+            class="dashboard-toast__close"
+            aria-label="Close"
+        >
+            &times;
+        </button>
+    `;
+
+    toast.querySelector(".dashboard-toast__message").textContent = message;
+
+    const closeButton = toast.querySelector(".dashboard-toast__close");
+
+    const removeToast = () => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(-0.5rem)";
+
+        setTimeout(() => {
+            toast.remove();
+        }, 200);
+    };
+
+    closeButton.addEventListener("click", removeToast);
+
+    container.appendChild(toast);
+
+    setTimeout(removeToast, 4000);
+}

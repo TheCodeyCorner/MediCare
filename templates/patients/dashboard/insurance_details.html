@@ -48,7 +48,7 @@
                         class="md-insurance__logo">
                     {% else %}
                     <span class="md-insurance__logo-placeholder">
-                        {{ insurance.provider_name|first|upper }}
+                        {{ insurance.provider_name|default:"I"|first|upper }}
                     </span>
                     {% endif %}
 

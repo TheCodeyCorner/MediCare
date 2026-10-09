@@ -24,6 +24,58 @@
     --register-shadow:
         0 35px 90px rgba(0, 0, 0, 0.42),
         0 10px 30px rgba(0, 0, 0, 0.22);
+
+    /* =====================================================
+   Dashboard-equivalent colors
+   ===================================================== */
+
+    --register-bg: var(--register-navy);
+
+    --register-foreground: var(--register-text);
+
+    --register-card: rgba(255, 255, 255, 0.05);
+
+    --register-muted-bg: rgba(255, 255, 255, 0.075);
+
+    --register-muted-foreground: var(--register-muted);
+
+    --register-primary: var(--register-blue);
+    --register-primary-foreground: var(--register-white);
+
+    --register-success: var(--register-mint-strong);
+
+    --register-alert: #f0a35b;
+
+    --register-danger: #ef6b73;
+
+    --register-info: var(--register-blue-light);
+
+    --register-overlay: rgba(4, 13, 28, 0.72);
+
+    --register-border-strong: rgba(110, 168, 255, 0.8);
+
+    --register-primary-hover: var(--register-blue-light);
+
+    --register-shadow-sm:
+        0 10px 25px rgba(0, 0, 0, 0.22);
+
+    --register-shadow-md:
+        0 18px 40px rgba(0, 0, 0, 0.30);
+
+    --register-shadow-lg:
+        0 35px 90px rgba(0, 0, 0, 0.42);
+
+    --register-alert-bg: rgba(240, 163, 91, 0.12);
+
+    --register-success-bg: rgba(91, 220, 139, 0.12);
+
+    --register-info-bg: rgba(110, 168, 255, 0.12);
+
+    --register-danger-bg: rgba(239, 107, 115, 0.12);
+
+    --register-radius: 0.5rem;
+
+    --register-radius-sm: calc(var(--register-radius) - 3px);
 }
 
 
@@ -946,5 +998,87 @@ body {
     .register-field input,
     .password-toggle {
         transition: none;
+    }
+}
+
+/* Popup CSS */
+
+.dashboard-toast-container {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: min(24rem, calc(100vw - 2rem));
+    pointer-events: none;
+}
+
+.dashboard-toast {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--register-border);
+    border-radius: var(--register-radius-sm);
+    background: rgba(7, 21, 35, 0.94);
+    color: var(--register-foreground);
+    box-shadow: var(--register-shadow-sm);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    pointer-events: auto;
+    animation: dashboard-toast-in 220ms ease;
+}
+
+.dashboard-toast--success {
+    border-color: var(--register-success);
+}
+
+.dashboard-toast--error {
+    border-color: var(--register-danger);
+}
+
+.dashboard-toast--warning {
+    border-color: var(--register-alert);
+}
+
+.dashboard-toast--info {
+    border-color: var(--register-primary);
+}
+
+.dashboard-toast__message {
+    flex: 1;
+    min-width: 0;
+    color: var(--register-foreground);
+    line-height: 1.4;
+    white-space: pre-line;
+}
+
+.dashboard-toast__close {
+    flex-shrink: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--register-muted-foreground);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.dashboard-toast__close:hover {
+    color: var(--register-foreground);
+}
+
+@keyframes dashboard-toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(-0.5rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

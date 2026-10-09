@@ -17,6 +17,25 @@
 
 <body>
 
+    <!-- Toast -->
+    <div class="dashboard-toast-container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="dashboard-toast dashboard-toast--{{ message.tags }}">
+                    <span class="dashboard-toast__message">{{ message }}</span>
+                    <button
+                        type="button"
+                        class="dashboard-toast__close"
+                        aria-label="Close"
+                    >
+                        &times;
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+
     <a class="login-brand-mark" href="{% url 'landing' %}" aria-label="MediCare home">
         <img src="{% static 'images/logo.webp' %}" alt="MediCare">
     </a>
@@ -113,6 +132,26 @@
     </main>
 
     <script src="{% static 'js/login.js' %}"></script>
+
+        <!-- Toast JavaScript -->
+    <script>
+        document.querySelectorAll(".dashboard-toast").forEach((toast) => {
+            const closeButton = toast.querySelector(".dashboard-toast__close");
+
+            const removeToast = () => {
+                toast.style.opacity = "0";
+                toast.style.transform = "translateY(-0.5rem)";
+
+                setTimeout(() => {
+                    toast.remove();
+                }, 200);
+            };
+
+            closeButton.addEventListener("click", removeToast);
+
+            setTimeout(removeToast, 4000);
+        });
+    </script>
 
 </body>
 

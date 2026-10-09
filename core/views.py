@@ -340,6 +340,16 @@ def register_patient(request):
 
 
 
+# def forgot(request):
+#     return render(request, "forgot_password.html")
+
+
+
+# def update_password(request):
+#     return render(request, "forgot_password.html")
+
+
+
 
 
 # ============================================================================
@@ -568,7 +578,7 @@ def patient_dashboard(request):
 
                     a.notes AS note,
 
-                    a.staff_id
+                    a.doctor_id
 
                 FROM "QueueCare".appointments a
 
@@ -576,7 +586,7 @@ def patient_dashboard(request):
                     ON at.app_type_id = a.app_type_id
 
                 LEFT JOIN "QueueCare".staff s
-                    ON s.staff_id = a.staff_id
+                    ON s.staff_id = a.doctor_id
 
                 LEFT JOIN "QueueCare".department d
                     ON d.department_id = s.department_id
@@ -1815,7 +1825,11 @@ def admin_dashboard(request):
 
     return render(
         request,
-        "admins/dashboard.html"
+        "admins/dashboard.html",
+        {
+            "page_title": "Admin Dashboard",
+            "breadcrumb": "Admin",
+        },
     )
 
 
@@ -1825,7 +1839,11 @@ def admin_staff(request):
 
     return render(
         request,
-        "admins/staff/manage_staff.html"
+        "admins/staff/manage_staff.html",
+        {
+            "page_title": "Staff Management",
+            "breadcrumb": "Admin/Manage_Staff",
+        },        
     )
 
 
@@ -2874,6 +2892,8 @@ def admin_add_staff(request):
                 "staff_levels": staff_levels,
                 "departments": departments,
                 "countries": countries,
+                "page_title": "Add Staff",
+                "breadcrumb": "Admin/Add_Staff",
             },
         )
 

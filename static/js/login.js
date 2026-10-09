@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // --------------------------------------------------------
 
         if (!email || !password) {
-            alert("Please enter your email and password.");
+            showDashboardToast("Please enter your email and password","error");
             return;
         }
 
@@ -131,9 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!response.ok) {
 
-                alert(
-                    data.error || "Invalid email or password."
-                );
+                showDashboardToast("Invalid email or password.","error")
 
                 submitButton.disabled = false;
                 submitButton.textContent = "Sign In";
@@ -167,7 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Unexpected response
             // ----------------------------------------------------
 
-            alert("Login failed.");
+            showDashboardToast("Login failed.","error")
 
             submitButton.disabled = false;
             submitButton.textContent = "Sign In";
@@ -176,10 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (error) {
 
             console.error("Login error:", error);
-
-            alert(
-                "Unable to connect to the server. Please try again."
-            );
+            showDashboardToast("Unable to connect to the server. Please try again.","error")
 
             submitButton.disabled = false;
             submitButton.textContent = "Sign In";
@@ -189,3 +184,47 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
 });
+
+// Popup Dynamic
+
+function showDashboardToast(message, type = "info") {
+    const container = document.querySelector(".dashboard-toast-container");
+
+    if (!container) {
+        return;
+    }
+
+    const toast = document.createElement("div");
+
+    toast.className = `dashboard-toast dashboard-toast--${type}`;
+
+    toast.innerHTML = `
+        <span class="dashboard-toast__message"></span>
+        <button
+            type="button"
+            class="dashboard-toast__close"
+            aria-label="Close"
+        >
+            &times;
+        </button>
+    `;
+
+    toast.querySelector(".dashboard-toast__message").textContent = message;
+
+    const closeButton = toast.querySelector(".dashboard-toast__close");
+
+    const removeToast = () => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(-0.5rem)";
+
+        setTimeout(() => {
+            toast.remove();
+        }, 200);
+    };
+
+    closeButton.addEventListener("click", removeToast);
+
+    container.appendChild(toast);
+
+    setTimeout(removeToast, 4000);
+}
