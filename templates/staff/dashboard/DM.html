@@ -1,0 +1,54 @@
+{# Staff Dashboard Block — Doctor Management | Feature code: DM #}
+
+<article class="staff-card staff-feature-widget">
+
+    <div class="staff-card__header">
+        <div class="staff-card__title-group">
+            <span class="staff-card__icon">
+                <i data-lucide="stethoscope" aria-hidden="true"></i>
+            </span>
+            <h2 class="staff-card__title">
+                {{ permission.feature_name }}
+            </h2>
+        </div>
+
+        <a href="{% url 'staff_doctors' %}"
+           class="staff-icon-button"
+           aria-label="Open Doctor Management"
+           title="View doctors">
+            <i data-lucide="arrow-up-right" aria-hidden="true"></i>
+        </a>
+    </div>
+
+    <div class="staff-feature-widget__metrics">
+
+        <div class="staff-feature-widget__metric">
+            <span class="staff-feature-widget__label">
+                Total Doctors
+            </span>
+            <strong class="staff-feature-widget__value">
+                {{ total_doctors|default:"0" }}
+            </strong>
+        </div>
+
+        <div class="staff-feature-widget__metric">
+            <span class="staff-feature-widget__label">
+                Active Doctors
+            </span>
+            <strong class="staff-feature-widget__value">
+                {{ active_doctors|default:"0" }}
+            </strong>
+        </div>
+
+        <div class="staff-feature-widget__metric">
+            <span class="staff-feature-widget__label">
+                Departments
+            </span>
+            <strong class="staff-feature-widget__value">
+                {{ department_count|default:"0" }}
+            </strong>
+        </div>
+
+    </div>
+
+</article>

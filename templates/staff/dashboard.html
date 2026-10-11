@@ -1,0 +1,22 @@
+
+{% extends "staff/base.html" %}
+
+{% block staff_title %}
+Staff Dashboard | Medicare
+{% endblock %}
+
+{% block content %}
+
+<div class="staff-page">
+
+    {% for feature_code, permission in staff_permissions.items %}
+        {% if permission.can_view %}
+            {% include "staff/dashboard/"|add:feature_code|add:".html" %}
+        {% endif %}
+    {% empty %}
+        <p>No staff features are currently assigned to your account.</p>
+    {% endfor %}
+
+</div>
+
+{% endblock %}

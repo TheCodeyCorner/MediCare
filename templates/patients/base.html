@@ -1,0 +1,22 @@
+{% extends "dashboard/base.html" %}
+
+{% load static %}
+
+
+{% block title %}
+{% block patient_title %}
+Patient Dashboard | Medicare
+{% endblock %}
+{% endblock %}
+
+
+{% block extra_css %}
+
+<link rel="stylesheet" href="{% static 'css/patient.css' %}">
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="{% static 'js/patient.js' %}"></script>
+{% endblock %}

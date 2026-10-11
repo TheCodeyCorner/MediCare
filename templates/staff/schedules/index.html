@@ -1,0 +1,434 @@
+{% extends "staff/base.html" %}
+
+{% block staff_title %}
+Schedules | Medicare
+{% endblock %}
+
+{% block content %}
+
+<section class="staff-page staff-schedules-page">
+
+    <!-- Page Header -->
+    <header class="staff-page-header">
+
+        {% if can_create_schedule %}
+        <a href="{% url 'staff_schedule_create' %}"
+           class="staff-button staff-button--primary">
+            <i data-lucide="plus" aria-hidden="true"></i>
+            <span>Add Schedule</span>
+        </a>
+        {% endif %}
+
+    </header>
+
+
+    <!-- Schedule Metrics -->
+    <section class="staff-schedule-metrics"
+             aria-label="Schedule statistics">
+
+        <article class="staff-card staff-metric-card">
+
+            <div class="staff-metric-card__header">
+                <span class="staff-metric-card__label">
+                    Total Schedules
+                </span>
+
+                <span class="staff-metric-card__icon">
+                    <i data-lucide="calendar-days" aria-hidden="true"></i>
+                </span>
+            </div>
+
+            <p class="staff-metric-card__value">
+                {{ total_schedules|default:"0" }}
+            </p>
+
+            <p class="staff-metric-card__hint">
+                All recorded schedules
+            </p>
+
+        </article>
+
+
+        <article class="staff-card staff-metric-card">
+
+            <div class="staff-metric-card__header">
+                <span class="staff-metric-card__label">
+                    Doctors Scheduled
+                </span>
+
+                <span class="staff-metric-card__icon">
+                    <i data-lucide="stethoscope" aria-hidden="true"></i>
+                </span>
+            </div>
+
+            <p class="staff-metric-card__value">
+                {{ doctors_scheduled|default:"0" }}
+            </p>
+
+            <p class="staff-metric-card__hint">
+                Doctors with scheduled shifts
+            </p>
+
+        </article>
+
+
+        <article class="staff-card staff-metric-card">
+
+            <div class="staff-metric-card__header">
+                <span class="staff-metric-card__label">
+                    Available Slots
+                </span>
+
+                <span class="staff-metric-card__icon">
+                    <i data-lucide="clock" aria-hidden="true"></i>
+                </span>
+            </div>
+
+            <p class="staff-metric-card__value">
+                {{ available_slots|default:"0" }}
+            </p>
+
+            <p class="staff-metric-card__hint">
+                Slots available for booking
+            </p>
+
+        </article>
+
+
+        <article class="staff-card staff-metric-card">
+
+            <div class="staff-metric-card__header">
+                <span class="staff-metric-card__label">
+                    Cancelled Slots
+                </span>
+
+                <span class="staff-metric-card__icon staff-metric-card__icon--alert">
+                    <i data-lucide="calendar-x" aria-hidden="true"></i>
+                </span>
+            </div>
+
+            <p class="staff-metric-card__value">
+                {{ cancelled_slots|default:"0" }}
+            </p>
+
+            <p class="staff-metric-card__hint">
+                Cancelled schedule slots
+            </p>
+
+        </article>
+
+    </section>
+
+
+    <!-- Schedule Calendar and Details -->
+    <section class="staff-schedule-layout">
+
+        <!-- Schedule Calendar -->
+        <article class="staff-card staff-schedule-calendar">
+
+            <div class="staff-card__header">
+
+                <div class="staff-card__title-group">
+
+                    <span class="staff-card__icon">
+                        <i data-lucide="calendar-range"
+                           aria-hidden="true"></i>
+                    </span>
+
+                    <h2 class="staff-card__title">
+                        Doctor Schedule
+                    </h2>
+
+                </div>
+
+                <div class="staff-schedule-calendar__actions">
+                    <button type="button"
+                            class="staff-icon-button"
+                            aria-label="Previous week"
+                            data-schedule-week="previous">
+                        <i data-lucide="chevron-left"
+                           aria-hidden="true"></i>
+                    </button>
+
+                    <span class="staff-schedule-calendar__period">
+                        {{ schedule_period|default:"Weekly overview" }}
+                    </span>
+
+                    <button type="button"
+                            class="staff-icon-button"
+                            aria-label="Next week"
+                            data-schedule-week="next">
+                        <i data-lucide="chevron-right"
+                           aria-hidden="true"></i>
+                    </button>
+                </div>
+
+            </div>
+
+
+            <!-- Filters -->
+            <form method="get"
+                  class="staff-schedule-filters">
+
+                <label class="staff-schedule-filter">
+                    <span>Department</span>
+
+                    <select name="department"
+                            class="staff-select">
+                        <option value="">All departments</option>
+
+                        {% for department in departments %}
+                        <option value="{{ department.id }}"
+                            {% if selected_department == department.id|stringformat:"s" %}selected{% endif %}>
+                            {{ department.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+
+                <label class="staff-schedule-filter">
+                    <span>Doctor</span>
+
+                    <select name="doctor"
+                            class="staff-select">
+                        <option value="">All doctors</option>
+
+                        {% for doctor in doctors %}
+                        <option value="{{ doctor.id }}"
+                            {% if selected_doctor == doctor.id|stringformat:"s" %}selected{% endif %}>
+                            {{ doctor.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+
+                <label class="staff-schedule-filter">
+                    <span>Room</span>
+
+                    <select name="room"
+                            class="staff-select">
+                        <option value="">All rooms</option>
+
+                        {% for room in rooms %}
+                        <option value="{{ room.id }}"
+                            {% if selected_room == room.id|stringformat:"s" %}selected{% endif %}>
+                            {{ room.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+
+                <button type="submit"
+                        class="staff-button staff-button--secondary">
+                    Apply filters
+                </button>
+
+            </form>
+
+
+            <!-- Weekly Schedule Table -->
+            <div class="staff-schedule-table-wrapper">
+
+                <table class="staff-schedule-table">
+
+                    <thead>
+                        <tr>
+                            <th scope="col">Time</th>
+
+                            {% for day in schedule_days %}
+                            <th scope="col">
+                                <span class="staff-schedule-day">
+                                    {{ day.label }}
+                                </span>
+                                <span class="staff-schedule-date">
+                                    {{ day.date|date:"d M" }}
+                                </span>
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+
+
+                    <tbody>
+                        {% for slot in schedule_rows %}
+
+                        <tr>
+                            <th scope="row"
+                                class="staff-schedule-time">
+                                {{ slot.label }}
+                            </th>
+
+                            {% for day in schedule_days %}
+
+                            <td>
+                                {% for appointment in day.appointments %}
+                                    {% if appointment.time_slot == slot.value %}
+
+                                    <div class="staff-schedule-slot
+                                        {% cycle '' 'staff-schedule-slot--pink' 'staff-schedule-slot--yellow' 'staff-schedule-slot--purple' %}">
+
+                                        <strong>
+                                            {{ appointment.doctor_name }}
+                                        </strong>
+
+                                        <span>
+                                            {{ appointment.department_name }}
+                                        </span>
+
+                                        <span>
+                                            Room {{ appointment.room_name }}
+                                        </span>
+
+                                        <span class="staff-schedule-slot__time">
+                                            {{ appointment.start_time|time:"H:i" }}
+                                            –
+                                            {{ appointment.end_time|time:"H:i" }}
+                                        </span>
+
+                                    </div>
+
+                                    {% endif %}
+                                {% empty %}
+                                    <span class="staff-schedule-empty-slot">—</span>
+                                {% endfor %}
+                            </td>
+
+                            {% endfor %}
+                        </tr>
+
+                        {% empty %}
+
+                        <tr>
+                            <td colspan="8"
+                                class="staff-schedule-empty">
+                                No schedule time slots are available.
+                            </td>
+                        </tr>
+
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </article>
+
+
+        <!-- Selected Schedule Details -->
+        <article class="staff-card staff-schedule-details">
+
+            <div class="staff-card__header">
+
+                <div class="staff-card__title-group">
+
+                    <span class="staff-card__icon">
+                        <i data-lucide="user-round"
+                           aria-hidden="true"></i>
+                    </span>
+
+                    <h2 class="staff-card__title">
+                        Schedule Details
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            {% if selected_schedule %}
+
+            <div class="staff-doctor-preview">
+
+                <div class="staff-doctor-avatar"
+                     aria-hidden="true">
+                    <i data-lucide="user-round"></i>
+                </div>
+
+                <div class="staff-doctor-preview__identity">
+
+                    <h3>{{ selected_schedule.doctor_name }}</h3>
+
+                    <p>{{ selected_schedule.department_name }}</p>
+
+                </div>
+
+            </div>
+
+
+            <dl class="staff-schedule-info">
+
+                <div class="staff-schedule-info__row">
+                    <dt>Doctor ID</dt>
+                    <dd>{{ selected_schedule.doctor_id }}</dd>
+                </div>
+
+                <div class="staff-schedule-info__row">
+                    <dt>Email</dt>
+                    <dd>{{ selected_schedule.email|default:"Not available" }}</dd>
+                </div>
+
+                <div class="staff-schedule-info__row">
+                    <dt>Contact</dt>
+                    <dd>{{ selected_schedule.contact|default:"Not available" }}</dd>
+                </div>
+
+                <div class="staff-schedule-info__row">
+                    <dt>Consultation Fee</dt>
+                    <dd>
+                        {% if selected_schedule.consultation_fee != None %}
+                            ₹{{ selected_schedule.consultation_fee }}
+                        {% else %}
+                            Not available
+                        {% endif %}
+                    </dd>
+                </div>
+
+                <div class="staff-schedule-info__row">
+                    <dt>Experience</dt>
+                    <dd>
+                        {% if selected_schedule.experience_years != None %}
+                            {{ selected_schedule.experience_years }} years
+                        {% else %}
+                            Not available
+                        {% endif %}
+                    </dd>
+                </div>
+
+                <div class="staff-schedule-info__row">
+                    <dt>Schedule Date</dt>
+                    <dd>{{ selected_schedule.date|date:"d M Y" }}</dd>
+                </div>
+
+                <div class="staff-schedule-info__row">
+                    <dt>Working Hours</dt>
+                    <dd>
+                        {{ selected_schedule.start_time|time:"H:i" }}
+                        –
+                        {{ selected_schedule.end_time|time:"H:i" }}
+                    </dd>
+                </div>
+
+            </dl>
+
+            {% else %}
+
+            <div class="staff-schedule-details__empty">
+                <i data-lucide="calendar-search"
+                   aria-hidden="true"></i>
+
+                <p>Select a schedule to view its details.</p>
+            </div>
+
+            {% endif %}
+
+        </article>
+
+    </section>
+
+</section>
+
+{% endblock %}

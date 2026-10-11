@@ -1,0 +1,22 @@
+{% extends "dashboard/base.html" %}
+
+{% load static %}
+
+
+{% block title %}
+{% block staff_title %}
+Staff Dashboard | Medicare
+{% endblock %}
+{% endblock %}
+
+
+{% block extra_css %}
+
+<link rel="stylesheet" href="{% static 'css/staff.css' %}">
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="{% static 'js/staff.js' %}"></script>
+{% endblock %}

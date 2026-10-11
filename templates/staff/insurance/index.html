@@ -1,0 +1,271 @@
+{% extends "staff/base.html" %}
+
+{% block staff_title %}Insurance | Medicare{% endblock %}
+
+{% block content %}
+<section class="staff-page staff-insurance-page">
+
+    <!-- Providers -->
+    <article class="staff-card staff-insurance-providers">
+
+        <div class="staff-card__header staff-insurance-providers__header">
+            <div class="staff-card__title-group">
+                <span class="staff-card__icon">
+                    <i data-lucide="shield-check" aria-hidden="true"></i>
+                </span>
+                <h2 class="staff-card__title">Insurance Providers</h2>
+            </div>
+
+            {% if can_create_insurance %}
+            <a href="{% url 'staff_insurance_create' %}"
+               class="staff-button staff-button--primary">
+                <i data-lucide="plus" aria-hidden="true"></i>
+                <span>Add Provider</span>
+            </a>
+            {% endif %}
+        </div>
+
+        <form method="get" class="staff-insurance-filters">
+            <label class="staff-insurance-search">
+                <span class="staff-insurance-sr-only">Search providers</span>
+                <i data-lucide="search" aria-hidden="true"></i>
+                <input
+                    type="search"
+                    name="q"
+                    value="{{ search_query|default:'' }}"
+                    placeholder="Search name, contact or email..."
+                >
+            </label>
+
+            <label class="staff-insurance-status-filter">
+                <span>Status</span>
+                <select name="status" class="staff-select">
+                    <option value="">All statuses</option>
+                    <option value="active"
+                        {% if selected_status == "active" %}selected{% endif %}>
+                        Active
+                    </option>
+                    <option value="inactive"
+                        {% if selected_status == "inactive" %}selected{% endif %}>
+                        Inactive
+                    </option>
+                </select>
+            </label>
+
+            <button type="submit" class="staff-button staff-button--secondary">
+                Filter
+            </button>
+
+            {% if search_query or selected_status %}
+            <a href="{% url 'staff_insurance' %}"
+               class="staff-insurance-clear">
+                <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+                Clear
+            </a>
+            {% endif %}
+        </form>
+
+        <div class="staff-insurance-table-wrapper">
+            <table class="staff-insurance-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Provider</th>
+                        <th scope="col">Contact</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for provider in insurance_providers %}
+                    <tr>
+                        <td>
+                            <a class="staff-insurance-provider-link"
+                               href="{% url 'staff_insurance' %}?provider={{ provider.id }}">
+                                <span class="staff-insurance-provider-mark"
+                                      aria-hidden="true">
+                                    <i data-lucide="shield" aria-hidden="true"></i>
+                                </span>
+                                <span>{{ provider.name }}</span>
+                            </a>
+                        </td>
+
+                        <td>{{ provider.contact|default:"—" }}</td>
+                        <td>{{ provider.email|default:"—" }}</td>
+
+                        <td>
+                            {% if provider.is_active %}
+                            <span class="staff-insurance-badge staff-insurance-badge--active">
+                                Active
+                            </span>
+                            {% else %}
+                            <span class="staff-insurance-badge staff-insurance-badge--inactive">
+                                Inactive
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <div class="staff-insurance-actions">
+                                <a href="{% url 'staff_insurance' %}?provider={{ provider.id }}"
+                                   class="staff-icon-button"
+                                   aria-label="View {{ provider.name }}"
+                                   title="View provider">
+                                    <i data-lucide="eye" aria-hidden="true"></i>
+                                </a>
+
+                                {% if can_edit_insurance %}
+                                <a href="{% url 'staff_insurance' %}?provider={{ provider.id }}&edit=1"
+                                   class="staff-icon-button"
+                                   aria-label="Edit {{ provider.name }}"
+                                   title="Edit provider">
+                                    <i data-lucide="pencil" aria-hidden="true"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="staff-insurance-empty">
+                            <i data-lucide="shield-question" aria-hidden="true"></i>
+                            <span>No insurance providers found.</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj and page_obj.paginator.num_pages > 1 %}
+        <nav class="staff-insurance-pagination" aria-label="Provider pages">
+            {% if page_obj.has_previous %}
+            <a class="staff-insurance-page-button"
+               href="?page={{ page_obj.previous_page_number }}&q={{ search_query|urlencode }}&status={{ selected_status|urlencode }}"
+               aria-label="Previous page">
+                <i data-lucide="chevron-left" aria-hidden="true"></i>
+            </a>
+            {% endif %}
+
+            <span>
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+            <a class="staff-insurance-page-button"
+               href="?page={{ page_obj.next_page_number }}&q={{ search_query|urlencode }}&status={{ selected_status|urlencode }}"
+               aria-label="Next page">
+                <i data-lucide="chevron-right" aria-hidden="true"></i>
+            </a>
+            {% endif %}
+        </nav>
+        {% endif %}
+    </article>
+
+    <!-- Provider details and recent policies -->
+    <div class="staff-insurance-side">
+
+        <article class="staff-card staff-insurance-details">
+            <div class="staff-card__header">
+                <div class="staff-card__title-group">
+                    <span class="staff-card__icon">
+                        <i data-lucide="building-2" aria-hidden="true"></i>
+                    </span>
+                    <h2 class="staff-card__title">Provider Details</h2>
+                </div>
+            </div>
+
+            {% if selected_provider %}
+            <div class="staff-insurance-details__identity">
+                <div>
+                    <h3>{{ selected_provider.name }}</h3>
+                    <p>{{ selected_provider.description|default:"Insurance provider" }}</p>
+                </div>
+
+                {% if selected_provider.is_active %}
+                <span class="staff-insurance-badge staff-insurance-badge--active">
+                    Active
+                </span>
+                {% else %}
+                <span class="staff-insurance-badge staff-insurance-badge--inactive">
+                    Inactive
+                </span>
+                {% endif %}
+            </div>
+
+            <h3 class="staff-insurance-subheading">General Information</h3>
+
+            <dl class="staff-insurance-info">
+                <div>
+                    <dt><i data-lucide="building-2" aria-hidden="true"></i> Provider</dt>
+                    <dd>{{ selected_provider.name }}</dd>
+                </div>
+                <div>
+                    <dt><i data-lucide="phone" aria-hidden="true"></i> Contact</dt>
+                    <dd>{{ selected_provider.contact|default:"Not available" }}</dd>
+                </div>
+                <div>
+                    <dt><i data-lucide="mail" aria-hidden="true"></i> Email</dt>
+                    <dd>{{ selected_provider.email|default:"Not available" }}</dd>
+                </div>
+            </dl>
+
+            {% else %}
+            <div class="staff-insurance-placeholder">
+                <i data-lucide="mouse-pointer-click" aria-hidden="true"></i>
+                <p>Select a provider from the table to view its details.</p>
+            </div>
+            {% endif %}
+        </article>
+
+        <article class="staff-card staff-insurance-policies">
+            <div class="staff-card__header">
+                <div class="staff-card__title-group">
+                    <span class="staff-card__icon">
+                        <i data-lucide="files" aria-hidden="true"></i>
+                    </span>
+                    <h2 class="staff-card__title">Recent Policies</h2>
+                </div>
+            </div>
+
+            {% if selected_provider %}
+            <div class="staff-insurance-policy-list">
+                {% for policy in recent_policies %}
+                <div class="staff-insurance-policy">
+                    <div class="staff-insurance-policy__main">
+                        <strong>{{ policy.plan_name }}</strong>
+                        <span>{{ policy.policy_number }}</span>
+                    </div>
+                    <div class="staff-insurance-policy__meta">
+                        <span>Coverage: {{ policy.coverage_percent }}%</span>
+                        <span>
+                            Expires:
+                            {% if policy.expiry_date %}
+                                {{ policy.expiry_date|date:"d M Y" }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </span>
+                    </div>
+                    <span class="staff-insurance-badge
+                        {% if policy.is_active %}staff-insurance-badge--active{% else %}staff-insurance-badge--inactive{% endif %}">
+                        {% if policy.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </div>
+                {% empty %}
+                <p class="staff-insurance-empty-message">
+                    No policies found for this provider.
+                </p>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="staff-insurance-empty-message">
+                Select a provider to see its recent policies.
+            </p>
+            {% endif %}
+        </article>
+
+    </div>
+</section>
+{% endblock %}

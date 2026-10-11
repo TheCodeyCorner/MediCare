@@ -1,0 +1,54 @@
+{# Staff Dashboard Block — Insurance | Feature code: IN #}
+
+<article class="staff-card staff-feature-widget">
+
+    <div class="staff-card__header">
+        <div class="staff-card__title-group">
+            <span class="staff-card__icon">
+                <i data-lucide="shield-check" aria-hidden="true"></i>
+            </span>
+            <h2 class="staff-card__title">
+                {{ permission.feature_name }}
+            </h2>
+        </div>
+
+        <a href="{% url 'staff_insurance' %}"
+           class="staff-icon-button"
+           aria-label="Open insurance page"
+           title="View insurance providers">
+            <i data-lucide="arrow-up-right" aria-hidden="true"></i>
+        </a>
+    </div>
+
+    <div class="staff-feature-widget__metrics">
+
+        <div class="staff-feature-widget__metric">
+            <span class="staff-feature-widget__label">
+                Total Providers
+            </span>
+            <strong class="staff-feature-widget__value">
+                {{ insurance_provider_count|default:"0" }}
+            </strong>
+        </div>
+
+        <div class="staff-feature-widget__metric">
+            <span class="staff-feature-widget__label">
+                Active Providers
+            </span>
+            <strong class="staff-feature-widget__value">
+                {{ active_insurance_provider_count|default:"0" }}
+            </strong>
+        </div>
+
+        <div class="staff-feature-widget__metric">
+            <span class="staff-feature-widget__label">
+                Total Policies
+            </span>
+            <strong class="staff-feature-widget__value">
+                {{ insurance_policy_count|default:"0" }}
+            </strong>
+        </div>
+
+    </div>
+
+</article>

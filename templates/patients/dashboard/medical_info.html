@@ -1,0 +1,52 @@
+<section class="panel shadow-panel">
+    <header class="panel__header">
+        <h2>Medical Information</h2>
+
+        <button
+            type="button"
+            class="icon-button"
+            aria-label="More Medical Information options"
+        >
+            <i data-lucide="more-horizontal"></i>
+        </button>
+    </header>
+
+    <div class="md-medinfo-grid">
+
+        <!-- Conditions -->
+        <div class="md-medinfo-section">
+            <p>Conditions</p>
+
+            <div class="md-tag-group">
+                {% for condition in medical_info.conditions %}
+                    <span class="medical-tag">
+                        {{ condition }}
+                    </span>
+                {% empty %}
+                    <span class="table-sub">
+                        No recorded conditions.
+                    </span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Allergies -->
+        <div class="md-medinfo-section">
+            <p>Allergies</p>
+
+            <div class="md-tag-group">
+                {% for allergy in medical_info.allergies %}
+                    <span class="medical-tag">
+                        {{ allergy }}
+                    </span>
+                {% empty %}
+                    <span class="table-sub">
+                        No recorded allergies.
+                    </span>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</section>
+

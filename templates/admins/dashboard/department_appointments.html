@@ -1,0 +1,81 @@
+{% load static %}
+
+<!-- ============================================================
+     Block 2 — Department-wise Appointments
+     ============================================================ -->
+
+<article class="admin-card admin-department-card">
+
+
+    <div class="admin-card__header">
+
+        <div class="admin-card__title-group">
+
+            <div class="admin-card__icon">
+                <i data-lucide="search"></i>
+            </div>
+
+            <h3 class="admin-card__title">
+                Department-wise Appointments
+            </h3>
+
+        </div>
+
+    </div>
+
+
+    <div class="admin-department-content">
+
+        <!-- ========================================================
+         Donut Chart
+         ======================================================== -->
+
+        <div class="admin-department-chart-wrapper">
+
+            <div class="admin-department-chart"></div>
+
+            <div class="admin-department-chart__inner">
+
+                <span class="admin-department-chart__total">
+                    {{ department_appointments_total }}
+                </span>
+
+                <span class="admin-department-chart__label">
+                    Total
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- ========================================================
+         Legend
+         ======================================================== -->
+
+        <div class="admin-department-legend">
+
+            {% for department in department_appointments %}
+
+            <div class="admin-department-legend__item">
+
+                <span class="admin-department-legend__dot {{ department.slug }}"></span>
+
+                <span>
+                    {{ department.name }}
+                </span>
+
+                <span class="admin-department-legend__percentage">
+                    {{ department.percentage }}%
+                </span>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+
+</article>

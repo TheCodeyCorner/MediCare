@@ -1,0 +1,39 @@
+{% load static %}
+
+<div class="patient-banner-wrapper">
+
+    <div class="md-banner-meta">
+        <span class="md-banner-meta__date">
+            {% now "l, F j, Y" %}
+        </span>
+    </div>
+
+    <section class="patient-card md-banner">
+
+        <div class="md-banner__content">
+
+            <p class="md-banner__greeting">
+                Welcome back
+            </p>
+
+            <h1 class="md-banner__name">
+                {{ patient.name }}
+            </h1>
+
+            <p class="md-banner__message">
+                Stay on top of your health, appointments, and care — all in one place.
+            </p>
+
+            <a href="#" class="md-banner__appointment">
+                Create Appointment
+            </a>
+
+        </div>
+
+        <div class="md-banner__doctor">
+            <img src="{% static 'images/doctor.webp' %}" alt="Doctor">
+        </div>
+
+    </section>
+
+</div>

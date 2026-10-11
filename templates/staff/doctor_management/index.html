@@ -1,0 +1,189 @@
+{% extends "staff/base.html" %}
+{% load static %}
+
+{% block staff_title %}{{ page_title }} | Medicare{% endblock %}
+
+{% block content %}
+<div class="staff-page staff-doctors-page">
+
+    <div class="staff-doctors-header">
+        <div>
+            <h1 class="staff-doctors-heading">{{ page_title }}</h1>
+            <p class="staff-doctors-breadcrumb">{{ breadcrumb }}</p>
+        </div>
+
+        {% if can_create_doctors %}
+        <a href="{% url 'staff_doctor_create' %}" class="staff-doctors-primary-btn">
+            <i data-lucide="plus"></i>
+            Add Doctor
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="staff-doctors-metrics">
+        <article class="staff-card staff-doctor-metric">
+            <span class="staff-doctor-metric__icon staff-doctor-metric__icon--teal">
+                <i data-lucide="stethoscope"></i>
+            </span>
+            <div>
+                <strong>{{ total_doctors }}</strong>
+                <span>Total Doctors</span>
+            </div>
+        </article>
+
+        <article class="staff-card staff-doctor-metric">
+            <span class="staff-doctor-metric__icon staff-doctor-metric__icon--green">
+                <i data-lucide="user-check"></i>
+            </span>
+            <div>
+                <strong>{{ active_doctors }}</strong>
+                <span>Active Doctors</span>
+            </div>
+        </article>
+
+        <article class="staff-card staff-doctor-metric">
+            <span class="staff-doctor-metric__icon staff-doctor-metric__icon--red">
+                <i data-lucide="user-round-x"></i>
+            </span>
+            <div>
+                <strong>{{ inactive_doctors }}</strong>
+                <span>Inactive Doctors</span>
+            </div>
+        </article>
+
+        <article class="staff-card staff-doctor-metric">
+            <span class="staff-doctor-metric__icon staff-doctor-metric__icon--purple">
+                <i data-lucide="building-2"></i>
+            </span>
+            <div>
+                <strong>{{ department_count }}</strong>
+                <span>Departments</span>
+            </div>
+        </article>
+    </div>
+
+    <section class="staff-card staff-doctors-table-card">
+        <div class="staff-doctors-table-header">
+            <h2 class="staff-card__title">Doctors</h2>
+
+            <form method="get" class="staff-doctors-filters">
+                <input
+                    type="search"
+                    name="q"
+                    value="{{ search_query }}"
+                    placeholder="Search doctors..."
+                    aria-label="Search doctors"
+                >
+
+                <select name="department" aria-label="Filter by department">
+                    <option value="">All departments</option>
+                    {% for department in departments %}
+                    <option value="{{ department }}" {% if selected_department == department %}selected{% endif %}>
+                        {{ department }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <select name="status" aria-label="Filter by status">
+                    <option value="">All statuses</option>
+                    <option value="active" {% if selected_status == "active" %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if selected_status == "inactive" %}selected{% endif %}>Inactive</option>
+                </select>
+
+                <button type="submit" class="staff-doctors-filter-btn">Filter</button>
+                <a href="{% url 'staff_doctors' %}" class="staff-doctors-clear-btn">Clear</a>
+            </form>
+        </div>
+
+        <div class="staff-doctors-table-wrap">
+            <table class="staff-doctors-table">
+                <thead>
+                    <tr>
+                        <th>Doctor</th>
+                        <th>Department</th>
+                        <th>Specialization</th>
+                        <th>Experience</th>
+                        <th>Consultation Fee</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for doctor in page_obj %}
+                    <tr>
+                        <td>
+                            <div class="staff-doctor-identity">
+                                <span class="staff-doctor-avatar">
+                                    <i data-lucide="user-round"></i>
+                                </span>
+                                <div>
+                                    <strong>{{ doctor.name }}</strong>
+                                    <span>{{ doctor.email }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ doctor.department|default:"—" }}</td>
+                        <td>{{ doctor.specialization|default:"—" }}</td>
+                        <td>
+                            {% if doctor.experience_years != None %}
+                                {{ doctor.experience_years }} years
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% if doctor.consultation_fee != None %}
+                                ₹{{ doctor.consultation_fee }}
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            <span class="staff-doctor-status {% if doctor.is_active %}is-active{% else %}is-inactive{% endif %}">
+                                {% if doctor.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="staff-doctor-actions">
+                                <a href="{% url 'staff_doctor_detail' doctor.id %}" aria-label="View {{ doctor.name }}" title="View">
+                                    <i data-lucide="eye"></i>
+                                </a>
+                                {% if can_edit_doctors %}
+                                <a href="{% url 'staff_doctor_edit' doctor.id %}" aria-label="Edit {{ doctor.name }}" title="Edit">
+                                    <i data-lucide="pencil"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="staff-doctors-empty">
+                            No doctors found. Try changing your filters.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.paginator %}
+        <div class="staff-doctors-pagination">
+            <span>
+                Showing {{ page_obj.start_index }}–{{ page_obj.end_index }}
+                of {{ page_obj.paginator.count }} doctors
+            </span>
+
+            <div>
+                {% if page_obj.has_previous %}
+                <a href="?q={{ search_query|urlencode }}&department={{ selected_department|urlencode }}&status={{ selected_status|urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>
+                {% endif %}
+
+                <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+                {% if page_obj.has_next %}
+                <a href="?q={{ search_query|urlencode }}&department={{ selected_department|urlencode }}&status={{ selected_status|urlencode }}&page={{ page_obj.next_page_number }}">Next</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
