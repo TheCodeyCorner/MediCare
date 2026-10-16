@@ -336,15 +336,15 @@ def register_user(request):
 # ============================================================================
 
 
+
+
 @role_required("Patient")
 def patient_dashboard(request):
-
     database_url = os.getenv("DATABASE_URL")
 
     if not database_url:
         raise ValueError("DATABASE_URL is missing")
 
-    # This is the Supabase / Medicare users.user_id.
     user_id = str(request.user.id)
 
     connection = psycopg2.connect(
@@ -363,13 +363,7 @@ def patient_dashboard(request):
                 SELECT
                     p.patient_id,
                     p.profile_image_path AS profile_image_path,
-
-                    CONCAT_WS(
-                        ' ',
-                        p.first_name,
-                        p.last_name
-                    ) AS name,
-
+                    CONCAT_WS(' ', p.first_name, p.last_name) AS name,
                     p.contact AS phone,
                     u.email AS email,
                     p.address AS address,
@@ -386,14 +380,10 @@ def patient_dashboard(request):
                     p.emergency_contact_relation
                         AS emergency_contact_relation,
                     p.insurance_id AS insurance_id
-
                 FROM medicare.patients p
-
                 LEFT JOIN medicare.users u
                     ON u.user_id = p.user_id
-
                 WHERE p.user_id = %s
-
                 LIMIT 1;
                 """,
                 (user_id,),
@@ -426,6 +416,67 @@ def patient_dashboard(request):
                 patient_emergency_contact_relation,
                 insurance_id,
             ) = patient_row
+
+            # =============================================================
+            # Clean allergies for display; preserve the raw database value
+            # =============================================================
+
+            if patient_allergies is None:
+                patient_allergies_raw = []
+            elif isinstance(patient_allergies, (list, tuple)):
+                patient_allergies_raw = list(patient_allergies)
+            else:
+                patient_allergies_raw = patient_allergies
+
+            if isinstance(patient_allergies_raw, (list, tuple)):
+                cleaned_allergies = [
+                    str(item).strip().strip("\"'")
+                    for item in patient_allergies_raw
+                    if item is not None
+                    and str(item).strip().strip("\"'")
+                ]
+
+                patient_allergies_display = ", ".join(
+                    cleaned_allergies
+                )
+            elif patient_allergies_raw:
+                patient_allergies_display = str(
+                    patient_allergies_raw
+                ).strip()
+
+                # Handle a string representation of an array defensively.
+                if (
+                    patient_allergies_display.startswith("[")
+                    and patient_allergies_display.endswith("]")
+                ):
+                    patient_allergies_display = (
+                        patient_allergies_display[1:-1]
+                    )
+
+                if (
+                    patient_allergies_display.startswith("{")
+                    and patient_allergies_display.endswith("}")
+                ):
+                    patient_allergies_display = (
+                        patient_allergies_display[1:-1]
+                    )
+
+                patient_allergies_display = (
+                    patient_allergies_display
+                    .replace('"', "")
+                    .replace("'", "")
+                    .strip()
+                )
+
+                if patient_allergies_display.lower() in {
+                    "none",
+                    "null",
+                    "[]",
+                    "{}",
+                }:
+                    patient_allergies_display = ""
+            else:
+                patient_allergies_display = ""
 
             # =============================================================
             # Profile completion
@@ -471,13 +522,9 @@ def patient_dashboard(request):
                     height_cm,
                     blood_sugar,
                     recorded_at
-
                 FROM medicare.vital_records
-
                 WHERE patient_id = %s
-
                 ORDER BY recorded_at DESC
-
                 LIMIT 1;
                 """,
                 (patient_id,),
@@ -496,13 +543,10 @@ def patient_dashboard(request):
                     diastolic_bp,
                     heart_rate_bpm,
                     recorded_at
-
                 FROM medicare.vital_records
-
                 WHERE patient_id = %s
                   AND systolic_bp IS NOT NULL
                   AND diastolic_bp IS NOT NULL
-
                 ORDER BY recorded_at DESC
                 LIMIT 12;
                 """,
@@ -540,7 +584,8 @@ def patient_dashboard(request):
                         d.department_name AS department,
                         a.status,
                         a.notes AS note,
-                        a.doctor_id
+                        a.doctor_id,
+                        s.profile_image_path AS staff_profile_image_path
                     FROM medicare.appointments a
                     LEFT JOIN medicare.appointment_type at
                         ON at.app_type_id = a.app_type_id
@@ -583,7 +628,8 @@ def patient_dashboard(request):
                         d.department_name AS department,
                         a.status,
                         a.notes AS note,
-                        a.doctor_id
+                        a.doctor_id,
+                        s.profile_image_path AS staff_profile_image_path
                     FROM medicare.appointments a
                     LEFT JOIN medicare.appointment_type at
                         ON at.app_type_id = a.app_type_id
@@ -617,12 +663,13 @@ def patient_dashboard(request):
             appointment_rows = cursor.fetchall()
 
             # =============================================================
-            # Queue + latest ML prediction
+            # Queue + latest prediction
             # =============================================================
 
             appointment_ids = [
                 row[0] for row in appointment_rows
             ]
+
             queue_rows = []
 
             if appointment_ids:
@@ -676,17 +723,12 @@ def patient_dashboard(request):
                     i.policy_number,
                     i.expiry_date,
                     i.status
-
                 FROM medicare.patients p
-
                 LEFT JOIN medicare.insurance_policies i
                     ON i.insurance_id = p.insurance_id
-
                 LEFT JOIN medicare.insurance_providers ip
                     ON ip.provider_id = i.provider_id
-
                 WHERE p.patient_id = %s
-
                 LIMIT 1;
                 """,
                 (patient_id,),
@@ -702,31 +744,20 @@ def patient_dashboard(request):
                 """
                 SELECT
                     p.pres_id,
-
-                    COALESCE(
-                        p.name,
-                        mc.drug_name
-                    ) AS name,
-
+                    COALESCE(p.name, mc.drug_name) AS name,
                     p.dosage,
                     p.frequency,
                     p.start_date,
                     p.end_date,
                     p.status
-
                 FROM medicare.prescription p
-
                 LEFT JOIN medicare.medication_catalogue mc
                     ON mc.medication_id = p.medication_id
-
                 LEFT JOIN medicare.consultation c
                     ON c.cons_id = p.cons_id
-
                 LEFT JOIN medicare.appointments a
                     ON a.appointment_id = c.app_id
-
                 WHERE a.patient_id = %s
-
                 ORDER BY p.start_date DESC NULLS LAST
                 LIMIT 10;
                 """,
@@ -739,65 +770,90 @@ def patient_dashboard(request):
         connection.close()
 
     # =============================================================
+    # Supabase Storage URL helper
+    # =============================================================
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_service_key = os.getenv(
+        "SUPABASE_SERVICE_ROLE_KEY"
+    )
+
+    storage_client = None
+
+    if supabase_url and supabase_service_key:
+        try:
+            storage_client = create_client(
+                supabase_url,
+                supabase_service_key,
+            )
+        except Exception:
+            logger.exception(
+                "Unable to initialize Supabase Storage client."
+            )
+
+    def _signed_storage_url(bucket_name, object_path):
+        if not object_path or storage_client is None:
+            return None
+
+        try:
+            response = storage_client.storage.from_(
+                bucket_name
+            ).create_signed_url(
+                object_path,
+                3600,
+            )
+
+            if isinstance(response, dict):
+                signed_url = (
+                    response.get("signedURL")
+                    or response.get("signedUrl")
+                    or response.get("signed_url")
+                )
+            else:
+                signed_url = (
+                    getattr(response, "signed_url", None)
+                    or getattr(response, "signedURL", None)
+                    or getattr(response, "signedUrl", None)
+                )
+
+            if not signed_url:
+                return None
+
+            if signed_url.startswith(("https://", "http://")):
+                return signed_url
+
+            base_url = (supabase_url or "").rstrip("/")
+
+            if signed_url.startswith("/storage/v1/"):
+                return base_url + signed_url
+
+            if signed_url.startswith("/"):
+                return base_url + "/storage/v1" + signed_url
+
+            if signed_url.startswith("storage/v1/"):
+                return base_url + "/" + signed_url
+
+            return (
+                base_url
+                + "/storage/v1/"
+                + signed_url.lstrip("/")
+            )
+
+        except Exception:
+            logger.exception(
+                "Unable to generate signed image URL for bucket %s.",
+                bucket_name,
+            )
+            return None
+
+    # =============================================================
     # Patient profile photo
     # =============================================================
 
-    patient_photo_url = None
-
-    if patient_profile_image_path:
-        supabase_url = os.getenv("SUPABASE_URL")
-        supabase_service_key = os.getenv(
-            "SUPABASE_SERVICE_ROLE_KEY"
-        )
-
-        if supabase_url and supabase_service_key:
-            try:
-                supabase = create_client(
-                    supabase_url,
-                    supabase_service_key,
-                )
-
-                storage = supabase.storage.from_("patient_profiles")
-
-                signed_response = storage.create_signed_url(
-                    patient_profile_image_path,
-                    3600,
-                )
-
-                if isinstance(signed_response, dict):
-                    signed_url = (
-                        signed_response.get("signedURL")
-                        or signed_response.get("signedUrl")
-                    )
-                else:
-                    signed_url = (
-                        getattr(signed_response, "signed_url", None)
-                        or getattr(signed_response, "signedURL", None)
-                        or getattr(signed_response, "signedUrl", None)
-                    )
-
-                if signed_url:
-                    if signed_url.startswith(
-                        "/storage/v1/"
-                    ):
-                        patient_photo_url = (
-                            supabase_url.rstrip("/")
-                            + signed_url
-                        )
-                    elif signed_url.startswith("/"):
-                        patient_photo_url = (
-                            supabase_url.rstrip("/")
-                            + "/storage/v1"
-                            + signed_url
-                        )
-                    else:
-                        patient_photo_url = signed_url
-
-            except Exception:
-                logger.exception(
-                    "Unable to generate patient profile photo URL."
-                )
-                patient_photo_url = None
+    patient_photo_url = _signed_storage_url(
+        "patient_profiles",
+        patient_profile_image_path,
+    )
 
     # =============================================================
     # Patient age
@@ -807,7 +863,6 @@ def patient_dashboard(request):
 
     if patient_dob:
         today = date.today()
-
         age = today.year - patient_dob.year
 
         if (today.month, today.day) < (
@@ -852,7 +907,9 @@ def patient_dashboard(request):
         "member_since": patient_member_since,
         "blood_type": patient_blood_type,
         "status": patient_status,
-        "allergies": patient_allergies,
+        "allergies": patient_allergies_display,
+        "allergies_display": patient_allergies_display,
+        "allergies_list": patient_allergies_raw,
         "country": patient_country,
         "state": patient_state,
         "emergency_contact": patient_emergency_contact,
@@ -862,7 +919,7 @@ def patient_dashboard(request):
     }
 
     # =============================================================
-    # Latest health metrics
+    # Health metric helpers
     # =============================================================
 
     def _metric_status(
@@ -882,21 +939,12 @@ def patient_dashboard(request):
             }
 
         if low is not None and value < low:
-            return {
-                "text": low_label,
-                "tone": "low",
-            }
+            return {"text": low_label, "tone": "low"}
 
         if high is not None and value > high:
-            return {
-                "text": high_label,
-                "tone": "high",
-            }
+            return {"text": high_label, "tone": "high"}
 
-        return {
-            "text": normal_label,
-            "tone": "normal",
-        }
+        return {"text": normal_label, "tone": "normal"}
 
     def _bmi_status(value, *, fallback_label="Last recorded"):
         if value is None:
@@ -906,81 +954,51 @@ def patient_dashboard(request):
             }
 
         if value < 18.5:
-            return {
-                "text": "Underweight",
-                "tone": "low",
-            }
+            return {"text": "Underweight", "tone": "low"}
 
         if value < 25:
-            return {
-                "text": "Healthy",
-                "tone": "normal",
-            }
+            return {"text": "Healthy", "tone": "normal"}
 
         if value < 30:
-            return {
-                "text": "Overweight",
-                "tone": "high",
-            }
+            return {"text": "Overweight", "tone": "high"}
 
-        return {
-            "text": "Obese",
-            "tone": "high",
-        }
+        return {"text": "Obese", "tone": "high"}
 
     health_metrics = {
         "height": {
             "value": None,
             "unit": "cm",
-            "status": {
-                "text": "Last recorded",
-                "tone": "neutral",
-            },
+            "status": {"text": "Last recorded", "tone": "neutral"},
         },
         "weight": {
             "value": None,
             "unit": "kg",
-            "status": {
-                "text": "Last recorded",
-                "tone": "neutral",
-            },
+            "status": {"text": "Last recorded", "tone": "neutral"},
         },
         "bmi": {
             "value": None,
             "unit": "kg/m²",
-            "status": {
-                "text": "Last recorded",
-                "tone": "neutral",
-            },
+            "status": {"text": "Last recorded", "tone": "neutral"},
         },
         "blood_sugar": {
             "value": None,
             "unit": "mg/dL",
-            "status": {
-                "text": "Last recorded",
-                "tone": "neutral",
-            },
+            "status": {"text": "Last recorded", "tone": "neutral"},
         },
         "spo2": {
             "value": None,
             "unit": "%",
-            "status": {
-                "text": "Last recorded",
-                "tone": "neutral",
-            },
+            "status": {"text": "Last recorded", "tone": "neutral"},
         },
         "heart_rate": {
             "value": None,
             "unit": "bpm",
-            "status": {
-                "text": "Last recorded",
-                "tone": "neutral",
-            },
+            "status": {"text": "Last recorded", "tone": "neutral"},
         },
     }
 
     # =============================================================
-    # Latest blood pressure
+    # Latest blood pressure and health metrics
     # =============================================================
 
     blood_pressure = {
@@ -1008,7 +1026,6 @@ def patient_dashboard(request):
             recorded_at,
         ) = latest_vital_row
 
-        # Health metrics
         health_metrics["height"]["value"] = height_cm
         health_metrics["weight"]["value"] = weight_kg
         health_metrics["blood_sugar"]["value"] = blood_sugar
@@ -1019,6 +1036,7 @@ def patient_dashboard(request):
             "text": "Last recorded",
             "tone": "neutral",
         }
+
         health_metrics["weight"]["status"] = {
             "text": "Last recorded",
             "tone": "neutral",
@@ -1049,23 +1067,14 @@ def patient_dashboard(request):
             normal_label="Stable",
         )
 
-        # BMI
         if height_cm and weight_kg:
             height_m = float(height_cm) / 100
 
             if height_m > 0:
                 bmi = float(weight_kg) / (height_m ** 2)
-
                 health_metrics["bmi"]["value"] = round(bmi, 1)
                 health_metrics["bmi"]["status"] = _bmi_status(bmi)
 
-        else:
-            health_metrics["bmi"]["status"] = {
-                "text": "Last recorded",
-                "tone": "neutral",
-            }
-
-        # Blood pressure
         blood_pressure["latest_systolic"] = systolic_bp
         blood_pressure["latest_diastolic"] = diastolic_bp
 
@@ -1122,25 +1131,16 @@ def patient_dashboard(request):
             status,
         ) = row
 
-        status_text = (
-            str(status) if status is not None else ""
+        status_lower = (
+            str(status).lower()
+            if status is not None
+            else ""
         )
-        status_lower = status_text.lower()
 
-        if status_lower in {
-            "active",
-            "prescribed",
-            "ongoing",
-        }:
+        if status_lower in {"active", "prescribed", "ongoing"}:
             category = "active"
-
-        elif status_lower in {
-            "discontinued",
-            "cancelled",
-            "canceled",
-        }:
+        elif status_lower in {"discontinued", "cancelled", "canceled"}:
             category = "discontinued"
-
         else:
             category = "history"
 
@@ -1193,7 +1193,7 @@ def patient_dashboard(request):
         }
 
     # =============================================================
-    # Appointments
+    # Appointment objects
     # =============================================================
 
     appointments = []
@@ -1209,9 +1209,9 @@ def patient_dashboard(request):
             status,
             note,
             staff_id,
+            staff_profile_image_path,
         ) = row
 
-        # Convert PostgreSQL timestamps to Django's local timezone.
         if schedule_datetime is not None:
             if timezone.is_naive(schedule_datetime):
                 schedule_datetime = timezone.make_aware(
@@ -1219,9 +1219,7 @@ def patient_dashboard(request):
                     timezone.get_current_timezone(),
                 )
 
-            schedule_datetime = timezone.localtime(
-                schedule_datetime
-            )
+            schedule_datetime = timezone.localtime(schedule_datetime)
 
         status_lower = (
             str(status).strip().lower()
@@ -1237,15 +1235,13 @@ def patient_dashboard(request):
             "no-show",
         }:
             appointment_category = "history"
-
         elif schedule_datetime is not None:
             comparison_now = timezone.localtime(timezone.now())
-
-            if schedule_datetime >= comparison_now:
-                appointment_category = "upcoming"
-            else:
-                appointment_category = "history"
-
+            appointment_category = (
+                "upcoming"
+                if schedule_datetime >= comparison_now
+                else "history"
+            )
         else:
             appointment_category = "history"
 
@@ -1270,24 +1266,23 @@ def patient_dashboard(request):
             "note": note,
             "schedule_datetime": schedule_datetime,
             "staff_id": staff_id,
+            "staff_profile_image_path": staff_profile_image_path,
         })
 
     # =============================================================
-    # Find next upcoming appointment
+    # Next upcoming appointment
     # =============================================================
 
     upcoming_appointments = [
-        appointment_row
-        for appointment_row in appointments
+        item for item in appointments
         if (
-            appointment_row["category"] == "upcoming"
-            and appointment_row["schedule_datetime"] is not None
+            item["category"] == "upcoming"
+            and item["schedule_datetime"] is not None
         )
     ]
 
     upcoming_appointments.sort(
-        key=lambda appointment_row:
-            appointment_row["schedule_datetime"]
+        key=lambda item: item["schedule_datetime"]
     )
 
     next_appointment_row = (
@@ -1296,15 +1291,11 @@ def patient_dashboard(request):
         else None
     )
 
-    # =============================================================
-    # Next appointment object
-    # =============================================================
-
     appointment = {
         "staff": {
             "name": None,
             "speciality": None,
-            "image": "images/staff.webp",
+            "image": None,
         },
         "date": None,
         "time": None,
@@ -1330,6 +1321,11 @@ def patient_dashboard(request):
         appointment["staff"]["speciality"] = (
             next_appointment_row["speciality"]
             or next_appointment_row["department"]
+        )
+
+        appointment["staff"]["image"] = _signed_storage_url(
+            "patient_profiles",
+            next_appointment_row["staff_profile_image_path"],
         )
 
         appointment["date"] = next_appointment_row["date"]
@@ -1366,7 +1362,7 @@ def patient_dashboard(request):
                 queue_data["predicted_at"]
             )
 
-        # Current Medicare schema has no location field.
+        # No fabricated location; this view does not fetch it yet.
         appointment["location"] = None
 
     # =============================================================
@@ -1398,16 +1394,13 @@ def patient_dashboard(request):
         insurance["expiry_date"] = expiry_date
         insurance["status"] = insurance_status
 
-        # insurance_providers currently has no provider_logo column.
-        insurance["provider_logo"] = None
-
     # =============================================================
     # Medical information
     # =============================================================
 
     medical_info = {
         "conditions": [],
-        "allergies": patient_allergies or [],
+        "allergies": patient_allergies_raw,
         "previous_surgeries": [],
         "family_history": [],
     }
@@ -1434,7 +1427,6 @@ def patient_dashboard(request):
             "profile_incomplete": profile_incomplete,
         },
     )
-
 
 
 
@@ -1467,6 +1459,7 @@ def patient_medical_records(request):
 
 
 
+
 @role_required("Patient")
 @require_http_methods(["GET", "POST"])
 def patient_profile(request):
@@ -1477,26 +1470,64 @@ def patient_profile(request):
     if not database_url:
         raise ValueError("DATABASE_URL is missing")
 
-    if not supabase_url or not supabase_key:
-        logger.error("Supabase Storage configuration is missing.")
-        return render(
-            request,
-            "patients/profile.html",
-            {
-                "page_title": "My Profile",
-                "breadcrumb": "Dashboard / Profile",
-                "patient": {},
-                "insurance_policies": [],
-                "errors": [
-                    "Profile photo storage is currently unavailable. "
-                    "Please try again later."
-                ],
-            },
-            status=503,
-        )
+    # =============================================================
+    # Allergy formatting helper
+    # Keep database arrays separate from their form display value.
+    # =============================================================
 
-    supabase = create_client(supabase_url, supabase_key)
-    storage = supabase.storage.from_("patient_profiles")
+    def _format_allergies(value):
+        if value is None:
+            return ""
+
+        if isinstance(value, (list, tuple)):
+            return ", ".join(
+                str(item).strip().strip("\"'")
+                for item in value
+                if item is not None
+                and str(item).strip().strip("\"'")
+            )
+
+        text = str(value).strip()
+
+        if (
+            text.startswith("[")
+            and text.endswith("]")
+        ):
+            text = text[1:-1]
+
+        if (
+            text.startswith("{")
+            and text.endswith("}")
+        ):
+            text = text[1:-1]
+
+        text = text.replace('"', "").replace("'", "").strip()
+
+        if text.lower() in {"none", "null", "[]", "{}"}:
+            return ""
+
+        return text
+
+    # =============================================================
+    # Optional Supabase Storage initialization
+    # Ordinary profile edits should work if Storage is unavailable.
+    # =============================================================
+
+    supabase = None
+    storage = None
+
+    if supabase_url and supabase_key:
+        try:
+            supabase = create_client(
+                supabase_url,
+                supabase_key,
+            )
+            storage = supabase.storage.from_("patient_profiles")
+        except Exception:
+            logger.exception(
+                "Unable to initialize Supabase Storage "
+                "for the patient profile."
+            )
 
     user_id = str(request.user.id)
     max_photo_size = 100 * 1024
@@ -1517,30 +1548,51 @@ def patient_profile(request):
     old_storage_path = None
     update_succeeded = False
 
+    # =============================================================
+    # Database operations
+    # =============================================================
+
     try:
         with psycopg2.connect(database_url) as connection:
             with connection.cursor() as cursor:
 
-                # -----------------------------------------------------
-                # Save profile
-                # -----------------------------------------------------
+                # =====================================================
+                # Process profile submission
+                # =====================================================
+
                 if request.method == "POST":
                     first_name = request.POST.get(
                         "first_name", ""
                     ).strip()
+
                     last_name = request.POST.get(
                         "last_name", ""
                     ).strip()
-                    dob_input = request.POST.get("dob", "").strip()
+
+                    dob_input = request.POST.get(
+                        "dob", ""
+                    ).strip()
+
                     gender = request.POST.get(
                         "gender", ""
                     ).strip() or None
+
                     contact = request.POST.get(
                         "contact", ""
                     ).strip() or None
-                    address = request.POST.get("address", "").strip()
-                    state = request.POST.get("state", "").strip()
-                    country = request.POST.get("country", "").strip()
+
+                    address = request.POST.get(
+                        "address", ""
+                    ).strip()
+
+                    state = request.POST.get(
+                        "state", ""
+                    ).strip()
+
+                    country = request.POST.get(
+                        "country", ""
+                    ).strip()
+
                     blood_group = request.POST.get(
                         "blood_group", ""
                     ).strip() or None
@@ -1548,6 +1600,7 @@ def patient_profile(request):
                     allergies_input = request.POST.get(
                         "allergies", ""
                     ).strip()
+
                     allergies = [
                         item.strip()
                         for item in allergies_input.split(",")
@@ -1557,16 +1610,21 @@ def patient_profile(request):
                     emergency_contact = request.POST.get(
                         "emergency_contact", ""
                     ).strip()
+
                     emergency_name = request.POST.get(
                         "emergency_name", ""
                     ).strip()
+
                     emergency_relation = request.POST.get(
                         "emergency_relation", ""
                     ).strip()
+
                     insurance_id_input = request.POST.get(
                         "insurance_id", ""
                     ).strip()
 
+                    # Retain submitted values when validation fails.
+                    # Empty values remain empty; no fallback text is saved.
                     submitted = {
                         "first_name": first_name,
                         "last_name": last_name,
@@ -1584,10 +1642,15 @@ def patient_profile(request):
                         "insurance_id": insurance_id_input,
                     }
 
-                    # Validate date of birth.
+                    # =================================================
+                    # Validate date of birth
+                    # =================================================
+
                     dob = None
+
                     if dob_input:
                         dob = parse_date(dob_input)
+
                         if dob is None:
                             errors.append(
                                 "Enter a valid date of birth."
@@ -1597,22 +1660,34 @@ def patient_profile(request):
                                 "Date of birth cannot be in the future."
                             )
 
-                    # Validate choices.
-                    allowed_genders = {"Male", "Female", "Other"}
+                    # =================================================
+                    # Validate gender and blood group
+                    # =================================================
+
+                    allowed_genders = {
+                        "Male",
+                        "Female",
+                        "Other",
+                    }
+
                     if gender and gender not in allowed_genders:
                         errors.append("Select a valid gender.")
 
                     allowed_blood_groups = {
-                        "A+", "A-", "B+", "B-", "AB+", "AB-",
-                        "O+", "O-",
+                        "A+", "A-", "B+", "B-",
+                        "AB+", "AB-", "O+", "O-",
                     }
+
                     if (
                         blood_group
                         and blood_group not in allowed_blood_groups
                     ):
                         errors.append("Select a valid blood group.")
 
-                    # Validate insurance policy.
+                    # =================================================
+                    # Validate insurance policy
+                    # =================================================
+
                     insurance_id = None
 
                     if insurance_id_input:
@@ -1620,7 +1695,11 @@ def patient_profile(request):
                             insurance_id = str(
                                 uuid.UUID(insurance_id_input)
                             )
-                        except (ValueError, TypeError, AttributeError):
+                        except (
+                            ValueError,
+                            TypeError,
+                            AttributeError,
+                        ):
                             errors.append(
                                 "Select a valid insurance policy."
                             )
@@ -1643,10 +1722,11 @@ def patient_profile(request):
                                 "active or does not exist."
                             )
 
-                    # -------------------------------------------------
-                    # Validate photo using the staff upload approach.
+                    # =================================================
+                    # Validate uploaded photo
                     # No Pillow dependency.
-                    # -------------------------------------------------
+                    # =================================================
+
                     photo = request.FILES.get("photo")
                     photo_bytes = None
                     photo_content_type = None
@@ -1662,10 +1742,12 @@ def patient_profile(request):
                                 "Profile photo must be a JPEG, PNG, "
                                 "or WebP image."
                             )
+
                         elif photo.size > max_photo_size:
                             errors.append(
                                 "Profile photo must be 100 KB or smaller."
                             )
+
                         else:
                             photo_bytes = photo.read()
 
@@ -1681,7 +1763,18 @@ def patient_profile(request):
                                     ]
                                 )
 
-                    # Fetch the current photo path.
+                    # Storage is only required when a photo is uploaded.
+                    if photo_bytes is not None and storage is None:
+                        errors.append(
+                            "Profile photo storage is unavailable. "
+                            "Your other profile information can still "
+                            "be saved without a photo."
+                        )
+
+                    # =================================================
+                    # Get existing profile photo path
+                    # =================================================
+
                     cursor.execute(
                         """
                         SELECT profile_image_path
@@ -1691,6 +1784,7 @@ def patient_profile(request):
                         """,
                         (user_id,),
                     )
+
                     existing_patient = cursor.fetchone()
 
                     if existing_patient is None:
@@ -1700,9 +1794,10 @@ def patient_profile(request):
 
                     old_storage_path = existing_patient[0]
 
-                    # -------------------------------------------------
-                    # Upload the new photo if validation passed.
-                    # -------------------------------------------------
+                    # =================================================
+                    # Upload new photo
+                    # =================================================
+
                     if not errors and photo_bytes is not None:
                         uploaded_storage_path = (
                             f"{user_id}/profile-"
@@ -1723,15 +1818,18 @@ def patient_profile(request):
                             logger.exception(
                                 "Patient profile photo upload failed."
                             )
+
                             uploaded_storage_path = None
+
                             errors.append(
                                 "Unable to upload your profile photo. "
                                 "Please try again."
                             )
 
-                    # -------------------------------------------------
-                    # Update patient information.
-                    # -------------------------------------------------
+                    # =================================================
+                    # Update patient record
+                    # =================================================
+
                     if not errors:
                         cursor.execute(
                             """
@@ -1780,9 +1878,10 @@ def patient_profile(request):
                                 "Patient record not found for this user."
                             )
 
-                # -----------------------------------------------------
-                # Load profile.
-                # -----------------------------------------------------
+                # =====================================================
+                # Reload saved patient data
+                # =====================================================
+
                 cursor.execute(
                     """
                     SELECT
@@ -1809,6 +1908,7 @@ def patient_profile(request):
                     """,
                     (user_id,),
                 )
+
                 row = cursor.fetchone()
 
                 if row is None:
@@ -1825,6 +1925,7 @@ def patient_profile(request):
                     "contact": row[5],
                     "blood_group": row[6],
                     "allergies": row[7],
+                    "allergies_display": _format_allergies(row[7]),
                     "emergency_contact": row[8],
                     "emergency_name": row[9],
                     "emergency_relation": row[10],
@@ -1836,12 +1937,19 @@ def patient_profile(request):
                     "profile_image_path": row[16],
                 }
 
+                # On validation errors, retain what the user submitted.
+                # Do not replace empty form values with placeholder text.
                 if errors and submitted:
                     patient.update(submitted)
 
-                # -----------------------------------------------------
-                # Load active insurance policies.
-                # -----------------------------------------------------
+                    patient["allergies_display"] = _format_allergies(
+                        submitted.get("allergies", "")
+                    )
+
+                # =====================================================
+                # Load active insurance policies
+                # =====================================================
+
                 cursor.execute(
                     """
                     SELECT
@@ -1879,7 +1987,7 @@ def patient_profile(request):
                     for policy in cursor.fetchall()
                 ]
 
-        # The connection context has now committed successfully.
+        # The connection context committed successfully.
         if request.method == "POST" and not errors:
             update_succeeded = True
 
@@ -1906,7 +2014,8 @@ def patient_profile(request):
                 "insurance_policies": insurance_policies,
                 "patient_photo_url": patient_photo_url,
                 "errors": [
-                    "We couldn't save or load your profile. Please try again."
+                    "We couldn't save or load your profile. "
+                    "Please try again."
                 ],
             },
             status=500,
@@ -1935,14 +2044,23 @@ def patient_profile(request):
                 "insurance_policies": insurance_policies,
                 "patient_photo_url": patient_photo_url,
                 "errors": [
-                    "We couldn't process your profile. Please try again."
+                    "We couldn't process your profile. "
+                    "Please try again."
                 ],
             },
             status=500,
         )
 
-    # Delete the previous photo only after the DB update commits.
-    if update_succeeded and uploaded_storage_path and old_storage_path:
+    # =============================================================
+    # Remove old photo only after the database update commits
+    # =============================================================
+
+    if (
+        update_succeeded
+        and uploaded_storage_path
+        and old_storage_path
+        and storage is not None
+    ):
         try:
             storage.remove([old_storage_path])
         except Exception:
@@ -1950,21 +2068,35 @@ def patient_profile(request):
                 "Could not remove the previous patient profile photo."
             )
 
-    # Generate a signed URL for the private bucket.
-    if patient and patient.get("profile_image_path"):
+    # =============================================================
+    # Generate signed URL for existing profile photo
+    # =============================================================
+
+    if (
+        storage is not None
+        and patient
+        and patient.get("profile_image_path")
+    ):
         try:
             signed_result = storage.create_signed_url(
                 patient["profile_image_path"],
                 3600,
             )
+
             patient_photo_url = (
                 signed_result.get("signedURL")
                 or signed_result.get("signedUrl")
+                or signed_result.get("signed_url")
             )
+
         except Exception:
             logger.exception(
                 "Could not create signed patient profile photo URL."
             )
+
+    # =============================================================
+    # Redirect after successful save
+    # =============================================================
 
     if request.method == "POST" and update_succeeded:
         return redirect("patient_profile")

@@ -78,20 +78,18 @@
                     <td>
                         {{ appointment.type }}
                     </td>
-
+                   
                     <td class="md-appointments__doctor">
 
                         <span class="md-appointments__doctor-name">
-                            {{ appointment.doctor }}
+                            {{ appointment.staff|default:"Doctor not assigned" }}
                         </span>
 
                         <span class="md-appointments__department">
-                            {{ appointment.department }}
+                            {{ appointment.speciality|default:appointment.department|default:"Department unavailable" }}
                         </span>
 
                     </td>
-
-                    <td>
 
                         {% if appointment.status == "Completed" or appointment.status == "Scheduled" %}
 

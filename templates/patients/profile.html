@@ -365,9 +365,14 @@ My Profile | Medicare
                         <label for="allergies">
                             Allergies
                         </label>
-
-                        <input type="text" id="allergies" name="allergies" value="{{ patient.allergies|default:'' }}"
-                            placeholder="e.g. Penicillin, Peanuts">
+                        
+                        <input
+                            type="text"
+                            id="allergies"
+                            name="allergies"
+                            value="{{ patient.allergies_display|default:'' }}"
+                            placeholder="e.g. Penicillin, Peanuts"
+                        >
 
                     </div>
 

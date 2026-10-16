@@ -28,17 +28,20 @@
     <!-- Appointment -->
     <div class="appointment-status__appointment">
 
-        {% with doctor_name=appointment.doctor.name|default:"Your Doctor" %}
-            {% if appointment.doctor.image %}
+        
+        
+        {% with doctor_name=appointment.staff.name|default:"Your Doctor" %}
+            {% if appointment.staff.image %}
                 <img
-                    src="{% static appointment.doctor.image %}"
-                    alt="{{ doctor_name }}"
+                    src="{{ appointment.staff.image }}"
+                    alt="{{ appointment.staff.name|default:'Your Doctor' }}"
                     class="appointment-status__doctor"
+                    onerror="this.onerror=null; this.src='{% static 'images/doctor.webp' %}';"
                 >
             {% else %}
                 <img
                     src="{% static 'images/doctor.webp' %}"
-                    alt="{{ doctor_name }}"
+                    alt="{{ appointment.staff.name|default:'Your Doctor' }}"
                     class="appointment-status__doctor"
                 >
             {% endif %}
@@ -47,7 +50,7 @@
                 <h4>{{ doctor_name }}</h4>
 
                 <p class="appointment-status__speciality">
-                    {{ appointment.doctor.speciality|default:"General Consultation" }}
+                    {{ appointment.staff.speciality|default:"General Consultation" }}
                 </p>
 
                 <div class="appointment-status__meta">
