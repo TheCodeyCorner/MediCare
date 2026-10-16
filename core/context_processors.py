@@ -8,7 +8,7 @@ from .permissions import get_staff_permissions  # Adjust if defined elsewhere
 
 
 def dashboard_navigation(request):
-    if not request.user.is_authenticated:
+    if not getattr(request, "user", None) or not request.user.is_authenticated:
         return {"sidebar_items": get_patient_navigation()}
 
     if request.user.access_level == "Admin":

@@ -538,7 +538,8 @@ def patient_dashboard(request):
                   AND systolic_bp IS NOT NULL
                   AND diastolic_bp IS NOT NULL
 
-                ORDER BY recorded_at ASC;
+                ORDER BY recorded_at DESC
+                LIMIT 12;
                 """,
                 (patient_id,)
             )
@@ -551,131 +552,124 @@ def patient_dashboard(request):
 
             cursor.execute(
                 """
-                SELECT
-                    a.appointment_id,
-
-                    a.schedule_time,
-
-                    at.type_name AS type,
-
-                    CONCAT_WS(
-                        ' ',
-                        s.first_name,
-                        s.last_name
-                    ) AS staff,
-
-                    COALESCE(
-                        NULLIF(
-                            array_to_string(
-                                s.specializations,
-                                ', '
-                            ),
-                            ''
-                        ),
-                        d.department_name
-                    ) AS speciality,
-
-                    d.department_name AS department,
-
-                    a.status,
-
-                    a.notes AS note,
-
-                    a.doctor_id
-
-                FROM medicare.appointments a
-
-                LEFT JOIN medicare.appointment_type at
-                    ON at.app_type_id = a.app_type_id
-
-                LEFT JOIN medicare.staff s
-                    ON s.staff_id = a.doctor_id
-
-                LEFT JOIN medicare.department d
-                    ON d.department_id = s.department_id
-
-                WHERE a.patient_id = %s
-
-                ORDER BY a.schedule_time DESC;
+                WITH upcoming AS (
+                    SELECT
+                        a.appointment_id,
+                        a.schedule_time,
+                        at.type_name AS type,
+                        CONCAT_WS(' ', s.first_name, s.last_name) AS staff,
+                        COALESCE(
+                            NULLIF(array_to_string(s.specializations, ', '), ''),
+                            d.department_name
+                        ) AS speciality,
+                        d.department_name AS department,
+                        a.status,
+                        a.notes AS note,
+                        a.doctor_id
+                    FROM medicare.appointments a
+                    LEFT JOIN medicare.appointment_type at
+                        ON at.app_type_id = a.app_type_id
+                    LEFT JOIN medicare.staff s
+                        ON s.staff_id = a.doctor_id
+                    LEFT JOIN medicare.department d
+                        ON d.department_id = s.department_id
+                    WHERE a.patient_id = %s
+                      AND a.schedule_time >= CURRENT_TIMESTAMP
+                      AND LOWER(COALESCE(a.status, '')) NOT IN (
+                          'cancelled', 'canceled', 'completed',
+                          'no_show', 'no-show'
+                      )
+                    ORDER BY a.schedule_time ASC
+                    LIMIT 10
+                ),
+                recent_history AS (
+                    SELECT
+                        a.appointment_id,
+                        a.schedule_time,
+                        at.type_name AS type,
+                        CONCAT_WS(' ', s.first_name, s.last_name) AS staff,
+                        COALESCE(
+                            NULLIF(array_to_string(s.specializations, ', '), ''),
+                            d.department_name
+                        ) AS speciality,
+                        d.department_name AS department,
+                        a.status,
+                        a.notes AS note,
+                        a.doctor_id
+                    FROM medicare.appointments a
+                    LEFT JOIN medicare.appointment_type at
+                        ON at.app_type_id = a.app_type_id
+                    LEFT JOIN medicare.staff s
+                        ON s.staff_id = a.doctor_id
+                    LEFT JOIN medicare.department d
+                        ON d.department_id = s.department_id
+                    WHERE a.patient_id = %s
+                      AND (
+                          a.schedule_time < CURRENT_TIMESTAMP
+                          OR a.schedule_time IS NULL
+                          OR LOWER(COALESCE(a.status, '')) IN (
+                              'cancelled', 'canceled', 'completed',
+                              'no_show', 'no-show'
+                          )
+                      )
+                    ORDER BY a.schedule_time DESC NULLS LAST
+                    LIMIT 10
+                )
+                SELECT * FROM upcoming
+                UNION ALL
+                SELECT * FROM recent_history
+                ORDER BY schedule_time DESC NULLS LAST;
                 """,
-                (patient_id,)
+                (patient_id, patient_id)
             )
 
             appointment_rows = cursor.fetchall()
-
-            print("\n========== APPOINTMENT DEBUG ==========")
-            print("USER ID:", user_id)
-            print("PATIENT ID:", patient_id)
-            print("APPOINTMENT ROWS:")
-
-            for row in appointment_rows:
-                print(row)
-
-            print("=======================================\n")
 
             # =================================================================
             # Queue + latest ML prediction
             # =================================================================
 
-            cursor.execute(
-                """
-                SELECT
-                    aq.appointment_id,
+            # Queue + latest ML prediction. Only fetch queue data for the
+            # appointments already limited by the dashboard query.
+            appointment_ids = [row[0] for row in appointment_rows]
+            queue_rows = []
 
-                    aq.token_number,
-
-                    aq.queue_position,
-
-                    aq.patients_ahead,
-
-                    aq.queue_status,
-
-                    qp.predicted_wait_minutes,
-
-                    qp.recommended_arrival,
-
-                    qp.confidence,
-
-                    qp.model_version,
-
-                    qp.predicted_at,
-
-                    qp.actual_wait_minutes,
-
-                    qp.prediction_error_minutes
-
-                FROM medicare.appointment_queue aq
-
-                LEFT JOIN LATERAL (
+            if appointment_ids:
+                cursor.execute(
+                    """
                     SELECT
-                        predicted_wait_minutes,
-                        recommended_arrival,
-                        confidence,
-                        model_version,
-                        predicted_at,
-                        actual_wait_minutes,
-                        prediction_error_minutes
-
-                    FROM medicare.queue_predictions qp
-
-                    WHERE qp.appointment_id = aq.appointment_id
-
-                    ORDER BY qp.predicted_at DESC
-
-                    LIMIT 1
-
-                ) qp ON TRUE
-
-                WHERE aq.appointment_id IN (
-                    SELECT appointment_id
-                    FROM medicare.appointments
-                    WHERE patient_id = %s
-                );
-                """,
-                (patient_id,)
-            )
-
-            queue_rows = cursor.fetchall()
+                        aq.appointment_id,
+                        aq.token_number,
+                        aq.queue_position,
+                        aq.patients_ahead,
+                        aq.queue_status,
+                        qp.predicted_wait_minutes,
+                        qp.recommended_arrival,
+                        qp.confidence,
+                        qp.model_version,
+                        qp.predicted_at,
+                        qp.actual_wait_minutes,
+                        qp.prediction_error_minutes
+                    FROM medicare.appointment_queue aq
+                    LEFT JOIN LATERAL (
+                        SELECT
+                            predicted_wait_minutes,
+                            recommended_arrival,
+                            confidence,
+                            model_version,
+                            predicted_at,
+                            actual_wait_minutes,
+                            prediction_error_minutes
+                        FROM medicare.queue_predictions qp
+                        WHERE qp.appointment_id = aq.appointment_id
+                        ORDER BY qp.predicted_at DESC
+                        LIMIT 1
+                    ) qp ON TRUE
+                    WHERE aq.appointment_id = ANY(%s::uuid[]);
+                    """,
+                    (appointment_ids,)
+                )
+                queue_rows = cursor.fetchall()
 
             # =================================================================
             # Insurance
@@ -750,7 +744,8 @@ def patient_dashboard(request):
 
                 WHERE a.patient_id = %s
 
-                ORDER BY p.start_date DESC;
+                ORDER BY p.start_date DESC NULLS LAST
+                LIMIT 10;
                 """,
                 (patient_id,)
             )
@@ -1065,7 +1060,7 @@ def patient_dashboard(request):
         diastolic_bp,
         heart_rate_bpm,
         recorded_at,
-    ) in vital_history_rows:
+    ) in reversed(vital_history_rows):
 
         if not recorded_at:
             continue
@@ -3414,3 +3409,14 @@ def logout(request):
     request.session.flush()
 
     return redirect("login")
+
+
+
+
+
+# ============================================================================
+# 404
+# ============================================================================
+
+def custom_404(request, exception):
+    return render(request, "404.html", status=404)

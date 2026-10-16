@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#071523">
+
+    <title>404 — Page Not Found | MediCare</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+
+    <style>
+        :root {
+            --navy: #071523;
+            --navy-light: #102b4a;
+            --blue: #2f6fed;
+            --blue-light: #6ea8ff;
+            --mint: #8de5c0;
+            --mint-strong: #5bdc8b;
+            --white: #ffffff;
+            --text: #f5f8fc;
+            --muted: #aebdce;
+            --border: rgba(255, 255, 255, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            min-height: 100svh;
+            overflow-x: hidden;
+            font-family: "Inter", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(ellipse at 15% 20%, rgba(47, 111, 237, 0.2), transparent 42%),
+                radial-gradient(ellipse at 85% 85%, rgba(91, 220, 139, 0.12), transparent 40%),
+                linear-gradient(135deg, var(--navy), #0b2035 55%, var(--navy-light));
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .page {
+            position: relative;
+            isolation: isolate;
+            min-height: 100vh;
+            min-height: 100svh;
+            padding: 100px 24px 65px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Ambient background glow */
+
+        .glow {
+            position: fixed;
+            z-index: -1;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.22;
+            pointer-events: none;
+            animation: glow-drift 12s ease-in-out infinite alternate;
+        }
+
+        .glow-blue {
+            top: -130px;
+            left: -100px;
+            background: var(--blue);
+        }
+
+        .glow-mint {
+            right: -130px;
+            bottom: -150px;
+            background: var(--mint-strong);
+            animation-delay: -5s;
+        }
+
+        /* Header */
+
+        .header {
+            position: absolute;
+            top: 25px;
+            left: 5%;
+            right: 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 11px;
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            display: grid;
+            place-items: center;
+            color: var(--navy);
+            border-radius: 13px;
+            background: linear-gradient(135deg, #b9f5d7, var(--mint-strong));
+            box-shadow: 0 6px 22px rgba(91, 220, 139, 0.18);
+        }
+
+        .home-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            color: var(--muted);
+            font-size: 0.88rem;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+
+        .home-link:hover {
+            color: var(--mint);
+        }
+
+        /* Decorative rings: each has equal width and height */
+
+        .rings {
+            position: absolute;
+            z-index: -1;
+            width: min(720px, 88vw, 88svh);
+            height: min(720px, 88vw, 88svh);
+            border: 1px solid rgba(255, 255, 255, 0.055);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: rotate 60s linear infinite;
+        }
+
+        .rings::before,
+        .rings::after {
+            content: "";
+            position: absolute;
+            border: 1px solid rgba(141, 229, 192, 0.08);
+            border-radius: 50%;
+        }
+
+        .rings::before {
+            inset: 8%;
+        }
+
+        .rings::after {
+            inset: 17%;
+            border-color: rgba(110, 168, 255, 0.1);
+        }
+
+        /* Main glass panel */
+
+        .error-card {
+            position: relative;
+            width: min(620px, 90vw);
+            padding: clamp(36px, 6vw, 64px) clamp(22px, 5vw, 48px);
+            overflow: hidden;
+            text-align: center;
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            background: rgba(255, 255, 255, 0.055);
+            box-shadow:
+                0 30px 90px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px) saturate(140%);
+            -webkit-backdrop-filter: blur(20px) saturate(140%);
+            animation: appear 0.7s ease both;
+        }
+
+        .error-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 12%;
+            right: 12%;
+            height: 1px;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(141, 229, 192, 0.55),
+                transparent
+            );
+        }
+
+        .error-card > * {
+            position: relative;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 15px;
+            margin-bottom: 22px;
+            border: 1px solid rgba(141, 229, 192, 0.2);
+            border-radius: 50px;
+            background: rgba(141, 229, 192, 0.07);
+            color: var(--mint);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .status i {
+            font-size: 0.7rem;
+        }
+
+        .error-code {
+            margin-bottom: 12px;
+            font-size: clamp(6rem, 20vw, 10rem);
+            font-weight: 800;
+            line-height: 0.95;
+            letter-spacing: -0.09em;
+            background: linear-gradient(
+                135deg,
+                var(--white) 15%,
+                var(--blue-light) 52%,
+                var(--mint) 95%
+            );
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 8px 30px rgba(47, 111, 237, 0.12));
+        }
+
+        .title {
+            margin-bottom: 14px;
+            font-size: clamp(1.7rem, 5vw, 2.5rem);
+            font-weight: 700;
+            letter-spacing: -1.2px;
+        }
+
+        .description {
+            max-width: 420px;
+            margin: 0 auto 30px;
+            color: var(--muted);
+            font-size: 0.94rem;
+            line-height: 1.8;
+        }
+
+        /* Actions */
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .button {
+            min-height: 48px;
+            padding: 14px 22px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid transparent;
+            border-radius: 50px;
+            font-family: inherit;
+            font-size: 0.86rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition:
+                transform 0.2s ease,
+                box-shadow 0.2s ease,
+                background 0.2s ease,
+                border-color 0.2s ease;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+        }
+
+        .button-primary {
+            color: #071523;
+            background: linear-gradient(135deg, #b9f5d7, var(--mint-strong));
+            box-shadow: 0 8px 24px rgba(91, 220, 139, 0.16);
+        }
+
+        .button-primary:hover {
+            box-shadow: 0 12px 30px rgba(91, 220, 139, 0.27);
+        }
+
+        .button-secondary {
+            color: var(--text);
+            border-color: rgba(255, 255, 255, 0.17);
+            background: rgba(255, 255, 255, 0.045);
+        }
+
+        .button-secondary:hover {
+            border-color: rgba(141, 229, 192, 0.4);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .support {
+            margin-top: 27px;
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        .support a {
+            color: var(--mint);
+            font-weight: 600;
+        }
+
+        .support a:hover {
+            text-decoration: underline;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 22px;
+            left: 20px;
+            right: 20px;
+            color: rgba(174, 189, 206, 0.65);
+            font-size: 0.73rem;
+            text-align: center;
+        }
+
+        @keyframes appear {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes glow-drift {
+            from { transform: translate(0, 0) scale(1); }
+            to { transform: translate(30px, 25px) scale(1.1); }
+        }
+
+        @media (max-width: 480px) {
+            .page {
+                padding: 100px 16px 70px;
+            }
+
+            .header {
+                top: 18px;
+                left: 18px;
+                right: 18px;
+            }
+
+            .brand {
+                font-size: 1.08rem;
+            }
+
+            .brand-icon {
+                width: 35px;
+                height: 35px;
+                border-radius: 11px;
+            }
+
+            .home-link {
+                font-size: 0.76rem;
+            }
+
+            .error-card {
+                padding: 38px 22px;
+                border-radius: 24px;
+            }
+
+            .status {
+                margin-bottom: 20px;
+                font-size: 0.65rem;
+            }
+
+            .description {
+                font-size: 0.86rem;
+                margin-bottom: 25px;
+            }
+
+            .button {
+                min-height: 45px;
+                padding: 12px 17px;
+                font-size: 0.8rem;
+            }
+
+            .support {
+                margin-top: 23px;
+                font-size: 0.76rem;
+            }
+
+            .rings {
+                width: min(94vw, 94svh);
+                height: min(94vw, 94svh);
+            }
+        }
+
+        @media (max-height: 650px) and (min-width: 481px) {
+            .page {
+                padding-top: 85px;
+                padding-bottom: 65px;
+            }
+
+            .error-card {
+                padding-top: 28px;
+                padding-bottom: 28px;
+            }
+
+            .status {
+                margin-bottom: 12px;
+            }
+
+            .error-code {
+                font-size: clamp(5rem, 18vh, 7rem);
+            }
+
+            .title {
+                margin-bottom: 9px;
+                font-size: 1.8rem;
+            }
+
+            .description {
+                margin-bottom: 18px;
+                font-size: 0.85rem;
+            }
+
+            .support {
+                margin-top: 18px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="glow glow-blue" aria-hidden="true"></div>
+    <div class="glow glow-mint" aria-hidden="true"></div>
+
+    <main class="page">
+        <header class="header">
+            <a class="brand" href="{% url 'landing' %}" aria-label="MediCare homepage">
+                <span>MediCare</span>
+            </a>
+
+            <a class="home-link" href="{% url 'landing' %}">
+                <i class="fa-solid fa-arrow-left"></i>
+                Back to Home
+            </a>
+        </header>
+
+        <div class="rings" aria-hidden="true"></div>
+
+        <section class="error-card" aria-labelledby="error-title">
+            <div class="status">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                Error 404
+            </div>
+
+            <div class="error-code" aria-label="404">404</div>
+
+            <h1 class="title" id="error-title">Page Not Found</h1>
+
+            <p class="description">
+                Looks like you've wandered outside our care zone.
+                The page you're looking for may have moved or no longer exists.
+                Let's get you back on track.
+            </p>
+
+            <div class="actions">
+                <a class="button button-primary" href="{% url 'landing' %}">
+                    <i class="fa-solid fa-house"></i>
+                    Return Home
+                </a>
+
+                <button class="button button-secondary" id="go-back" type="button">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Go Back
+                </button>
+            </div>
+
+            <p class="support">
+                Need help finding something?
+                <a href="mailto:care@medicare.example">Contact Support</a>
+            </p>
+        </section>
+
+        <footer class="footer">
+            &copy; <span id="year"></span> MediCare. All rights reserved.
+        </footer>
+    </main>
+
+    <script>
+        document.getElementById("year").textContent =
+            new Date().getFullYear();
+
+        document.getElementById("go-back").addEventListener("click", function () {
+            if (window.history.length > 1 && document.referrer) {
+                window.history.back();
+            } else {
+                window.location.href = "{% url 'landing' %}";
+            }
+        });
+    </script>
+</body>
+</html>

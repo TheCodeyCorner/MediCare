@@ -1,12 +1,11 @@
+
 {% load static %}
 
 <section class="patient-card appointment-status">
 
     <!-- Header -->
     <div class="appointment-status__header">
-
         <div class="appointment-status__title">
-
             <span class="appointment-status__icon">
                 <i data-lucide="calendar-days"></i>
             </span>
@@ -15,130 +14,143 @@
                 <h3>Next Appointment</h3>
                 <p>Your upcoming visit</p>
             </div>
-
         </div>
 
-        <a href="#" class="appointment-status__link">
+        <a href="{% url 'patient_appointments' %}" class="appointment-status__link">
             View Details
             <i data-lucide="chevron-right"></i>
         </a>
-
     </div>
-
 
     <!-- Appointment -->
     <div class="appointment-status__appointment">
 
-        <img src="{% static appointment.doctor.image %}" alt="{{ appointment.doctor.name }}"
-            class="appointment-status__doctor">
+        {% with doctor_name=appointment.doctor.name|default:"Your Doctor" %}
+            {% if appointment.doctor.image %}
+                <img
+                    src="{% static appointment.doctor.image %}"
+                    alt="{{ doctor_name }}"
+                    class="appointment-status__doctor"
+                >
+            {% else %}
+                <img
+                    src="{% static 'images/doctor.webp' %}"
+                    alt="{{ doctor_name }}"
+                    class="appointment-status__doctor"
+                >
+            {% endif %}
 
-        <div class="appointment-status__doctor-info">
+            <div class="appointment-status__doctor-info">
+                <h4>{{ doctor_name }}</h4>
 
-            <h4>{{ appointment.doctor.name }}</h4>
+                <p class="appointment-status__speciality">
+                    {{ appointment.doctor.speciality|default:"General Consultation" }}
+                </p>
 
-            <p class="appointment-status__speciality">
-                {{ appointment.doctor.speciality }}
-            </p>
+                <div class="appointment-status__meta">
+                    <span>
+                        <i data-lucide="calendar"></i>
+                        {{ appointment.date|default:"Date to be confirmed" }}
+                    </span>
 
-            <div class="appointment-status__meta">
+                    <span>
+                        <i data-lucide="clock-3"></i>
+                        {% if appointment.time %}
+                            {{ appointment.time }} IST
+                        {% else %}
+                            Time to be confirmed
+                        {% endif %}
+                    </span>
 
-                <span>
-                    <i data-lucide="calendar"></i>
-                    {{ appointment.date }}
-                </span>
-
-                <span>
-                    <i data-lucide="clock-3"></i>
-                    {{ appointment.time }} IST
-                </span>
-
-                <span>
-                    <i data-lucide="map-pin"></i>
-                    {{ appointment.location }}
-                </span>
-
+                    <span>
+                        <i data-lucide="map-pin"></i>
+                        {{ appointment.location|default:"Location to be confirmed" }}
+                    </span>
+                </div>
             </div>
+        {% endwith %}
 
-        </div>
-
-        <button type="button" class="appointment-status__button">
+        <a
+            href="{% url 'patient_appointments' %}"
+            class="appointment-status__button"
+        >
             View Appointment
             <i data-lucide="arrow-up-right"></i>
-        </button>
-
+        </a>
     </div>
-
 
     <!-- Queue -->
     <div class="appointment-status__queue">
-
         <div class="appointment-status__queue-main">
 
             <div class="appointment-status__queue-title">
-
                 <span class="appointment-status__queue-icon">
                     <i data-lucide="users"></i>
                 </span>
 
                 <div>
-                    <h4>Live Queue</h4>
+                    <h4>Queue Status</h4>
 
                     <span class="appointment-status__live">
                         <span></span>
-                        Live
+                        {% if appointment.queue.token %}
+                            Queue information available
+                        {% else %}
+                            Awaiting queue information
+                        {% endif %}
                     </span>
                 </div>
-
             </div>
 
             <div class="appointment-status__token">
-
                 <span>Your Token</span>
 
-                <strong>{{ appointment.queue.token }}</strong>
+                <strong>
+                    {{ appointment.queue.token|default:"—" }}
+                </strong>
 
                 <small>
-                    {{ appointment.queue.patients_ahead }} patients ahead
+                    {% if appointment.queue.patients_ahead != None %}
+                        {{ appointment.queue.patients_ahead }} patients ahead
+                    {% else %}
+                        Queue position unavailable
+                    {% endif %}
                 </small>
-
             </div>
-
         </div>
 
-
         <div class="appointment-status__queue-stats">
-
             <div class="appointment-status__queue-stat">
-
                 <i data-lucide="clock-3"></i>
 
                 <div>
                     <span>Estimated Wait</span>
-                    <strong>{{ appointment.queue.estimated_wait }} min</strong>
+                    <strong>
+                        {% if appointment.queue.estimated_wait != None %}
+                            {{ appointment.queue.estimated_wait }} min
+                        {% else %}
+                            Not available
+                        {% endif %}
+                    </strong>
                 </div>
-
             </div>
 
-
             <div class="appointment-status__queue-stat">
-
                 <i data-lucide="footprints"></i>
 
                 <div>
                     <span>Recommended Arrival</span>
-                    <strong>{{ appointment.queue.recommended_arrival }}</strong>
+                    <strong>
+                        {{ appointment.queue.recommended_arrival|default:"To be confirmed" }}
+                    </strong>
                 </div>
-
             </div>
-
         </div>
-
 
         <p class="appointment-status__notification">
             <i data-lucide="bell"></i>
-            We'll notify you when it's almost your turn.
+            Queue updates will appear here when available.
         </p>
-
     </div>
 
 </section>
