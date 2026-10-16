@@ -82,8 +82,8 @@ class SupabaseBackend:
                         u.access_id,
                         al.access_level,
                         u.status
-                    FROM "QueueCare".users AS u
-                    LEFT JOIN "QueueCare".access_levels AS al
+                    FROM medicare.users AS u
+                    LEFT JOIN medicare.access_levels AS al
                         ON u.access_id = al.access_id
                     WHERE u.user_id = %s
                     LIMIT 1;

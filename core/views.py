@@ -91,7 +91,7 @@ def login_patient(request):
                 cursor.execute(
                     """
                     SELECT last_login
-                    FROM "QueueCare".users
+                    FROM medicare.users
                     WHERE user_id = %s
                     LIMIT 1;
                     """,
@@ -112,7 +112,7 @@ def login_patient(request):
 
                     cursor.execute(
                         """
-                        INSERT INTO "QueueCare".patients (
+                        INSERT INTO medicare.patients (
                             user_id
                         )
                         VALUES (%s)
@@ -124,7 +124,7 @@ def login_patient(request):
                 # Update login time.
                 cursor.execute(
                     """
-                    UPDATE "QueueCare".users
+                    UPDATE medicare.users
                     SET last_login = NOW()
                     WHERE user_id = %s;
                     """,
@@ -253,7 +253,7 @@ def register_patient(request):
             cursor.execute(
                 """
                 SELECT access_id
-                FROM "QueueCare".access_levels
+                FROM medicare.access_levels
                 WHERE access_level = 'Patient'
                 LIMIT 1;
                 """
@@ -275,7 +275,7 @@ def register_patient(request):
 
             cursor.execute(
                 """
-                INSERT INTO "QueueCare".users (
+                INSERT INTO medicare.users (
                     user_id,
                     email,
                     access_id,
@@ -399,9 +399,9 @@ def patient_dashboard(request):
 
                     p.insurance_id AS insurance_id
 
-                FROM "QueueCare".patients p
+                FROM medicare.patients p
 
-                LEFT JOIN "QueueCare".users u
+                LEFT JOIN medicare.users u
                     ON u.user_id = p.user_id
 
                 WHERE p.user_id = %s
@@ -447,7 +447,7 @@ def patient_dashboard(request):
                 """
                 SELECT EXISTS (
                     SELECT 1
-                    FROM "QueueCare".patients p
+                    FROM medicare.patients p
                     WHERE p.user_id = %s
                       AND p.first_name IS NOT NULL
                       AND p.dob IS NOT NULL
@@ -484,7 +484,7 @@ def patient_dashboard(request):
                     blood_sugar,
                     recorded_at
 
-                FROM "QueueCare".vital_records
+                FROM medicare.vital_records
 
                 WHERE patient_id = %s
 
@@ -509,7 +509,7 @@ def patient_dashboard(request):
                     heart_rate_bpm,
                     recorded_at
 
-                FROM "QueueCare".vital_records
+                FROM medicare.vital_records
 
                 WHERE patient_id = %s
                   AND systolic_bp IS NOT NULL
@@ -560,15 +560,15 @@ def patient_dashboard(request):
 
                     a.staff_id
 
-                FROM "QueueCare".appointments a
+                FROM medicare.appointments a
 
-                LEFT JOIN "QueueCare".appointment_type at
+                LEFT JOIN medicare.appointment_type at
                     ON at.app_type_id = a.app_type_id
 
-                LEFT JOIN "QueueCare".staff s
+                LEFT JOIN medicare.staff s
                     ON s.staff_id = a.staff_id
 
-                LEFT JOIN "QueueCare".department d
+                LEFT JOIN medicare.department d
                     ON d.department_id = s.department_id
 
                 WHERE a.patient_id = %s
@@ -621,7 +621,7 @@ def patient_dashboard(request):
 
                     qp.prediction_error_minutes
 
-                FROM "QueueCare".appointment_queue aq
+                FROM medicare.appointment_queue aq
 
                 LEFT JOIN LATERAL (
                     SELECT
@@ -633,7 +633,7 @@ def patient_dashboard(request):
                         actual_wait_minutes,
                         prediction_error_minutes
 
-                    FROM "QueueCare".queue_predictions qp
+                    FROM medicare.queue_predictions qp
 
                     WHERE qp.appointment_id = aq.appointment_id
 
@@ -645,7 +645,7 @@ def patient_dashboard(request):
 
                 WHERE aq.appointment_id IN (
                     SELECT appointment_id
-                    FROM "QueueCare".appointments
+                    FROM medicare.appointments
                     WHERE patient_id = %s
                 );
                 """,
@@ -673,12 +673,12 @@ def patient_dashboard(request):
 
                     i.status
 
-                FROM "QueueCare".patients p
+                FROM medicare.patients p
 
-                LEFT JOIN "QueueCare".insurance_policies i
+                LEFT JOIN medicare.insurance_policies i
                     ON i.insurance_id = p.insurance_id
 
-                LEFT JOIN "QueueCare".insurance_providers ip
+                LEFT JOIN medicare.insurance_providers ip
                     ON ip.provider_id = i.provider_id
 
                 WHERE p.patient_id = %s
@@ -714,15 +714,15 @@ def patient_dashboard(request):
 
                     p.status
 
-                FROM "QueueCare".prescription p
+                FROM medicare.prescription p
 
-                LEFT JOIN "QueueCare".medication_catalogue mc
+                LEFT JOIN medicare.medication_catalogue mc
                     ON mc.medication_id = p.medication_id
 
-                LEFT JOIN "QueueCare".consultation c
+                LEFT JOIN medicare.consultation c
                     ON c.cons_id = p.cons_id
 
-                LEFT JOIN "QueueCare".appointments a
+                LEFT JOIN medicare.appointments a
                     ON a.appointment_id = c.app_id
 
                 WHERE a.patient_id = %s
@@ -1602,7 +1602,7 @@ def patient_profile(request):
 
                 cursor.execute(
                     """
-                    UPDATE "QueueCare".patients
+                    UPDATE medicare.patients
 
                     SET
                         first_name = %s,
@@ -1669,7 +1669,7 @@ def patient_profile(request):
                     p.state,
                     p.gender
 
-                FROM "QueueCare".patients p
+                FROM medicare.patients p
 
                 WHERE p.user_id = %s
 
@@ -1723,9 +1723,9 @@ def patient_profile(request):
                     ip.provider_id,
                     prov.provider_name
 
-                FROM "QueueCare".insurance_policies ip
+                FROM medicare.insurance_policies ip
 
-                LEFT JOIN "QueueCare".insurance_providers prov
+                LEFT JOIN medicare.insurance_providers prov
                     ON ip.provider_id = prov.provider_id
 
                 WHERE ip.status = 'active'
@@ -1941,9 +1941,9 @@ def admin_add_doctor(request):
                     SELECT
                         s.staff_id
 
-                    FROM "QueueCare".staff s
+                    FROM medicare.staff s
 
-                    JOIN "QueueCare".staff_levels sl
+                    JOIN medicare.staff_levels sl
                         ON sl.staff_level_id = s.staff_level_id
 
                     WHERE s.user_id = %s
@@ -1976,7 +1976,7 @@ def admin_add_doctor(request):
 
                 cursor.execute(
                     """
-                    UPDATE "QueueCare".staff
+                    UPDATE medicare.staff
 
                     SET
                         first_name = %s,
@@ -2048,12 +2048,12 @@ def admin_add_doctor(request):
                     s.country,
                     s.status
 
-                FROM "QueueCare".staff s
+                FROM medicare.staff s
 
-                JOIN "QueueCare".staff_levels sl
+                JOIN medicare.staff_levels sl
                     ON sl.staff_level_id = s.staff_level_id
 
-                LEFT JOIN "QueueCare".department d
+                LEFT JOIN medicare.department d
                     ON d.department_id = s.department_id
 
                 WHERE s.user_id = %s

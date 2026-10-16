@@ -1,0 +1,25 @@
+{
+    "algorithm": "Median Baseline",
+    "doctor_aware": {
+        "algorithm": "DoctorAwareMedianModel",
+        "model_type": "doctor_aware",
+        "mae": 13.168010752688172,
+        "rmse": 15.19205012816816,
+        "r2": -0.012876026467308455,
+        "training_records": 2976,
+        "testing_records": 744,
+        "total_records": 3720,
+        "model_path": "E:\\my data\\my work\\Queue care\\core\\saved_models\\median_baseline\\median_baseline_doctor_aware.joblib"
+    },
+    "general_fallback": {
+        "algorithm": "GeneralMedianModel",
+        "model_type": "general_fallback",
+        "mae": 13.172043010752688,
+        "rmse": 15.136742309424953,
+        "r2": -0.005514545859837794,
+        "training_records": 2976,
+        "testing_records": 744,
+        "total_records": 3720,
+        "model_path": "E:\\my data\\my work\\Queue care\\core\\saved_models\\median_baseline\\median_baseline_general_fallback.joblib"
+    }
+}

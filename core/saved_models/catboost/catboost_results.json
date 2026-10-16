@@ -1,0 +1,75 @@
+{
+    "algorithm": "CatBoost",
+    "doctor_aware": {
+        "algorithm": "CatBoostRegressor",
+        "model_type": "doctor_aware",
+        "mae": 13.1743,
+        "rmse": 15.1389,
+        "r2": -0.0058,
+        "training_records": 2976,
+        "testing_records": 744,
+        "total_records": 3720,
+        "features": [
+            "doctor_id",
+            "reason_id",
+            "app_type_id",
+            "doctor_experience",
+            "doctor_department_id",
+            "reason_department_id",
+            "day_of_week",
+            "hour_of_day"
+        ],
+        "categorical_features": [
+            "doctor_id",
+            "reason_id",
+            "app_type_id",
+            "doctor_department_id",
+            "reason_department_id",
+            "day_of_week"
+        ],
+        "feature_importance": {
+            "reason_id": 41.3786,
+            "doctor_experience": 27.3542,
+            "doctor_id": 14.9724,
+            "app_type_id": 13.4176,
+            "reason_department_id": 1.6456,
+            "day_of_week": 1.2316,
+            "doctor_department_id": 0.0,
+            "hour_of_day": 0.0
+        },
+        "model_path": "E:\\my data\\my work\\Queue care\\core\\saved_models\\catboost\\catboost_doctor_aware.cbm",
+        "best_iteration": 4
+    },
+    "general_fallback": {
+        "algorithm": "CatBoostRegressor",
+        "model_type": "general_fallback",
+        "mae": 13.1692,
+        "rmse": 15.1374,
+        "r2": -0.0056,
+        "training_records": 2976,
+        "testing_records": 744,
+        "total_records": 3720,
+        "features": [
+            "reason_id",
+            "app_type_id",
+            "reason_department_id",
+            "day_of_week",
+            "hour_of_day"
+        ],
+        "categorical_features": [
+            "reason_id",
+            "app_type_id",
+            "reason_department_id",
+            "day_of_week"
+        ],
+        "feature_importance": {
+            "app_type_id": 30.0014,
+            "reason_department_id": 26.4574,
+            "day_of_week": 22.3946,
+            "hour_of_day": 16.0357,
+            "reason_id": 5.1108
+        },
+        "model_path": "E:\\my data\\my work\\Queue care\\core\\saved_models\\catboost\\catboost_general_fallback.cbm",
+        "best_iteration": 5
+    }
+}

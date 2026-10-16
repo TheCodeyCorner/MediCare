@@ -1,0 +1,107 @@
+{
+    "algorithm": "XGBoost",
+    "doctor_aware": {
+        "algorithm": "XGBRegressor",
+        "model_type": "doctor_aware",
+        "mae": 13.304,
+        "rmse": 15.5143,
+        "r2": -0.0563,
+        "training_records": 2976,
+        "testing_records": 744,
+        "total_records": 3720,
+        "features": [
+            "doctor_id",
+            "reason_id",
+            "app_type_id",
+            "doctor_experience",
+            "doctor_department_id",
+            "reason_department_id",
+            "day_of_week",
+            "hour_of_day"
+        ],
+        "categorical_features": [
+            "doctor_id",
+            "reason_id",
+            "app_type_id",
+            "doctor_department_id",
+            "reason_department_id",
+            "day_of_week"
+        ],
+        "numeric_features": [
+            "doctor_experience",
+            "hour_of_day"
+        ],
+        "feature_importance": {
+            "categorical__doctor_id_6e899d12-dd97-4fd0-b679-036fc80b2708": 0.009117,
+            "categorical__reason_id_40b82f4e-abc2-4685-aae3-0db0c966670b": 0.008712,
+            "categorical__reason_id_ee97c32f-6630-454a-b9e7-5f34e89e0cba": 0.008323,
+            "categorical__reason_id_a14dee8c-36ce-43b7-a830-9cf6a476d196": 0.007595,
+            "categorical__reason_department_id_c23da6ce-16db-4140-a9d0-5081457da0f0": 0.007579,
+            "categorical__doctor_id_f9f2fafa-9e1c-427d-8ea7-0f2cfe07d9f9": 0.007559,
+            "categorical__reason_id_88073fad-0a99-4ab2-a289-cb71199ca6af": 0.00755,
+            "categorical__doctor_id_29673d69-819a-4063-88bf-30deff1b1f40": 0.007501,
+            "categorical__doctor_id_23af9711-75db-4920-b966-8d917c3852dc": 0.007406,
+            "categorical__reason_id_4148b310-0202-4757-b2f6-b5b489f91224": 0.007166,
+            "categorical__reason_id_48ddeef4-cba6-4dea-84a9-36119f45061b": 0.007141,
+            "categorical__reason_department_id_f7f6ef70-c7b1-470d-bf54-7c91dde3ccbf": 0.007003,
+            "categorical__doctor_id_390888e6-464d-4a3c-994a-25b3618deceb": 0.006963,
+            "categorical__reason_id_71c670e1-fef2-4ebe-b243-1982787389d6": 0.006889,
+            "categorical__reason_id_7e167c72-e103-47b0-9886-d79c8c2de308": 0.00685,
+            "categorical__reason_department_id_891c6aa0-708f-4a1a-87f5-5f55b0cb58cc": 0.006842,
+            "categorical__reason_id_6ab1e566-ac17-4538-9f72-ca3e8a225cb2": 0.006838,
+            "categorical__reason_department_id_1fa0c1bc-1006-4f1b-a843-364d000468e4": 0.006787,
+            "categorical__doctor_id_d9c5f472-4a20-451b-8bea-edaa2f493a3d": 0.006749,
+            "categorical__reason_id_74429c47-045a-4799-8763-b0e54502b7a3": 0.00672
+        },
+        "model_path": "E:\\my data\\my work\\Queue care\\core\\saved_models\\xgboost\\xgboost_doctor_aware.joblib"
+    },
+    "general_fallback": {
+        "algorithm": "XGBRegressor",
+        "model_type": "general_fallback",
+        "mae": 13.2605,
+        "rmse": 15.4859,
+        "r2": -0.0524,
+        "training_records": 2976,
+        "testing_records": 744,
+        "total_records": 3720,
+        "features": [
+            "reason_id",
+            "app_type_id",
+            "reason_department_id",
+            "day_of_week",
+            "hour_of_day"
+        ],
+        "categorical_features": [
+            "reason_id",
+            "app_type_id",
+            "reason_department_id",
+            "day_of_week"
+        ],
+        "numeric_features": [
+            "hour_of_day"
+        ],
+        "feature_importance": {
+            "categorical__reason_id_2e644801-7a83-4bd8-8ec5-d6e1c31a6113": 0.010222,
+            "categorical__reason_id_ee97c32f-6630-454a-b9e7-5f34e89e0cba": 0.009517,
+            "categorical__reason_department_id_f7f6ef70-c7b1-470d-bf54-7c91dde3ccbf": 0.00918,
+            "categorical__reason_id_a14dee8c-36ce-43b7-a830-9cf6a476d196": 0.008543,
+            "categorical__reason_id_52ecc3f0-6abb-4b71-90c1-2a76c255e386": 0.008409,
+            "categorical__reason_id_88073fad-0a99-4ab2-a289-cb71199ca6af": 0.008292,
+            "categorical__reason_department_id_891c6aa0-708f-4a1a-87f5-5f55b0cb58cc": 0.008283,
+            "categorical__reason_department_id_9f629674-dd5b-486b-a406-9a8eb120491f": 0.008082,
+            "categorical__reason_id_0232a5fa-2343-4b4c-9c66-614d1ab37faa": 0.007744,
+            "categorical__reason_id_2b5df9ee-25d3-46a3-83f5-7d83383dadb1": 0.007704,
+            "categorical__reason_id_8f8210ae-3810-4a28-9839-1b31234f2420": 0.007604,
+            "categorical__reason_id_4148b310-0202-4757-b2f6-b5b489f91224": 0.007584,
+            "categorical__reason_id_1a86cc5b-7a1c-4cea-8f36-135d9461e567": 0.007573,
+            "categorical__reason_id_d55b3a3e-a4cd-4973-a55f-e5f3bb51bdc7": 0.007543,
+            "categorical__reason_id_6ab1e566-ac17-4538-9f72-ca3e8a225cb2": 0.007503,
+            "categorical__reason_id_48ddeef4-cba6-4dea-84a9-36119f45061b": 0.007496,
+            "categorical__reason_id_8c9dd49f-6836-4030-a708-6b2a4541b6f9": 0.007493,
+            "categorical__reason_id_9cdb3d6f-a742-45e7-adb8-2c4a219fb3cd": 0.007454,
+            "categorical__reason_id_2a6eee56-0c7f-43d7-93d3-670ead7994c6": 0.007415,
+            "categorical__reason_id_76479fda-7835-4964-b732-c15cb9763285": 0.007354
+        },
+        "model_path": "E:\\my data\\my work\\Queue care\\core\\saved_models\\xgboost\\xgboost_general_fallback.joblib"
+    }
+}

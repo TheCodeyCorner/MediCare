@@ -1,0 +1,107 @@
+{
+    "algorithm": "Decision Tree",
+    "doctor_aware": {
+        "algorithm": "DecisionTreeRegressor",
+        "model_type": "doctor_aware",
+        "mae": 13.3161,
+        "rmse": 15.4585,
+        "r2": -0.0487,
+        "training_records": 2976,
+        "testing_records": 744,
+        "total_records": 3720,
+        "features": [
+            "doctor_id",
+            "reason_id",
+            "app_type_id",
+            "doctor_experience",
+            "doctor_department_id",
+            "reason_department_id",
+            "day_of_week",
+            "hour_of_day"
+        ],
+        "categorical_features": [
+            "doctor_id",
+            "reason_id",
+            "app_type_id",
+            "doctor_department_id",
+            "reason_department_id",
+            "day_of_week"
+        ],
+        "numeric_features": [
+            "doctor_experience",
+            "hour_of_day"
+        ],
+        "feature_importance": {
+            "numeric__doctor_experience": 0.155061,
+            "numeric__hour_of_day": 0.152773,
+            "categorical__reason_id_76479fda-7835-4964-b732-c15cb9763285": 0.057222,
+            "categorical__day_of_week_Sunday": 0.056953,
+            "categorical__reason_id_88073fad-0a99-4ab2-a289-cb71199ca6af": 0.048387,
+            "categorical__reason_id_a14dee8c-36ce-43b7-a830-9cf6a476d196": 0.046572,
+            "categorical__reason_id_6ab1e566-ac17-4538-9f72-ca3e8a225cb2": 0.046282,
+            "categorical__reason_id_bb2188e1-0cd9-40d8-bd7a-39516acc0b09": 0.041971,
+            "categorical__reason_id_c53a60c2-a2b1-4404-a7ba-86d444d648e7": 0.038876,
+            "categorical__reason_department_id_f7f6ef70-c7b1-470d-bf54-7c91dde3ccbf": 0.03811,
+            "categorical__reason_id_2a6eee56-0c7f-43d7-93d3-670ead7994c6": 0.037739,
+            "categorical__reason_id_8f8210ae-3810-4a28-9839-1b31234f2420": 0.03413,
+            "categorical__app_type_id_a35a2266-8bb6-41e8-a8be-68751fb58545": 0.029979,
+            "categorical__reason_id_9e671337-5f2c-44dc-b155-6ad749edc82e": 0.026983,
+            "categorical__reason_id_8da2b074-9991-4cac-8abb-d49bcacdef0c": 0.02557,
+            "categorical__reason_id_73f7fa23-c431-4869-8d73-bfbcb4da3cf2": 0.024865,
+            "categorical__reason_id_c7e19bef-9833-41ef-898d-872bb2149855": 0.024647,
+            "categorical__app_type_id_125b108b-bce2-459a-9c34-a3af2fcaa727": 0.023975,
+            "categorical__day_of_week_Monday": 0.023896,
+            "categorical__doctor_id_23af9711-75db-4920-b966-8d917c3852dc": 0.021896
+        },
+        "model_path": "E:\\my data\\my work\\Queue care\\core\\saved_models\\decision_tree\\decision_tree_doctor_aware.joblib"
+    },
+    "general_fallback": {
+        "algorithm": "DecisionTreeRegressor",
+        "model_type": "general_fallback",
+        "mae": 13.353,
+        "rmse": 15.5066,
+        "r2": -0.0553,
+        "training_records": 2976,
+        "testing_records": 744,
+        "total_records": 3720,
+        "features": [
+            "reason_id",
+            "app_type_id",
+            "reason_department_id",
+            "day_of_week",
+            "hour_of_day"
+        ],
+        "categorical_features": [
+            "reason_id",
+            "app_type_id",
+            "reason_department_id",
+            "day_of_week"
+        ],
+        "numeric_features": [
+            "hour_of_day"
+        ],
+        "feature_importance": {
+            "numeric__hour_of_day": 0.207024,
+            "categorical__reason_id_76479fda-7835-4964-b732-c15cb9763285": 0.064045,
+            "categorical__reason_id_88073fad-0a99-4ab2-a289-cb71199ca6af": 0.054156,
+            "categorical__reason_id_a14dee8c-36ce-43b7-a830-9cf6a476d196": 0.052125,
+            "categorical__reason_id_6ab1e566-ac17-4538-9f72-ca3e8a225cb2": 0.051801,
+            "categorical__day_of_week_Sunday": 0.049366,
+            "categorical__app_type_id_125b108b-bce2-459a-9c34-a3af2fcaa727": 0.04823,
+            "categorical__reason_id_bb2188e1-0cd9-40d8-bd7a-39516acc0b09": 0.046975,
+            "categorical__reason_id_c53a60c2-a2b1-4404-a7ba-86d444d648e7": 0.043511,
+            "categorical__reason_department_id_f7f6ef70-c7b1-470d-bf54-7c91dde3ccbf": 0.042654,
+            "categorical__reason_id_2a6eee56-0c7f-43d7-93d3-670ead7994c6": 0.042239,
+            "categorical__reason_id_8f8210ae-3810-4a28-9839-1b31234f2420": 0.0382,
+            "categorical__app_type_id_a35a2266-8bb6-41e8-a8be-68751fb58545": 0.033553,
+            "categorical__reason_id_9e671337-5f2c-44dc-b155-6ad749edc82e": 0.0302,
+            "categorical__reason_id_8da2b074-9991-4cac-8abb-d49bcacdef0c": 0.028619,
+            "categorical__reason_id_73f7fa23-c431-4869-8d73-bfbcb4da3cf2": 0.02783,
+            "categorical__reason_id_c7e19bef-9833-41ef-898d-872bb2149855": 0.027585,
+            "categorical__day_of_week_Monday": 0.026746,
+            "categorical__reason_id_2b5df9ee-25d3-46a3-83f5-7d83383dadb1": 0.022739,
+            "categorical__app_type_id_ad423be6-a08c-4fd2-9df0-8d62a8e73725": 0.022177
+        },
+        "model_path": "E:\\my data\\my work\\Queue care\\core\\saved_models\\decision_tree\\decision_tree_general_fallback.joblib"
+    }
+}

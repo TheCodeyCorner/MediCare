@@ -1,0 +1,107 @@
+{
+    "algorithm": "Linear Regression",
+    "doctor_aware": {
+        "algorithm": "LinearRegression",
+        "model_type": "doctor_aware",
+        "mae": 13.4144,
+        "rmse": 15.7247,
+        "r2": -0.0851,
+        "training_records": 2976,
+        "testing_records": 744,
+        "total_records": 3720,
+        "features": [
+            "doctor_id",
+            "reason_id",
+            "app_type_id",
+            "doctor_experience",
+            "doctor_department_id",
+            "reason_department_id",
+            "day_of_week",
+            "hour_of_day"
+        ],
+        "categorical_features": [
+            "doctor_id",
+            "reason_id",
+            "app_type_id",
+            "doctor_department_id",
+            "reason_department_id",
+            "day_of_week"
+        ],
+        "numeric_features": [
+            "doctor_experience",
+            "hour_of_day"
+        ],
+        "top_coefficients": {
+            "categorical__reason_id_76479fda-7835-4964-b732-c15cb9763285": 10.3786,
+            "categorical__reason_id_a14dee8c-36ce-43b7-a830-9cf6a476d196": -10.1967,
+            "categorical__reason_id_88073fad-0a99-4ab2-a289-cb71199ca6af": -9.9873,
+            "categorical__reason_id_bb2188e1-0cd9-40d8-bd7a-39516acc0b09": 9.6046,
+            "categorical__reason_id_c53a60c2-a2b1-4404-a7ba-86d444d648e7": -9.2648,
+            "categorical__reason_id_6ab1e566-ac17-4538-9f72-ca3e8a225cb2": -9.0683,
+            "categorical__reason_id_8f8210ae-3810-4a28-9839-1b31234f2420": 8.5406,
+            "categorical__reason_id_0f3809cd-8025-4bd2-b45e-40eb821e83b5": 8.3747,
+            "categorical__reason_id_dd4e6c1b-f401-43bc-bfeb-3c880d3ea116": 8.1294,
+            "categorical__reason_id_2a6eee56-0c7f-43d7-93d3-670ead7994c6": -8.0875,
+            "categorical__reason_id_9e671337-5f2c-44dc-b155-6ad749edc82e": -7.5837,
+            "categorical__reason_id_2dde3331-e89d-4c59-ac1e-d1da1440ad95": -7.4603,
+            "categorical__reason_id_c7e19bef-9833-41ef-898d-872bb2149855": 7.2252,
+            "categorical__reason_id_d1cfcba3-0ac3-4606-b3d8-b31f1d505f1f": 7.1737,
+            "categorical__reason_id_8da2b074-9991-4cac-8abb-d49bcacdef0c": -6.9223,
+            "categorical__reason_id_b3f0aa43-6a22-46a2-8fff-076b03b04a75": 6.831,
+            "categorical__reason_id_29eb5ad4-c024-45f1-909e-8eb6a0291b24": -6.486,
+            "categorical__reason_id_5366ea16-d51b-4696-8cb3-aa383679b3cb": 6.4154,
+            "categorical__reason_id_1cbc8a5e-7b28-4a2d-87e0-ac19c97cde3b": -6.4097,
+            "categorical__reason_id_c63e3944-a204-42c6-a5d0-9089794741da": 6.4027
+        },
+        "model_path": "E:\\my data\\my work\\Queue care\\core\\saved_models\\linear_regression\\linear_regression_doctor_aware.joblib"
+    },
+    "general_fallback": {
+        "algorithm": "LinearRegression",
+        "model_type": "general_fallback",
+        "mae": 13.4205,
+        "rmse": 15.683,
+        "r2": -0.0794,
+        "training_records": 2976,
+        "testing_records": 744,
+        "total_records": 3720,
+        "features": [
+            "reason_id",
+            "app_type_id",
+            "reason_department_id",
+            "day_of_week",
+            "hour_of_day"
+        ],
+        "categorical_features": [
+            "reason_id",
+            "app_type_id",
+            "reason_department_id",
+            "day_of_week"
+        ],
+        "numeric_features": [
+            "hour_of_day"
+        ],
+        "top_coefficients": {
+            "categorical__reason_id_76479fda-7835-4964-b732-c15cb9763285": 10.4684,
+            "categorical__reason_id_a14dee8c-36ce-43b7-a830-9cf6a476d196": -10.3481,
+            "categorical__reason_id_88073fad-0a99-4ab2-a289-cb71199ca6af": -10.3111,
+            "categorical__reason_id_bb2188e1-0cd9-40d8-bd7a-39516acc0b09": 9.397,
+            "categorical__reason_id_c53a60c2-a2b1-4404-a7ba-86d444d648e7": -9.3425,
+            "categorical__reason_id_6ab1e566-ac17-4538-9f72-ca3e8a225cb2": -9.1992,
+            "categorical__reason_id_8f8210ae-3810-4a28-9839-1b31234f2420": 8.6299,
+            "categorical__reason_id_0f3809cd-8025-4bd2-b45e-40eb821e83b5": 8.3702,
+            "categorical__reason_id_dd4e6c1b-f401-43bc-bfeb-3c880d3ea116": 8.0291,
+            "categorical__reason_id_2a6eee56-0c7f-43d7-93d3-670ead7994c6": -7.9037,
+            "categorical__reason_id_2dde3331-e89d-4c59-ac1e-d1da1440ad95": -7.5977,
+            "categorical__reason_id_9e671337-5f2c-44dc-b155-6ad749edc82e": -7.5794,
+            "categorical__reason_id_c7e19bef-9833-41ef-898d-872bb2149855": 7.2496,
+            "categorical__reason_id_d1cfcba3-0ac3-4606-b3d8-b31f1d505f1f": 7.1303,
+            "categorical__reason_id_8da2b074-9991-4cac-8abb-d49bcacdef0c": -6.9193,
+            "categorical__reason_id_b3f0aa43-6a22-46a2-8fff-076b03b04a75": 6.7312,
+            "categorical__reason_id_5366ea16-d51b-4696-8cb3-aa383679b3cb": 6.5218,
+            "categorical__reason_id_29eb5ad4-c024-45f1-909e-8eb6a0291b24": -6.4104,
+            "categorical__reason_id_c63e3944-a204-42c6-a5d0-9089794741da": 6.3672,
+            "categorical__reason_id_1cbc8a5e-7b28-4a2d-87e0-ac19c97cde3b": -6.3268
+        },
+        "model_path": "E:\\my data\\my work\\Queue care\\core\\saved_models\\linear_regression\\linear_regression_general_fallback.joblib"
+    }
+}
