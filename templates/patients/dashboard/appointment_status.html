@@ -16,10 +16,13 @@
             </div>
         </div>
 
-        <a href="{% url 'patient_appointments' %}" class="appointment-status__link">
-            View Details
-            <i data-lucide="chevron-right"></i>
+        <a href="{% url 'patient_appointments' %}"
+            class="patient-icon-button"
+            aria-label="Open schedules page"
+            title="View all schedules">
+            <i data-lucide="arrow-up-right" aria-hidden="true"></i>
         </a>
+        
     </div>
 
     <!-- Appointment -->

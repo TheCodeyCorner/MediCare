@@ -9,9 +9,12 @@
             Prescriptions
         </h2>
 
-        <button type="button" class="md-prescriptions__menu" aria-label="More Prescriptions options">
-            <i data-lucide="more-horizontal"></i>
-        </button>
+        <a href="{% url 'patient_medical_records' %}"
+            class="patient-icon-button"
+            aria-label="Open schedules page"
+            title="View all schedules">
+            <i data-lucide="arrow-up-right" aria-hidden="true"></i>
+        </a>
 
     </header>
 

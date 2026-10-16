@@ -8,9 +8,12 @@
             Appointments
         </h2>
 
-        <button type="button" class="md-appointments__menu" aria-label="More Appointments options">
-            <i data-lucide="more-horizontal"></i>
-        </button>
+        <a href="{% url 'patient_appointments' %}"
+            class="patient-icon-button"
+            aria-label="Open schedules page"
+            title="View all schedules">
+            <i data-lucide="arrow-up-right" aria-hidden="true"></i>
+        </a>
 
     </header>
 

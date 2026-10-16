@@ -8,6 +8,16 @@ My Profile | Medicare
 
 {% block content %}
 
+{% if errors %}
+    <div class="form-errors" role="alert">
+        <ul>
+            {% for error in errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
 <section class="patient-card profile-form-panel">
 
 
@@ -39,10 +49,51 @@ My Profile | Medicare
 
     <div class="patient-card__body profile-form-panel__body">
 
-        <form method="POST" action="{% url 'patient_profile' %}" class="profile-form">
+        <form
+            method="POST"
+            action="{% url 'patient_profile' %}"
+            class="profile-form"
+            enctype="multipart/form-data"
+        >
 
             {% csrf_token %}
 
+             <!--  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == 
+             Profile Photo
+              ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  -->
+
+            <section class="profile-form__section">
+                <header class="profile-form__section-header">
+                    <div>
+                        <h3>Profile Photo</h3>
+                        <p>JPEG, PNG, or WebP. Maximum size: 100 KB.</p>
+                    </div>
+                </header>
+
+                <div class="profile-form__fields">
+                    {% if patient_photo_url %}
+                        <div class="profile-form__field">
+                            <label>Current Photo</label>
+                            <img
+                                src="{{ patient_photo_url }}"
+                                alt="Your current profile photo"
+                                class="patient-profile-photo"
+                            >
+                        </div>
+                    {% endif %}
+
+                    <div class="profile-form__field">
+                        <label for="photo">Choose Profile Photo</label>
+                        <input
+                            type="file"
+                            id="photo"
+                            name="photo"
+                            accept="image/jpeg,image/png,image/webp"
+                        >
+                        <small>Maximum file size: 100 KB.</small>
+                    </div>
+                </div>
+            </section>
 
             <!--  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == 
              Personal Information
@@ -424,14 +475,12 @@ My Profile | Medicare
                             </option>
 
                             {% for policy in insurance_policies %}
-
                                 <option
                                     value="{{ policy.insurance_id }}"
-                                    {% if patient.insurance_id == policy.insurance_id %}selected{% endif %}
+                                    {% if patient.insurance_id|stringformat:"s" == policy.insurance_id|stringformat:"s" %}selected{% endif %}
                                 >
-                                    {{ policy.plan_name }}
+                                    {{ policy.provider_name }} - {{ policy.plan_name }}
                                 </option>
-
                             {% endfor %}
 
                         </select>

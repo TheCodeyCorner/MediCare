@@ -3,9 +3,15 @@
 <section class="patient-card patient-summary">
 
     <div class="patient-summary__profile">
-
-        <img src="{% static 'images/patient-avatar.jpg' %}" alt="Patient {{ patient.name }}"
-            class="patient-summary__photo" width="512" height="512">
+        
+        <img
+            src="{{ patient.profile_image|default:'' }}"
+            alt="Patient {{ patient.name }}"
+            class="patient-summary__photo"
+            width="512"
+            height="512"
+            onerror="this.onerror=null; this.src='{% static 'images/patient-avatar.jpg' %}';"
+        >
 
         <div class="patient-summary__identity">
 

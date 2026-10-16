@@ -1,69 +1,62 @@
 {% load static %}
 
 <header class="md-header">
-
-    <button type="button" class="icon-button md-header__menu-btn" aria-label="Open navigation" aria-expanded="false"
-        data-nav-open>
-
+    <button
+        type="button"
+        class="icon-button md-header__menu-btn"
+        aria-label="Open navigation"
+        aria-expanded="false"
+        data-nav-open
+    >
         <i data-lucide="menu"></i>
-
     </button>
 
-
     <div class="md-header__titles">
-
-        <h1>
-            {{ page_title|default:"Dashboard" }}
-        </h1>
-
-        <p>
-            {{ breadcrumb|default:"Dashboard" }}
-        </p>
-
+        <h1>{{ page_title|default:"Dashboard" }}</h1>
+        <p>{{ breadcrumb|default:"Dashboard" }}</p>
     </div>
 
-
     <div class="md-header__right">
-
         <label class="md-search">
-
             <i data-lucide="search"></i>
-
-            <input type="text" aria-label="Search" placeholder="Search anything">
-
+            <input
+                type="text"
+                aria-label="Search"
+                placeholder="Search anything"
+            >
         </label>
 
-
-        <button type="button" class="icon-button" aria-label="Notifications">
-
+        <button
+            type="button"
+            class="icon-button"
+            aria-label="Notifications"
+        >
             <i data-lucide="bell"></i>
-
             <span class="icon-button__dot"></span>
-
         </button>
 
-
         <div class="md-user">
-
-            <img src="{% static 'images/patient-avatar.jpg' %}" alt="{{ request.user.get_full_name }}" width="512"
-                height="512">
+            <img
+                src="{% static 'images/patient-avatar.jpg' %}"
+                alt="User avatar"
+                width="512"
+                height="512"
+            >
 
             <div class="md-user__meta">
-
                 <p>
-                    {{ patient.name }}
+                    {% if patient %}
+                        {{ patient.first_name|default:"" }}
+                        {{ patient.last_name|default:"" }}
+                    {% else %}
+                        {{ request.user.email|default:"User" }}
+                    {% endif %}
                 </p>
 
-                <p>
-                    {{ request.user.profile.role }}
-                </p>
-
+                <p>{{ request.user.access_level|default:"User" }}</p>
             </div>
 
             <i data-lucide="chevron-down"></i>
-
         </div>
-
     </div>
-
 </header>
