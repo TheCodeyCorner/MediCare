@@ -2249,7 +2249,7 @@ def _get_patient_appointment(patient_id, appointment_id):
                   AND a.patient_id = %s
                 LIMIT 1;
                 """,
-                (appointment_id, patient_id),
+                (str(appointment_id), str(patient_id)),
             )
             row = cursor.fetchone()
     finally:
@@ -2953,7 +2953,7 @@ def patient_send_message(request, appointment_id):
                       AND a.patient_id = %s
                     FOR UPDATE OF a;
                     """,
-                    (appointment_id, patient_id),
+                    (str(appointment_id),str(patient_id)),
                 )
                 current_row = cursor.fetchone()
 
@@ -3010,9 +3010,9 @@ def patient_send_message(request, appointment_id):
                         status;
                     """,
                     (
-                        user_id,
-                        current_doctor_user_id,
-                        appointment_id,
+                        str(user_id),
+                        str(current_doctor_user_id),
+                        str(appointment_id),
                         message_content,
                     ),
                 )
