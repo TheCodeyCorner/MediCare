@@ -5444,6 +5444,68 @@
     min-width: 0;
 }
 
+.booking-appointment-page__steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.booking-appointment-page__steps li {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 0;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid var(--patient-border);
+    border-radius: var(--patient-card-radius-sm);
+    background: var(--patient-surface);
+}
+
+.booking-appointment-page__steps li > span {
+    display: grid;
+    flex: 0 0 1.8rem;
+    width: 1.8rem;
+    height: 1.8rem;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--patient-surface-muted);
+    color: var(--patient-text-muted);
+    font-size: 0.7rem;
+    font-weight: 750;
+}
+
+.booking-appointment-page__steps li.is-current {
+    border-color: color-mix(in oklch, var(--patient-primary) 32%, var(--patient-border));
+    background: color-mix(in oklch, var(--patient-primary) 5%, var(--patient-surface));
+}
+
+.booking-appointment-page__steps li.is-current > span {
+    background: var(--patient-primary);
+    color: #fff;
+}
+
+.booking-appointment-page__steps strong,
+.booking-appointment-page__steps small {
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.booking-appointment-page__steps strong {
+    color: var(--patient-text);
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.booking-appointment-page__steps small {
+    margin-top: 0.15rem;
+    color: var(--patient-text-muted);
+    font-size: 0.58rem;
+    line-height: 1.4;
+}
+
 .booking-appointment-page__intro {
     min-width: 0;
 }
@@ -5551,6 +5613,72 @@
     line-height: 1.4;
 }
 
+.booking-schedule-card {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid color-mix(in oklch, var(--patient-primary) 18%, var(--patient-border));
+    border-radius: var(--patient-card-radius-sm);
+    background: color-mix(in oklch, var(--patient-primary) 3%, var(--patient-surface));
+}
+
+.booking-schedule-card__heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+}
+
+.booking-schedule-card__heading > span {
+    display: grid;
+    flex: 0 0 2rem;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border-radius: 0.6rem;
+    background: var(--patient-surface);
+    color: var(--patient-primary);
+}
+
+.booking-schedule-card__heading h4 {
+    margin: 0;
+    color: var(--patient-text);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.booking-schedule-card__heading p {
+    margin: 0.2rem 0 0;
+    color: var(--patient-text-muted);
+    font-size: 0.63rem;
+    line-height: 1.5;
+}
+
+.booking-schedule-card__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: 0.55rem;
+    margin-top: 0.8rem;
+}
+
+.booking-schedule-card__doctor {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--patient-border);
+    border-radius: 0.55rem;
+    background: var(--patient-surface);
+}
+
+.booking-schedule-card__doctor strong {
+    color: var(--patient-text);
+    font-size: 0.65rem;
+}
+
+.booking-schedule-card__doctor span {
+    color: var(--patient-text-muted);
+    font-size: 0.61rem;
+    line-height: 1.45;
+}
+
 /* Keep required controls calm until the user focuses or submits the form. */
 .booking-appointment-page .profile-form__field input:invalid:not(:focus),
 .booking-appointment-page .profile-form__field select:invalid:not(:focus) {
@@ -5576,6 +5704,11 @@
 
     .booking-appointment-page__button {
         width: 100%;
+    }
+
+    .booking-appointment-page__steps {
+        grid-template-columns: 1fr;
+        gap: 0.45rem;
     }
 
     .booking-appointment-page__actions {

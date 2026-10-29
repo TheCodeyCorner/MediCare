@@ -98,7 +98,7 @@
                 {% for chat in chats %}
                     <button type="button"
                             class="patient-messages-conversation"
-                            data-chat-id="{{ chat.appointment_id|default:chat.chat_id }}"
+                            data-chat-id="{{ chat.doctor_id|default:chat.chat_id }}"
                             data-chat-type="appointment"
                             data-chat-can-chat="{% if chat.can_chat %}true{% else %}false{% endif %}"
                             data-can-chat="{% if chat.can_chat %}true{% else %}false{% endif %}"
@@ -120,7 +120,7 @@
                                 <strong>{{ chat.doctor_name|default:"Care team" }}</strong>
                                 {% if chat.last_message_at %}
                                     <span class="patient-messages-conversation__time">
-                                        {{ chat.last_message_at|date:"M j" }}
+                                        {{ chat.last_message_display_at }}
                                     </span>
                                 {% endif %}
                             </span>
@@ -194,8 +194,8 @@
                             
                             {% if message.sent_at %}
                                 <time class="patient-messages-message__time"
-                                    datetime="{{ message.sent_at|date:'c' }}">
-                                    {{ message.sent_at|date:"M j, Y · g:i A" }}
+                                    datetime="{{ message.sent_at }}">
+                                    {{ message.display_sent_at }}
                                 </time>
                             {% endif %}
 
@@ -226,8 +226,8 @@
                  
                             {% if message.sent_at %}
                                 <time class="patient-messages-message__time"
-                                    datetime="{{ message.sent_at|date:'c' }}">
-                                    {{ message.sent_at|date:"M j, Y · g:i A" }}
+                                    datetime="{{ message.sent_at }}">
+                                    {{ message.display_sent_at }}
                                 </time>
                             {% endif %}
 
@@ -245,7 +245,7 @@
             <!-- Appointment threads -->
             {% for chat in chats %}
                 <div class="patient-messages-thread"
-                     data-chat-thread="{{ chat.appointment_id|default:chat.chat_id }}"
+                     data-chat-thread="{{ chat.doctor_id|default:chat.chat_id }}"
                      role="log"
                      aria-live="polite"
                      hidden>
@@ -269,8 +269,8 @@
 
                                 {% if message.sent_at %}
                                     <time class="patient-messages-message__time"
-                                        datetime="{{ message.sent_at|date:'c' }}">
-                                        {{ message.sent_at|date:"M j, Y · g:i A" }}
+                                        datetime="{{ message.sent_at }}">
+                                        {{ message.display_sent_at }}
                                     </time>
                                 {% endif %}
 

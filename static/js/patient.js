@@ -1304,7 +1304,7 @@ document.addEventListener("DOMContentLoaded", function () {
             endpoint = "/patient/messages/support/";
         } else if (type === "appointment" && uuidPattern.test(chatId)) {
             endpoint =
-                `/patient/messages/${encodeURIComponent(chatId)}/`;
+                `/patient/messages/doctor/${encodeURIComponent(chatId)}/`;
         } else {
             return;
         }
@@ -1463,7 +1463,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             endpoint =
-                `/patient/messages/${encodeURIComponent(chatId)}/send/`;
+                `/patient/messages/doctor/${encodeURIComponent(chatId)}/send/`;
         } else {
             alert("This conversation does not support sending messages.");
             return;

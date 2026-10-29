@@ -15,6 +15,21 @@
         </a>
     </header>
 
+    <ol class="booking-appointment-page__steps" aria-label="Booking steps">
+        <li class="is-current">
+            <span>1</span>
+            <div><strong>Visit details</strong><small>Department and reason</small></div>
+        </li>
+        <li>
+            <span>2</span>
+            <div><strong>Availability</strong><small>Doctor and appointment time</small></div>
+        </li>
+        <li>
+            <span>3</span>
+            <div><strong>Arrival estimate</strong><small>Queue prediction</small></div>
+        </li>
+    </ol>
+
     {% if messages %}
         <div class="booking-appointment-page__messages">
             {% for message in messages %}
@@ -45,7 +60,7 @@
                     <header class="profile-form__section-header">
                         <div>
                             <h3>Visit preferences</h3>
-                            <p>Choose a department and preferred time first. Doctors and visit reasons will be available for that department.</p>
+                            <p>Choose a department and date to see the doctors and visit reasons available for your visit.</p>
                         </div>
                     </header>
 
@@ -133,6 +148,21 @@
                             {% endif %}
                         </div>
                     </div>
+
+                    <section class="booking-schedule-card"
+                             id="doctor-schedule-panel"
+                             data-schedule-url="{% url 'patient_doctor_schedule' %}"
+                             aria-live="polite"
+                             hidden>
+                        <div class="booking-schedule-card__heading">
+                            <span aria-hidden="true"><i data-lucide="calendar-clock"></i></span>
+                            <div>
+                                <h4 id="doctor-schedule-title">Doctor schedules</h4>
+                                <p id="doctor-schedule-message">Choose a date to see working hours.</p>
+                            </div>
+                        </div>
+                        <div class="booking-schedule-card__list" id="doctor-schedule-list"></div>
+                    </section>
                 </section>
 
                 {% if availability_notice %}
@@ -173,6 +203,11 @@
             const departmentSelect = document.getElementById("department_id");
             const doctorSelect = document.getElementById("doctor_id");
             const reasonSelect = document.getElementById("reason_id");
+            const scheduleInput = document.getElementById("schedule_time");
+            const schedulePanel = document.getElementById("doctor-schedule-panel");
+            const scheduleTitle = document.getElementById("doctor-schedule-title");
+            const scheduleMessage = document.getElementById("doctor-schedule-message");
+            const scheduleList = document.getElementById("doctor-schedule-list");
             const availabilityNotice = document.getElementById("appointment-availability-notice");
 
             if (availabilityNotice) {
@@ -182,6 +217,7 @@
             if (!departmentSelect || !doctorSelect || !reasonSelect) return;
 
             let requestNumber = 0;
+            let scheduleRequestNumber = 0;
 
             const resetSelect = (select, prompt) => {
                 select.replaceChildren(new Option(prompt, ""));
@@ -237,6 +273,7 @@
                         reasonSelect.value = reasonSelect.dataset.selectedValue;
                         delete reasonSelect.dataset.selectedValue;
                     }
+                    loadSchedule();
                 } catch (error) {
                     if (currentRequest !== requestNumber) return;
                     resetSelect(doctorSelect, "Could not load doctors");
@@ -245,7 +282,77 @@
                 }
             };
 
+            const formatTime = (value) => {
+                const [hour, minute] = value.split(":").map(Number);
+                const date = new Date(2000, 0, 1, hour, minute);
+                return new Intl.DateTimeFormat(undefined, {
+                    hour: "numeric",
+                    minute: "2-digit"
+                }).format(date);
+            };
+
+            const loadSchedule = async () => {
+                const selectedDate = scheduleInput?.value.split("T")[0] || "";
+                const currentRequest = ++scheduleRequestNumber;
+                if (!departmentSelect.value || !selectedDate || !schedulePanel) {
+                    if (schedulePanel) schedulePanel.hidden = true;
+                    return;
+                }
+
+                schedulePanel.hidden = false;
+                scheduleTitle.textContent = "Doctor schedules";
+                scheduleMessage.textContent = "Loading working hours…";
+                scheduleList.replaceChildren();
+
+                try {
+                    const url = new URL(schedulePanel.dataset.scheduleUrl, window.location.href);
+                    url.searchParams.set("department_name", departmentSelect.selectedOptions[0].textContent.trim());
+                    url.searchParams.set("date", selectedDate);
+                    if (doctorSelect.value) url.searchParams.set("doctor_id", doctorSelect.value);
+
+                    const response = await fetch(url, {
+                        headers: { "Accept": "application/json" },
+                        credentials: "same-origin"
+                    });
+                    const data = await response.json();
+                    if (currentRequest !== scheduleRequestNumber) return;
+                    if (!response.ok) throw new Error(data.error || "Could not load doctor schedules.");
+
+                    scheduleTitle.textContent = `Working hours for ${data.weekday}`;
+                    const doctors = data.doctors || [];
+                    if (!doctors.length) {
+                        scheduleMessage.textContent = "No doctors are available in this department.";
+                        return;
+                    }
+
+                    scheduleMessage.textContent = doctorSelect.value
+                        ? "Appointments must fit within the doctor’s working hours."
+                        : "Choose a doctor to see their hours, or leave it blank for the earliest available doctor.";
+
+                    for (const doctor of doctors) {
+                        const card = document.createElement("article");
+                        card.className = "booking-schedule-card__doctor";
+                        const name = document.createElement("strong");
+                        name.textContent = doctor.name;
+                        const hours = document.createElement("span");
+                        hours.textContent = doctor.windows.length
+                            ? doctor.windows.map((window) => `${formatTime(window.start)} – ${formatTime(window.end)}`).join(" · ")
+                            : "Not scheduled this day";
+                        card.append(name, hours);
+                        scheduleList.append(card);
+                    }
+                } catch (error) {
+                    if (currentRequest !== scheduleRequestNumber) return;
+                    scheduleMessage.textContent = error.message || "Could not load doctor schedules.";
+                    console.error("Unable to load doctor schedules:", error);
+                }
+            };
+
             departmentSelect.addEventListener("change", loadOptions);
+            departmentSelect.addEventListener("change", loadSchedule);
+            doctorSelect.addEventListener("change", loadSchedule);
+            scheduleInput?.addEventListener("change", loadSchedule);
+            scheduleInput?.addEventListener("input", loadSchedule);
             if (departmentSelect.value) loadOptions();
         })();
     </script>

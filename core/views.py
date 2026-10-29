@@ -2200,7 +2200,12 @@ def _serialize_message(message):
 
     sent_at = message.get("sent_at")
     if sent_at is not None:
-        message["sent_at"] = sent_at.isoformat()
+        if hasattr(sent_at, "tzinfo"):
+            local_sent_at = timezone.localtime(sent_at) if timezone.is_aware(sent_at) else sent_at
+            message["display_sent_at"] = local_sent_at.strftime("%b %d, %Y · %I:%M %p")
+            message["sent_at"] = sent_at.isoformat()
+        else:
+            message["display_sent_at"] = str(sent_at)
 
     return message
 
@@ -2275,12 +2280,58 @@ def _get_patient_appointment(patient_id, appointment_id):
     }
 
 
+def _get_patient_doctor_anchor(cursor, patient_id, doctor_id, *, lock=False):
+    """Pick this doctor's next appointment, or most recent one if none is next."""
+    lock_clause = "FOR UPDATE OF a" if lock else ""
+    cursor.execute(
+        f"""
+        SELECT
+            a.appointment_id,
+            a.schedule_time,
+            s.user_id AS doctor_user_id
+        FROM medicare.appointments AS a
+        JOIN medicare.staff AS s
+          ON s.staff_id = a.doctor_id
+        WHERE a.patient_id = %s
+          AND a.doctor_id = %s
+          AND LOWER(COALESCE(a.status, '')) NOT IN (
+              'cancelled', 'canceled', 'rejected'
+          )
+        ORDER BY
+            CASE
+                WHEN a.schedule_time >= CURRENT_TIMESTAMP THEN 0
+                ELSE 1
+            END,
+            CASE
+                WHEN a.schedule_time >= CURRENT_TIMESTAMP
+                    THEN a.schedule_time
+            END ASC NULLS LAST,
+            CASE
+                WHEN a.schedule_time < CURRENT_TIMESTAMP
+                  OR a.schedule_time IS NULL
+                    THEN a.schedule_time
+            END DESC NULLS LAST,
+            a.appointment_id DESC
+        LIMIT 1
+        {lock_clause};
+        """,
+        (str(patient_id), str(doctor_id)),
+    )
+    row = cursor.fetchone()
+    if row is None:
+        return None
+    return {
+        "appointment_id": str(row[0]),
+        "schedule_time": row[1],
+        "doctor_user_id": str(row[2]) if row[2] is not None else None,
+    }
+
+
 
 
 def _seed_upcoming_appointment_intros(patient_id, user_id):
     """
-    Create one introductory patient message for each upcoming
-    appointment that has no existing patient-to-doctor message.
+    Create one introductory patient message per doctor conversation.
 
     The appointment row is locked to prevent concurrent page loads
     from inserting duplicate introductions.
@@ -2294,6 +2345,7 @@ def _seed_upcoming_appointment_intros(patient_id, user_id):
                     """
                     SELECT
                         a.appointment_id,
+                        a.doctor_id,
                         a.schedule_time,
                         a.status,
                         s.user_id AS doctor_user_id
@@ -2305,6 +2357,19 @@ def _seed_upcoming_appointment_intros(patient_id, user_id):
                       AND LOWER(a.status) NOT IN (
                           'cancelled', 'canceled', 'rejected'
                       )
+                      AND a.appointment_id = (
+                          SELECT next_a.appointment_id
+                          FROM medicare.appointments AS next_a
+                          WHERE next_a.patient_id = a.patient_id
+                            AND next_a.doctor_id = a.doctor_id
+                            AND next_a.schedule_time >= CURRENT_TIMESTAMP
+                            AND LOWER(next_a.status) NOT IN (
+                                'cancelled', 'canceled', 'rejected'
+                            )
+                          ORDER BY next_a.schedule_time ASC,
+                                   next_a.appointment_id ASC
+                          LIMIT 1
+                      )
                     ORDER BY a.schedule_time ASC
                     FOR UPDATE OF a;
                     """,
@@ -2313,7 +2378,7 @@ def _seed_upcoming_appointment_intros(patient_id, user_id):
 
                 upcoming = cursor.fetchall()
 
-                for appointment_id, schedule_time, status, doctor_user_id in upcoming:
+                for appointment_id, doctor_id, schedule_time, status, doctor_user_id in upcoming:
                     if doctor_user_id is None:
                         continue
 
@@ -2322,14 +2387,18 @@ def _seed_upcoming_appointment_intros(patient_id, user_id):
                     cursor.execute(
                         """
                         SELECT 1
-                        FROM medicare.messages
-                        WHERE appointment_id = %s
-                          AND sender_id = %s
-                          AND receiver_id = %s
+                        FROM medicare.messages AS m
+                        JOIN medicare.appointments AS existing_a
+                          ON existing_a.appointment_id = m.appointment_id
+                        WHERE existing_a.patient_id = %s
+                          AND existing_a.doctor_id = %s
+                          AND m.sender_id = %s
+                          AND m.receiver_id = %s
                         LIMIT 1;
                         """,
                         (
-                            appointment_id,
+                            patient_id,
+                            doctor_id,
                             user_id,
                             doctor_user_id,
                         ),
@@ -2382,7 +2451,7 @@ def _seed_upcoming_appointment_intros(patient_id, user_id):
 def patient_messages(request):
     """
     Render at most 10 doctor conversations and the latest 20 messages
-    per conversation, plus the latest 20 Customer Care messages.
+    per appointment in each conversation, plus the latest 20 Customer Care messages.
     Messages are displayed chronologically, oldest to newest.
     """
     identity = _get_patient_identity(request)
@@ -2438,9 +2507,26 @@ def patient_messages(request):
                         ) AS doctor_name,
                         at.type_name AS appointment_type,
                         ROW_NUMBER() OVER (
-                            PARTITION BY s.user_id
+                            PARTITION BY a.doctor_id
                             ORDER BY
-                                a.schedule_time DESC NULLS LAST,
+                                CASE
+                                    WHEN a.schedule_time >= CURRENT_TIMESTAMP
+                                     AND LOWER(COALESCE(a.status, '')) NOT IN (
+                                         'cancelled', 'canceled', 'rejected'
+                                     ) THEN 0
+                                    ELSE 1
+                                END,
+                                CASE
+                                    WHEN a.schedule_time >= CURRENT_TIMESTAMP
+                                     AND LOWER(COALESCE(a.status, '')) NOT IN (
+                                         'cancelled', 'canceled', 'rejected'
+                                     ) THEN a.schedule_time
+                                END ASC NULLS LAST,
+                                CASE
+                                    WHEN a.schedule_time < CURRENT_TIMESTAMP
+                                      OR a.schedule_time IS NULL
+                                        THEN a.schedule_time
+                                END DESC NULLS LAST,
                                 a.appointment_id DESC
                         ) AS appointment_rank
                     FROM medicare.appointments AS a
@@ -2449,13 +2535,32 @@ def patient_messages(request):
                     LEFT JOIN medicare.appointment_type AS at
                         ON at.app_type_id = a.app_type_id
                     WHERE a.patient_id = %s
+                      AND LOWER(COALESCE(a.status, '')) NOT IN (
+                          'cancelled', 'canceled', 'rejected'
+                      )
                 ),
                 latest_doctors AS (
                     SELECT *
                     FROM doctor_appointments
                     WHERE appointment_rank = 1
                     ORDER BY
-                        schedule_time DESC NULLS LAST,
+                        CASE
+                            WHEN schedule_time >= CURRENT_TIMESTAMP
+                             AND LOWER(COALESCE(status, '')) NOT IN (
+                                 'cancelled', 'canceled', 'rejected'
+                             ) THEN 0
+                            ELSE 1
+                        END,
+                        CASE
+                            WHEN schedule_time >= CURRENT_TIMESTAMP
+                             AND LOWER(COALESCE(status, '')) NOT IN (
+                                 'cancelled', 'canceled', 'rejected'
+                             ) THEN schedule_time
+                        END ASC NULLS LAST,
+                        CASE
+                            WHEN schedule_time < CURRENT_TIMESTAMP
+                              OR schedule_time IS NULL THEN schedule_time
+                        END DESC NULLS LAST,
                         appointment_id DESC
                     LIMIT 10
                 )
@@ -2469,7 +2574,23 @@ def patient_messages(request):
                     appointment_type
                 FROM latest_doctors
                 ORDER BY
-                    schedule_time DESC NULLS LAST,
+                    CASE
+                        WHEN schedule_time >= CURRENT_TIMESTAMP
+                         AND LOWER(COALESCE(status, '')) NOT IN (
+                             'cancelled', 'canceled', 'rejected'
+                         ) THEN 0
+                        ELSE 1
+                    END,
+                    CASE
+                        WHEN schedule_time >= CURRENT_TIMESTAMP
+                         AND LOWER(COALESCE(status, '')) NOT IN (
+                             'cancelled', 'canceled', 'rejected'
+                         ) THEN schedule_time
+                    END ASC NULLS LAST,
+                    CASE
+                        WHEN schedule_time < CURRENT_TIMESTAMP
+                          OR schedule_time IS NULL THEN schedule_time
+                    END DESC NULLS LAST,
                     appointment_id DESC;
                 """,
                 (patient_id,),
@@ -2477,30 +2598,36 @@ def patient_messages(request):
 
             appointments = _dict_rows(cursor)
 
-            # Retrieve at most 20 latest messages across ALL appointments
-            # belonging to each of the selected doctors.
+            # Retrieve the latest 20 messages for every appointment belonging
+            # to each selected doctor, so older appointment threads remain visible.
             if appointments:
                 cursor.execute(
                     """
                     WITH selected_doctors AS (
-                        SELECT DISTINCT
-                            s.user_id AS doctor_user_id
+                        SELECT
+                            a.doctor_id,
+                            s.user_id AS doctor_user_id,
+                            MAX(a.schedule_time) AS last_appointment_time
                         FROM medicare.appointments AS a
                         JOIN medicare.staff AS s
                             ON s.staff_id = a.doctor_id
                         WHERE a.patient_id = %s
-                        ORDER BY s.user_id
+                        GROUP BY a.doctor_id, s.user_id
+                        ORDER BY MAX(a.schedule_time) DESC NULLS LAST,
+                                 a.doctor_id
                         LIMIT 10
                     ),
                     patient_appointments AS (
                         SELECT
                             a.appointment_id,
+                            a.doctor_id,
                             s.user_id AS doctor_user_id
                         FROM medicare.appointments AS a
                         JOIN medicare.staff AS s
                             ON s.staff_id = a.doctor_id
                         JOIN selected_doctors AS sd
-                            ON sd.doctor_user_id = s.user_id
+                            ON sd.doctor_id = a.doctor_id
+                           AND sd.doctor_user_id = s.user_id
                         WHERE a.patient_id = %s
                     ),
                     ranked_messages AS (
@@ -2512,9 +2639,10 @@ def patient_messages(request):
                             m.message_content,
                             m.sent_at,
                             m.status,
+                            pa.doctor_id,
                             pa.doctor_user_id,
                             ROW_NUMBER() OVER (
-                                PARTITION BY pa.doctor_user_id
+                                PARTITION BY pa.appointment_id
                                 ORDER BY
                                     m.sent_at DESC,
                                     m.m_id DESC
@@ -2535,11 +2663,12 @@ def patient_messages(request):
                         message_content,
                         sent_at,
                         status,
+                        doctor_id,
                         doctor_user_id
                     FROM ranked_messages
                     WHERE rn <= 20
                     ORDER BY
-                        doctor_user_id,
+                        doctor_id,
                         sent_at ASC,
                         m_id ASC;
                     """,
@@ -2613,7 +2742,7 @@ def patient_messages(request):
             str(message["sender_id"]) == str(user_id)
         )
 
-        doctor_key = str(message["doctor_user_id"])
+        doctor_key = str(message["doctor_id"])
 
         messages_by_doctor.setdefault(
             doctor_key, []
@@ -2625,14 +2754,12 @@ def patient_messages(request):
             appointment["appointment_id"]
         )
 
-        # Preserve compatibility with the existing template and JS.
-        appointment["chat_id"] = appointment["appointment_id"]
-
         appointment["doctor_id"] = (
             str(appointment["doctor_id"])
             if appointment["doctor_id"] is not None
             else None
         )
+        appointment["chat_id"] = appointment["doctor_id"]
 
         appointment["doctor_user_id"] = (
             str(appointment["doctor_user_id"])
@@ -2686,12 +2813,12 @@ def patient_messages(request):
 
         appointment["chat_type"] = "appointment"
 
-        doctor_key = appointment["doctor_user_id"]
+        doctor_key = appointment["doctor_id"]
 
-        # Defensive cap: never render more than 20 messages per doctor.
+        # Messages are capped at 20 per appointment in the query.
         chat_messages = messages_by_doctor.get(
             doctor_key, []
-        )[-20:]
+        )
 
         appointment["messages"] = chat_messages
 
@@ -2702,6 +2829,9 @@ def patient_messages(request):
             )
             appointment["last_message_at"] = (
                 last_message.get("sent_at")
+            )
+            appointment["last_message_display_at"] = (
+                last_message.get("display_sent_at")
             )
         else:
             appointment["last_message"] = ""
@@ -2741,6 +2871,182 @@ def patient_messages(request):
     )
 
 
+
+
+@role_required("Patient")
+@require_GET
+def patient_doctor_chat_messages(request, doctor_id):
+    """Load the latest messages in the patient's doctor-wide conversation."""
+    identity = _get_patient_identity(request)
+    if identity is None:
+        return JsonResponse(
+            {"error": "No patient record is associated with this account."},
+            status=404,
+        )
+
+    patient_id = identity["patient_id"]
+    user_id = identity["user_id"]
+    db = _open_medicare_connection()
+    try:
+        with db.cursor() as cursor:
+            anchor = _get_patient_doctor_anchor(
+                cursor,
+                patient_id,
+                doctor_id,
+            )
+            if anchor is None:
+                return JsonResponse({"error": "Chat not found."}, status=404)
+
+            cursor.execute(
+                """
+                WITH ranked_messages AS (
+                    SELECT
+                        m.m_id,
+                        m.appointment_id,
+                        m.sender_id,
+                        m.receiver_id,
+                        m.message_content,
+                        m.sent_at,
+                        m.status,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY m.appointment_id
+                            ORDER BY m.sent_at DESC, m.m_id DESC
+                        ) AS rn
+                    FROM medicare.messages AS m
+                    JOIN medicare.appointments AS a
+                      ON a.appointment_id = m.appointment_id
+                    WHERE a.patient_id = %s
+                      AND a.doctor_id = %s
+                      AND (
+                          m.sender_id = %s
+                          OR m.receiver_id = %s
+                      )
+                )
+                SELECT
+                    m_id,
+                    appointment_id,
+                    sender_id,
+                    receiver_id,
+                    message_content,
+                    sent_at,
+                    status
+                FROM ranked_messages
+                WHERE rn <= 20
+                ORDER BY sent_at ASC, m_id ASC;
+                """,
+                (patient_id, str(doctor_id), user_id, user_id),
+            )
+            chat_messages = _dict_rows(cursor)
+    finally:
+        db.close()
+
+    for message in chat_messages:
+        _serialize_message(message)
+        message["is_mine"] = str(message["sender_id"]) == str(user_id)
+
+    return JsonResponse({
+        "doctor_id": str(doctor_id),
+        "appointment_id": anchor["appointment_id"],
+        "can_chat": _chat_is_writable(anchor["schedule_time"]),
+        "messages": chat_messages,
+    })
+
+
+@role_required("Patient")
+@require_POST
+def patient_send_doctor_message(request, doctor_id):
+    """Send to a doctor, attaching the message to the next/last appointment."""
+    identity = _get_patient_identity(request)
+    if identity is None:
+        return JsonResponse(
+            {"error": "No patient record is associated with this account."},
+            status=404,
+        )
+
+    patient_id = identity["patient_id"]
+    user_id = identity["user_id"]
+    if request.content_type == "application/json":
+        try:
+            payload = json.loads(request.body or b"{}")
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return JsonResponse({"error": "Invalid JSON."}, status=400)
+    else:
+        payload = request.POST
+
+    message_content = (payload.get("message_content") or "").strip()
+    if not message_content:
+        return JsonResponse({"error": "Message cannot be empty."}, status=400)
+    if len(message_content) > 5000:
+        return JsonResponse(
+            {"error": "Message cannot exceed 5000 characters."},
+            status=400,
+        )
+
+    db = _open_medicare_connection()
+    try:
+        with db:
+            with db.cursor() as cursor:
+                anchor = _get_patient_doctor_anchor(
+                    cursor,
+                    patient_id,
+                    doctor_id,
+                    lock=True,
+                )
+                if anchor is None:
+                    return JsonResponse({"error": "Chat not found."}, status=404)
+                if not _chat_is_writable(anchor["schedule_time"]):
+                    return JsonResponse(
+                        {
+                            "error": (
+                                "This chat is read-only. You can still view "
+                                "its history."
+                            )
+                        },
+                        status=403,
+                    )
+                if anchor["doctor_user_id"] is None:
+                    return JsonResponse(
+                        {"error": "The assigned doctor has no linked user account."},
+                        status=409,
+                    )
+
+                cursor.execute(
+                    """
+                    INSERT INTO medicare.messages (
+                        sender_id,
+                        receiver_id,
+                        appointment_id,
+                        message_content,
+                        sent_at,
+                        status
+                    )
+                    VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP, 'sent')
+                    RETURNING
+                        m_id,
+                        appointment_id,
+                        sender_id,
+                        receiver_id,
+                        message_content,
+                        sent_at,
+                        status;
+                    """,
+                    (
+                        str(user_id),
+                        anchor["doctor_user_id"],
+                        anchor["appointment_id"],
+                        message_content,
+                    ),
+                )
+                saved_message = _dict_rows(cursor)[0]
+    finally:
+        db.close()
+
+    _serialize_message(saved_message)
+    saved_message["is_mine"] = True
+    return JsonResponse(
+        {"message": saved_message, "appointment_id": anchor["appointment_id"]},
+        status=201,
+    )
 
 
 @role_required("Patient")
@@ -2797,7 +3103,7 @@ def patient_chat_messages(request, appointment_id):
                     WHERE a.patient_id = %s
                       AND a.doctor_id = %s
                 ),
-                latest_messages AS (
+                ranked_messages AS (
                     SELECT
                         m.m_id,
                         m.appointment_id,
@@ -2805,7 +3111,11 @@ def patient_chat_messages(request, appointment_id):
                         m.receiver_id,
                         m.message_content,
                         m.sent_at,
-                        m.status
+                        m.status,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY m.appointment_id
+                            ORDER BY m.sent_at DESC, m.m_id DESC
+                        ) AS rn
                     FROM medicare.messages AS m
                     JOIN doctor_appointments AS da
                         ON da.appointment_id = m.appointment_id
@@ -2813,10 +3123,6 @@ def patient_chat_messages(request, appointment_id):
                         m.sender_id = %s
                         OR m.receiver_id = %s
                     )
-                    ORDER BY
-                        m.sent_at DESC,
-                        m.m_id DESC
-                    LIMIT 20
                 )
                 SELECT
                     m_id,
@@ -2826,7 +3132,8 @@ def patient_chat_messages(request, appointment_id):
                     message_content,
                     sent_at,
                     status
-                FROM latest_messages
+                FROM ranked_messages
+                WHERE rn <= 20
                 ORDER BY
                     sent_at ASC,
                     m_id ASC;
@@ -3874,6 +4181,41 @@ def book_patient_appointments(request):
                                     doctor_experience,
                                     doctor_department_id,
                                 ) = doctor_row
+                                local_requested_time = timezone.localtime(
+                                    requested_time
+                                )
+                                requested_date = local_requested_time.date()
+                                cursor.execute(
+                                    """
+                                    SELECT start_time, end_time
+                                    FROM medicare.schedule
+                                    WHERE staff_id = %s
+                                      AND active = TRUE
+                                      AND (
+                                          day_of_week IS NULL
+                                          OR LOWER(day_of_week::text) = LOWER(%s)
+                                      )
+                                    ORDER BY start_time;
+                                    """,
+                                    (
+                                        str(doctor_id),
+                                        requested_date.strftime("%A"),
+                                    ),
+                                )
+                                schedule_windows = []
+                                for start_time, end_time in cursor.fetchall():
+                                    window_start = timezone.make_aware(
+                                        datetime.combine(requested_date, start_time),
+                                        timezone.get_current_timezone(),
+                                    )
+                                    window_end = timezone.make_aware(
+                                        datetime.combine(requested_date, end_time),
+                                        timezone.get_current_timezone(),
+                                    )
+                                    schedule_windows.append((window_start, window_end))
+                                if not schedule_windows:
+                                    continue
+
                                 model_type = (
                                     "doctor_aware"
                                     if form_values["doctor_id"]
@@ -4017,33 +4359,44 @@ def book_patient_appointments(request):
                                     ):
                                         queue_durations[index] = duration
 
-                                candidate_time = requested_time
-                                while True:
-                                    candidate_end = candidate_time + timedelta(
-                                        minutes=predicted_minutes
-                                    )
-                                    overlapping_ends = []
-                                    for queue_row, queue_duration in zip(
-                                        queue_rows,
-                                        queue_durations,
+                                candidate_time = None
+                                for window_start, window_end in schedule_windows:
+                                    slot_time = max(requested_time, window_start)
+                                    while (
+                                        slot_time + timedelta(minutes=predicted_minutes)
+                                        <= window_end
                                     ):
-                                        queue_time = queue_row[0]
-                                        if timezone.is_naive(queue_time):
-                                            queue_time = timezone.make_aware(
-                                                queue_time,
-                                                timezone.get_current_timezone(),
-                                            )
-                                        queue_end = queue_time + timedelta(
-                                            minutes=queue_duration or predicted_minutes
+                                        candidate_end = slot_time + timedelta(
+                                            minutes=predicted_minutes
                                         )
-                                        if (
-                                            candidate_time < queue_end
-                                            and queue_time < candidate_end
+                                        overlapping_ends = []
+                                        for queue_row, queue_duration in zip(
+                                            queue_rows,
+                                            queue_durations,
                                         ):
-                                            overlapping_ends.append(queue_end)
-                                    if not overlapping_ends:
+                                            queue_time = queue_row[0]
+                                            if timezone.is_naive(queue_time):
+                                                queue_time = timezone.make_aware(
+                                                    queue_time,
+                                                    timezone.get_current_timezone(),
+                                                )
+                                            queue_end = queue_time + timedelta(
+                                                minutes=queue_duration or predicted_minutes
+                                            )
+                                            if (
+                                                slot_time < queue_end
+                                                and queue_time < candidate_end
+                                            ):
+                                                overlapping_ends.append(queue_end)
+                                        if not overlapping_ends:
+                                            candidate_time = slot_time
+                                            break
+                                        slot_time = max(overlapping_ends)
+                                    if candidate_time is not None:
                                         break
-                                    candidate_time = max(overlapping_ends)
+
+                                if candidate_time is None:
+                                    continue
 
                                 candidate_bookings.append({
                                     "doctor_id": doctor_id,
@@ -4052,7 +4405,15 @@ def book_patient_appointments(request):
                                     "model_type": model_type,
                                     "predicted_minutes": predicted_minutes,
                                     "available_time": candidate_time,
+                                    "schedule_windows": schedule_windows,
                                 })
+
+                            if not candidate_bookings:
+                                raise ValueError(
+                                    "No doctor in this department has enough "
+                                    "scheduled time on that day. Please choose "
+                                    "another date or doctor."
+                                )
 
                             chosen_booking = min(
                                 candidate_bookings,
@@ -4067,6 +4428,13 @@ def book_patient_appointments(request):
                             model_type = chosen_booking["model_type"]
                             predicted_minutes = chosen_booking["predicted_minutes"]
                             candidate_time = chosen_booking["available_time"]
+                            schedule_display = ", ".join(
+                                "{}–{}".format(
+                                    timezone.localtime(start).strftime("%I:%M %p").lstrip("0"),
+                                    timezone.localtime(end).strftime("%I:%M %p").lstrip("0"),
+                                )
+                                for start, end in chosen_booking["schedule_windows"]
+                            )
 
                             if candidate_time > requested_time:
                                 suggested_local_time = timezone.localtime(candidate_time)
@@ -4080,6 +4448,7 @@ def book_patient_appointments(request):
                                     f"That time is unavailable for Dr. "
                                     f"{doctor_first_name} {doctor_last_name}. "
                                     f"The next available time is {suggested_display}. "
+                                    f"Working hours that day: {schedule_display}. "
                                     "Please choose a time and submit again."
                                 )
                             else:
@@ -4373,6 +4742,81 @@ def patient_appointment_options(request):
             ]
 
     return JsonResponse({"doctors": doctors, "reasons": reasons})
+
+
+@role_required("Patient")
+@require_GET
+def patient_doctor_schedule(request):
+    """Return active doctors' working windows for the selected weekday."""
+    department_name = request.GET.get("department_name", "").strip()
+    schedule_date = parse_date(request.GET.get("date", ""))
+    doctor_id = request.GET.get("doctor_id", "").strip()
+
+    if not department_name or schedule_date is None:
+        return JsonResponse(
+            {"error": "Choose a department and valid date."},
+            status=400,
+        )
+
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        return JsonResponse(
+            {"error": "Doctor schedules are temporarily unavailable."},
+            status=500,
+        )
+
+    weekday_name = schedule_date.strftime("%A")
+    with psycopg2.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    s.staff_id,
+                    CONCAT_WS(' ', s.first_name, s.last_name) AS doctor_name,
+                    sch.start_time,
+                    sch.end_time
+                FROM medicare.staff AS s
+                JOIN medicare.department AS d
+                  ON d.department_id = s.department_id
+                LEFT JOIN medicare.schedule AS sch
+                  ON sch.staff_id = s.staff_id
+                 AND sch.active = TRUE
+                 AND (
+                     sch.day_of_week IS NULL
+                     OR LOWER(sch.day_of_week::text) = LOWER(%s)
+                 )
+                WHERE d.department_name = %s
+                  AND d.active = TRUE
+                  AND s.active = TRUE
+                  AND (%s = '' OR s.staff_id::text = %s)
+                ORDER BY
+                    s.first_name,
+                    s.last_name,
+                    s.staff_id,
+                    sch.start_time;
+                """,
+                (weekday_name, department_name, doctor_id, doctor_id),
+            )
+            rows = cursor.fetchall()
+
+    doctors_by_id = {}
+    for staff_id, name, start_time, end_time in rows:
+        key = str(staff_id)
+        doctor = doctors_by_id.setdefault(
+            key,
+            {"doctor_id": key, "name": name or "Doctor", "windows": []},
+        )
+        if start_time is not None and end_time is not None:
+            doctor["windows"].append({
+                "start": start_time.strftime("%H:%M"),
+                "end": end_time.strftime("%H:%M"),
+            })
+
+    return JsonResponse({
+        "date": schedule_date.isoformat(),
+        "weekday": weekday_name,
+        "doctors": list(doctors_by_id.values()),
+    })
 
 
 
