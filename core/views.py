@@ -2370,13 +2370,14 @@ def _seed_upcoming_appointment_intros(patient_id, user_id):
 
 
 
+
 @role_required("Patient")
 @require_GET
 def patient_messages(request):
     """
-    Render appointment conversations and the complete Customer Care
-    conversation history. Mark each message as outgoing or incoming
-    for the authenticated patient.
+    Render at most 10 doctor conversations and the latest 20 messages
+    per conversation, plus the latest 20 Customer Care messages.
+    Messages are displayed chronologically, oldest to newest.
     """
     identity = _get_patient_identity(request)
 
@@ -2388,6 +2389,7 @@ def patient_messages(request):
 
     patient_id = identity["patient_id"]
     user_id = identity["user_id"]
+
     _seed_upcoming_appointment_intros(patient_id, user_id)
 
     db = _open_medicare_connection()
@@ -2412,69 +2414,142 @@ def patient_messages(request):
                 else None
             )
 
-            # Retrieve appointment conversations.
+            # Select only the 10 most recently active doctors.
+            # A doctor's latest appointment represents that conversation.
             cursor.execute(
                 """
+                WITH doctor_appointments AS (
+                    SELECT
+                        a.appointment_id,
+                        a.doctor_id,
+                        a.schedule_time,
+                        a.status,
+                        s.user_id AS doctor_user_id,
+                        CONCAT_WS(
+                            ' ',
+                            s.first_name,
+                            s.last_name
+                        ) AS doctor_name,
+                        at.type_name AS appointment_type,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY s.user_id
+                            ORDER BY
+                                a.schedule_time DESC NULLS LAST,
+                                a.appointment_id DESC
+                        ) AS appointment_rank
+                    FROM medicare.appointments AS a
+                    JOIN medicare.staff AS s
+                        ON s.staff_id = a.doctor_id
+                    LEFT JOIN medicare.appointment_type AS at
+                        ON at.app_type_id = a.app_type_id
+                    WHERE a.patient_id = %s
+                ),
+                latest_doctors AS (
+                    SELECT *
+                    FROM doctor_appointments
+                    WHERE appointment_rank = 1
+                    ORDER BY
+                        schedule_time DESC NULLS LAST,
+                        appointment_id DESC
+                    LIMIT 10
+                )
                 SELECT
-                    a.appointment_id,
-                    a.doctor_id,
-                    a.schedule_time,
-                    s.user_id AS doctor_user_id
-                FROM medicare.appointments AS a
-                LEFT JOIN medicare.staff AS s
-                    ON s.staff_id = a.doctor_id
-                WHERE a.patient_id = %s
-                  AND (
-                      a.schedule_time >=
-                          CURRENT_TIMESTAMP - INTERVAL '7 days'
-                      OR EXISTS (
-                          SELECT 1
-                          FROM medicare.messages AS m
-                          WHERE m.appointment_id = a.appointment_id
-                            AND (
-                                m.sender_id = %s
-                                OR m.receiver_id = %s
-                            )
-                      )
-                  )
-                ORDER BY a.schedule_time DESC NULLS LAST;
+                    appointment_id,
+                    doctor_id,
+                    schedule_time,
+                    status,
+                    doctor_user_id,
+                    doctor_name,
+                    appointment_type
+                FROM latest_doctors
+                ORDER BY
+                    schedule_time DESC NULLS LAST,
+                    appointment_id DESC;
                 """,
-                (patient_id, user_id, user_id),
+                (patient_id,),
             )
+
             appointments = _dict_rows(cursor)
 
-            appointment_ids = [
-                str(appointment["appointment_id"])
-                for appointment in appointments
-            ]
-
-            # Retrieve appointment message history.
-            if appointment_ids:
+            # Retrieve at most 20 latest messages across ALL appointments
+            # belonging to each of the selected doctors.
+            if appointments:
                 cursor.execute(
                     """
+                    WITH selected_doctors AS (
+                        SELECT DISTINCT
+                            s.user_id AS doctor_user_id
+                        FROM medicare.appointments AS a
+                        JOIN medicare.staff AS s
+                            ON s.staff_id = a.doctor_id
+                        WHERE a.patient_id = %s
+                        ORDER BY s.user_id
+                        LIMIT 10
+                    ),
+                    patient_appointments AS (
+                        SELECT
+                            a.appointment_id,
+                            s.user_id AS doctor_user_id
+                        FROM medicare.appointments AS a
+                        JOIN medicare.staff AS s
+                            ON s.staff_id = a.doctor_id
+                        JOIN selected_doctors AS sd
+                            ON sd.doctor_user_id = s.user_id
+                        WHERE a.patient_id = %s
+                    ),
+                    ranked_messages AS (
+                        SELECT
+                            m.m_id,
+                            m.appointment_id,
+                            m.sender_id,
+                            m.receiver_id,
+                            m.message_content,
+                            m.sent_at,
+                            m.status,
+                            pa.doctor_user_id,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY pa.doctor_user_id
+                                ORDER BY
+                                    m.sent_at DESC,
+                                    m.m_id DESC
+                            ) AS rn
+                        FROM medicare.messages AS m
+                        JOIN patient_appointments AS pa
+                            ON pa.appointment_id = m.appointment_id
+                        WHERE (
+                            m.sender_id = %s
+                            OR m.receiver_id = %s
+                        )
+                    )
                     SELECT
-                        m.m_id,
-                        m.appointment_id,
-                        m.sender_id,
-                        m.receiver_id,
-                        m.message_content,
-                        m.sent_at,
-                        m.status
-                    FROM medicare.messages AS m
-                    WHERE m.appointment_id = ANY(%s::uuid[])
-                      AND (
-                          m.sender_id = %s
-                          OR m.receiver_id = %s
-                      )
-                    ORDER BY m.sent_at ASC, m.m_id ASC;
+                        m_id,
+                        appointment_id,
+                        sender_id,
+                        receiver_id,
+                        message_content,
+                        sent_at,
+                        status,
+                        doctor_user_id
+                    FROM ranked_messages
+                    WHERE rn <= 20
+                    ORDER BY
+                        doctor_user_id,
+                        sent_at ASC,
+                        m_id ASC;
                     """,
-                    (appointment_ids, user_id, user_id),
+                    (
+                        patient_id,
+                        patient_id,
+                        user_id,
+                        user_id,
+                    ),
                 )
+
                 appointment_messages = _dict_rows(cursor)
             else:
                 appointment_messages = []
 
-            # Retrieve the complete Customer Care conversation.
+            # Retrieve the latest 20 Customer Care messages.
             if support_user_id is not None:
                 cursor.execute(
                     """
@@ -2499,7 +2574,10 @@ def patient_messages(request):
                               AND m.receiver_id = %s
                           )
                       )
-                    ORDER BY m.sent_at ASC, m.m_id ASC;
+                    ORDER BY
+                        m.sent_at DESC,
+                        m.m_id DESC
+                    LIMIT 20;
                     """,
                     (
                         user_id,
@@ -2508,34 +2586,40 @@ def patient_messages(request):
                         user_id,
                     ),
                 )
-                support_messages = _dict_rows(cursor)
+
+                # The query returns newest first; reverse for display.
+                support_messages = list(
+                    reversed(_dict_rows(cursor))
+                )
             else:
                 support_messages = []
 
     finally:
         db.close()
 
-    # Serialize appointment messages and mark outgoing messages.
-    messages_by_appointment = {}
+    # Group messages by doctor, not by individual appointment.
+    messages_by_doctor = {}
 
     for message in appointment_messages:
         _serialize_message(message)
 
         message["is_mine"] = (
-            message["sender_id"] == user_id
+            str(message["sender_id"]) == str(user_id)
         )
 
-        appointment_key = message["appointment_id"]
+        doctor_key = str(message["doctor_user_id"])
 
-        messages_by_appointment.setdefault(
-            appointment_key, []
+        messages_by_doctor.setdefault(
+            doctor_key, []
         ).append(message)
 
-    # Prepare appointment conversations.
+    # Prepare the 10-or-fewer doctor conversations.
     for appointment in appointments:
         appointment["appointment_id"] = str(
             appointment["appointment_id"]
         )
+
+        # Preserve compatibility with the existing template and JS.
         appointment["chat_id"] = appointment["appointment_id"]
 
         appointment["doctor_id"] = (
@@ -2550,34 +2634,90 @@ def patient_messages(request):
             else None
         )
 
+        appointment["doctor_name"] = (
+            appointment.get("doctor_name") or "Care team"
+        )
+
+        schedule_time = appointment["schedule_time"]
+
+        if schedule_time is not None:
+            local_schedule = (
+                timezone.localtime(schedule_time)
+                if isinstance(schedule_time, datetime)
+                and timezone.is_aware(schedule_time)
+                else schedule_time
+            )
+
+            if isinstance(local_schedule, datetime):
+                formatted_time = local_schedule.strftime(
+                    "%b %d, %Y at %I:%M %p"
+                )
+            else:
+                formatted_time = local_schedule.strftime(
+                    "%b %d, %Y"
+                )
+        else:
+            formatted_time = "Date unavailable"
+
+        appointment_type = (
+            appointment.get("appointment_type")
+            or "Appointment"
+        )
+
+        appointment["appointment_label"] = (
+            f"{appointment_type} · {formatted_time}"
+        )
+
         appointment["can_chat"] = _chat_is_writable(
-            appointment["schedule_time"]
+            schedule_time
+        )
+
+        appointment["lock_reason"] = (
+            ""
+            if appointment["can_chat"]
+            else "Read only — appointment ended more than 7 days ago"
         )
 
         appointment["chat_type"] = "appointment"
 
-        appointment["messages"] = messages_by_appointment.get(
-            appointment["appointment_id"],
-            [],
-        )
+        doctor_key = appointment["doctor_user_id"]
 
-    # Serialize support messages and identify the sender.
+        # Defensive cap: never render more than 20 messages per doctor.
+        chat_messages = messages_by_doctor.get(
+            doctor_key, []
+        )[-20:]
+
+        appointment["messages"] = chat_messages
+
+        if chat_messages:
+            last_message = chat_messages[-1]
+            appointment["last_message"] = (
+                last_message.get("message_content", "")
+            )
+            appointment["last_message_at"] = (
+                last_message.get("sent_at")
+            )
+        else:
+            appointment["last_message"] = ""
+            appointment["last_message_at"] = None
+
+        appointment["unread_count"] = 0
+
+    # Serialize Customer Care messages and identify the sender.
     for message in support_messages:
         _serialize_message(message)
 
         message["is_mine"] = (
-            message["sender_id"] == user_id
+            str(message["sender_id"]) == str(user_id)
         )
 
-    # IMPORTANT: The template and JavaScript use "customer-care"
-    # as the support conversation ID. Keep the ID consistent.
     support_chat = {
         "chat_id": "customer-care",
         "appointment_id": None,
         "chat_type": "support",
         "name": "Customer Care",
         "can_chat": support_user_id is not None,
-        "messages": support_messages,
+        "messages": support_messages[-20:],
     }
 
     return render(
@@ -2588,7 +2728,7 @@ def patient_messages(request):
             "breadcrumb": "Patient / Messages",
             "chats": appointments,
             "support_chat": support_chat,
-            "support_messages": support_messages,
+            "support_messages": support_messages[-20:],
             "support_available": support_user_id is not None,
             "patient_user_id": user_id,
         },
@@ -2596,10 +2736,16 @@ def patient_messages(request):
 
 
 
+
 @role_required("Patient")
 @require_GET
 def patient_chat_messages(request, appointment_id):
-    """Return the complete message history for an authorized appointment."""
+    """
+    Return the latest 20 messages across all appointments between
+    the authenticated patient and the selected doctor.
+
+    Messages are returned in chronological order, oldest to newest.
+    """
     identity = _get_patient_identity(request)
 
     if identity is None:
@@ -2611,6 +2757,7 @@ def patient_chat_messages(request, appointment_id):
     patient_id = identity["patient_id"]
     user_id = identity["user_id"]
 
+    # Validate that the requested appointment belongs to this patient.
     appointment = _get_patient_appointment(
         patient_id,
         appointment_id,
@@ -2622,12 +2769,49 @@ def patient_chat_messages(request, appointment_id):
             status=404,
         )
 
+    doctor_id = appointment["doctor_id"]
+
+    if doctor_id is None:
+        return JsonResponse(
+            {"error": "Chat not found."},
+            status=404,
+        )
+
     db = _open_medicare_connection()
 
     try:
         with db.cursor() as cursor:
+            # Get the latest 20 messages across all of this patient's
+            # appointments with the selected doctor.
             cursor.execute(
                 """
+                WITH doctor_appointments AS (
+                    SELECT a.appointment_id
+                    FROM medicare.appointments AS a
+                    WHERE a.patient_id = %s
+                      AND a.doctor_id = %s
+                ),
+                latest_messages AS (
+                    SELECT
+                        m.m_id,
+                        m.appointment_id,
+                        m.sender_id,
+                        m.receiver_id,
+                        m.message_content,
+                        m.sent_at,
+                        m.status
+                    FROM medicare.messages AS m
+                    JOIN doctor_appointments AS da
+                        ON da.appointment_id = m.appointment_id
+                    WHERE (
+                        m.sender_id = %s
+                        OR m.receiver_id = %s
+                    )
+                    ORDER BY
+                        m.sent_at DESC,
+                        m.m_id DESC
+                    LIMIT 20
+                )
                 SELECT
                     m_id,
                     appointment_id,
@@ -2636,22 +2820,31 @@ def patient_chat_messages(request, appointment_id):
                     message_content,
                     sent_at,
                     status
-                FROM medicare.messages
-                WHERE appointment_id = %s
-                  AND (
-                      sender_id = %s
-                      OR receiver_id = %s
-                  )
-                ORDER BY sent_at ASC;
+                FROM latest_messages
+                ORDER BY
+                    sent_at ASC,
+                    m_id ASC;
                 """,
-                (appointment_id, user_id, user_id),
+                (
+                    patient_id,
+                    doctor_id,
+                    user_id,
+                    user_id,
+                ),
             )
+
             chat_messages = _dict_rows(cursor)
+
     finally:
         db.close()
 
+    # Serialize messages and identify outgoing messages.
     for message in chat_messages:
         _serialize_message(message)
+
+        message["is_mine"] = (
+            str(message["sender_id"]) == str(user_id)
+        )
 
     return JsonResponse(
         {
@@ -2662,6 +2855,7 @@ def patient_chat_messages(request, appointment_id):
             "messages": chat_messages,
         }
     )
+
 
 
 @role_required("Patient")

@@ -1,4 +1,3 @@
- 
 {% extends "patients/base.html" %}
 {% load static %}
 
@@ -7,45 +6,6 @@
 {% block content %}
 <section class="patient-page patient-messages-page"
          data-current-user-id="{{ patient_user_id }}">
-
-    <!-- Message overview -->
-    <section class="patient-messages-stats" aria-label="Message overview">
-        <article class="patient-card patient-messages-stat">
-            <div class="patient-messages-stat__top">
-                <span>Total conversations</span>
-                <span class="patient-messages-stat__icon">✉</span>
-            </div>
-            <strong>{{ total_conversations|default:0 }}</strong>
-            <p>Your message history</p>
-        </article>
-
-        <article class="patient-card patient-messages-stat">
-            <div class="patient-messages-stat__top">
-                <span>Unread messages</span>
-                <span class="patient-messages-stat__icon patient-messages-stat__icon--amber">●</span>
-            </div>
-            <strong>{{ unread_messages|default:0 }}</strong>
-            <p>Messages awaiting your attention</p>
-        </article>
-
-        <article class="patient-card patient-messages-stat">
-            <div class="patient-messages-stat__top">
-                <span>Active chats</span>
-                <span class="patient-messages-stat__icon patient-messages-stat__icon--blue">↔</span>
-            </div>
-            <strong>{{ active_chats|default:0 }}</strong>
-            <p>Conversations you can reply to</p>
-        </article>
-
-        <article class="patient-card patient-messages-stat">
-            <div class="patient-messages-stat__top">
-                <span>Announcements</span>
-                <span class="patient-messages-stat__icon patient-messages-stat__icon--rose">!</span>
-            </div>
-            <strong>{{ announcement_count|default:0 }}</strong>
-            <p>Updates from Medicare</p>
-        </article>
-    </section>
 
     <section class="patient-messages-workspace" aria-label="Messaging workspace">
 
@@ -78,13 +38,13 @@
 
             <div class="patient-messages-conversation-list" data-conversation-list>
 
-                <!-- Announcements: read-only -->
+                <!-- Announcements -->
                 <button type="button"
                         class="patient-messages-conversation is-active"
                         data-chat-id="announcements"
                         data-chat-type="announcements"
-                        data-chat-can-chat=false
-                        data-can-chat=false
+                        data-chat-can-chat="false"
+                        data-can-chat="false"
                         data-chat-name="Announcements"
                         data-chat-subtitle="Official updates from Medicare"
                         data-chat-context="Important updates and notices from Medicare."
@@ -199,8 +159,7 @@
                  aria-label="Selected conversation">
 
             <header class="patient-messages-chat-header">
-                <span class="patient-messages-avatar"
-                      data-active-avatar>A</span>
+                <span class="patient-messages-avatar" data-active-avatar>A</span>
 
                 <div class="patient-messages-chat-header__identity">
                     <h2 class="patient-card__title" data-active-name>
@@ -227,12 +186,19 @@
                  aria-live="polite">
 
                 {% for message in announcement_messages %}
-                    <article class="patient-messages-message {% if message.is_mine %}patient-messages-message--mine{% else %}patient-messages-message--theirs{% endif %}">
+                    <article
+                        class="patient-messages-message {% if message.is_mine %}patient-messages-message--mine{% else %}patient-messages-message--theirs{% endif %}"
+                        {% if message.m_id != None %}data-message-id="{{ message.m_id }}"{% endif %}>
                         <div class="patient-messages-bubble">
                             <p>{{ message.message_content|linebreaksbr }}</p>
-                            <time datetime="{{ message.sent_at|date:'c' }}">
-                                {{ message.sent_at|date:"M j, Y · g:i A" }}
-                            </time>
+                            
+                            {% if message.sent_at %}
+                                <time class="patient-messages-message__time"
+                                    datetime="{{ message.sent_at|date:'c' }}">
+                                    {{ message.sent_at|date:"M j, Y · g:i A" }}
+                                </time>
+                            {% endif %}
+
                         </div>
                     </article>
                 {% empty %}
@@ -252,12 +218,19 @@
                  hidden>
 
                 {% for message in support_messages %}
-                    <article class="patient-messages-message {% if message.is_mine %}patient-messages-message--mine{% else %}patient-messages-message--theirs{% endif %}">
+                    <article
+                        class="patient-messages-message {% if message.is_mine %}patient-messages-message--mine{% else %}patient-messages-message--theirs{% endif %}"
+                        {% if message.m_id != None %}data-message-id="{{ message.m_id }}"{% endif %}>
                         <div class="patient-messages-bubble">
                             <p>{{ message.message_content|linebreaksbr }}</p>
-                            <time datetime="{{ message.sent_at|date:'c' }}">
-                                {{ message.sent_at|date:"M j, Y · g:i A" }}
-                            </time>
+                 
+                            {% if message.sent_at %}
+                                <time class="patient-messages-message__time"
+                                    datetime="{{ message.sent_at|date:'c' }}">
+                                    {{ message.sent_at|date:"M j, Y · g:i A" }}
+                                </time>
+                            {% endif %}
+
                         </div>
                     </article>
                 {% empty %}
@@ -288,12 +261,19 @@
                     {% endif %}
 
                     {% for message in chat.messages %}
-                        <article class="patient-messages-message {% if message.is_mine %}patient-messages-message--mine{% else %}patient-messages-message--theirs{% endif %}">
+                        <article
+                            class="patient-messages-message {% if message.is_mine %}patient-messages-message--mine{% else %}patient-messages-message--theirs{% endif %}"
+                            {% if message.m_id != None %}data-message-id="{{ message.m_id }}"{% endif %}>
                             <div class="patient-messages-bubble">
-                                <p>{{ message.message_content|linebreaksbr }}</p>
-                                <time datetime="{{ message.sent_at|date:'c' }}">
-                                    {{ message.sent_at|date:"M j, Y · g:i A" }}
-                                </time>
+                                <p>{{ message.message_content|linebreaksbr }}</p>                     
+
+                                {% if message.sent_at %}
+                                    <time class="patient-messages-message__time"
+                                        datetime="{{ message.sent_at|date:'c' }}">
+                                        {{ message.sent_at|date:"M j, Y · g:i A" }}
+                                    </time>
+                                {% endif %}
+
                             </div>
                         </article>
                     {% empty %}

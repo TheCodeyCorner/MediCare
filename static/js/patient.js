@@ -939,7 +939,113 @@ function getCookie(name) {
 
 
 /* ==========================================================================
- * Patient Messaging
+ * Patient Messaging Helpers — Global Scope
+ * ========================================================================== */
+
+
+function formatMessageTime(sentAt) {
+    if (!sentAt) return "";
+
+    const date = new Date(sentAt);
+
+    if (Number.isNaN(date.getTime())) return "";
+
+    return date.toLocaleString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+    });
+}
+
+function appendMessage(thread, message, currentUserId) {
+    if (!thread || !message) return;
+
+    if (message.m_id != null) {
+        const messageId = String(message.m_id);
+
+        const alreadyRendered = Array.from(
+            thread.querySelectorAll("[data-message-id]")
+        ).some(function (element) {
+            return element.dataset.messageId === messageId;
+        });
+
+        if (alreadyRendered) return;
+    }
+
+    const emptyState = thread.querySelector(
+        ".patient-messages-empty-thread"
+    );
+
+    if (emptyState) emptyState.remove();
+
+    const mine =
+        String(message.sender_id) === String(currentUserId);
+
+    const article = document.createElement("article");
+
+    article.className =
+        "patient-messages-message " +
+        (mine
+            ? "patient-messages-message--mine"
+            : "patient-messages-message--theirs");
+
+    if (message.m_id != null) {
+        article.dataset.messageId = String(message.m_id);
+    }
+
+    const bubble = document.createElement("div");
+    bubble.className = "patient-messages-bubble";
+
+    const paragraph = document.createElement("p");
+    paragraph.textContent = message.message_content || "";
+    bubble.appendChild(paragraph);
+
+    const timestamp = message.sent_at || message.created_at;
+    const formattedTime = formatMessageTime(timestamp);
+
+    if (formattedTime) {
+        const time = document.createElement("time");
+        time.className = "patient-messages-message__time";
+        time.dateTime = timestamp;
+        time.textContent = formattedTime;
+        bubble.appendChild(time);
+    }
+
+    article.appendChild(bubble);
+    thread.appendChild(article);
+
+    enforceMessageLimit(thread, 20);
+    scrollChatToLatest(thread);
+}
+
+
+function scrollChatToLatest(thread) {
+    if (!thread || thread.hidden) return;
+
+    thread.scrollTop = thread.scrollHeight;
+}
+
+
+function enforceMessageLimit(thread, limit = 20) {
+    if (!thread) return;
+
+    const messages = thread.querySelectorAll(
+        ".patient-messages-message"
+    );
+
+    const excess = messages.length - limit;
+
+    for (let i = 0; i < excess; i++) {
+        messages[i].remove();
+    }
+}
+
+
+/* ==========================================================================
+ * Patient Messaging Initialization
  * ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -953,10 +1059,11 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
     }
 
-    // Prevent duplicate event handlers if this script is loaded more than once.
+    // Prevent duplicate event handlers.
     if (form.dataset.messagingBound === "true") {
         return;
     }
+
     form.dataset.messagingBound = "true";
 
     const sendButton = form.querySelector('button[type="submit"]');
@@ -972,15 +1079,18 @@ document.addEventListener("DOMContentLoaded", function () {
     const appointmentDetails = document.querySelector(
         "[data-details-appointment]"
     );
+
     const announcementsDetails = document.querySelector(
         "[data-details-announcements]"
     );
-    const supportDetails = document.querySelector("[data-details-support]");
 
+    const supportDetails = document.querySelector("[data-details-support]");
     const detailDoctor = document.querySelector("[data-detail-doctor]");
+
     const detailAppointment = document.querySelector(
         "[data-detail-appointment]"
     );
+
     const detailStatus = document.querySelector("[data-detail-status]");
 
     const conversationButtons = Array.from(
@@ -1001,9 +1111,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let activeChat = null;
     let isSubmitting = false;
+    let isRefreshingMessages = false;
 
     const uuidPattern =
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 
     function setText(element, value) {
         if (element) {
@@ -1011,19 +1123,23 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+
     function showElement(element, visible) {
         if (element) {
             element.hidden = !visible;
         }
     }
 
+
     function getThreadId(chat) {
         return chat.dataset.chatId || "";
     }
 
+
     function getChatType(chat) {
         return chat.dataset.chatType || "";
     }
+
 
     function getChatName(chat) {
         const title = chat.querySelector(
@@ -1035,10 +1151,12 @@ document.addEventListener("DOMContentLoaded", function () {
             "Conversation";
     }
 
+
     function getChatCanChat(chat) {
         return chat.dataset.chatCanChat === "true" ||
             chat.dataset.canChat === "true";
     }
+
 
     function getChatStatus(chat) {
         const meta = chat.querySelector(
@@ -1053,6 +1171,7 @@ document.addEventListener("DOMContentLoaded", function () {
             ? "Customer Care"
             : "Messaging available";
     }
+
 
     function updateComposer(chat) {
         const type = getChatType(chat);
@@ -1069,6 +1188,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         messageInput.disabled = !showComposer;
+
         messageInput.placeholder = type === "support"
             ? "Message Customer Care..."
             : "Write a message...";
@@ -1083,6 +1203,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+
     function updateDetails(chat) {
         const type = getChatType(chat);
         const isAppointment = type === "appointment";
@@ -1092,19 +1213,23 @@ document.addEventListener("DOMContentLoaded", function () {
         showElement(supportDetails, type === "support");
 
         if (isAppointment) {
-            setText(detailDoctor, chat.dataset.doctorName || getChatName(chat));
+            setText(
+                detailDoctor,
+                chat.dataset.doctorName || getChatName(chat)
+            );
+
             setText(
                 detailAppointment,
                 chat.dataset.appointmentLabel || "Appointment conversation"
             );
+
             setText(detailStatus, getChatStatus(chat));
         }
     }
 
+
     function selectConversation(chat) {
-        if (!chat) {
-            return;
-        }
+        if (!chat) return;
 
         activeChat = chat;
 
@@ -1114,6 +1239,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         conversationButtons.forEach(function (button) {
             const selected = button === chat;
+
             button.classList.toggle("is-active", selected);
             button.setAttribute("aria-pressed", String(selected));
         });
@@ -1125,6 +1251,7 @@ document.addEventListener("DOMContentLoaded", function () {
         chatIdInput.value = chatId;
 
         setText(activeName, name);
+
         setText(
             activeSubtitle,
             chat.dataset.chatSubtitle ||
@@ -1141,6 +1268,7 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
         setText(activeStatus, getChatStatus(chat));
+
         setText(
             activeContext,
             chat.dataset.chatContext ||
@@ -1159,9 +1287,10 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    
-    // Lightweight message refresh for the currently selected chat.
-    let isRefreshingMessages = false;
+
+    /* ----------------------------------------------------------------------
+     * Refresh Messages
+     * ---------------------------------------------------------------------- */
 
     async function refreshActiveMessages() {
         if (isRefreshingMessages || !activeChat) return;
@@ -1192,30 +1321,41 @@ document.addEventListener("DOMContentLoaded", function () {
             const response = await fetch(endpoint, {
                 method: "GET",
                 credentials: "same-origin",
-                headers: { "Accept": "application/json" },
+                headers: {
+                    "Accept": "application/json"
+                },
                 cache: "no-store"
             });
 
-            if (!response.ok) return;
+            if (!response.ok) {
+                console.error(
+                    "Message refresh failed:",
+                    response.status
+                );
+                return;
+            }
 
             const result = await response.json();
+
             const currentUserId = document.querySelector(
                 "[data-current-user-id]"
             )?.dataset.currentUserId;
 
-            (result.messages || []).forEach(message => {
+            (result.messages || []).forEach(function (message) {
                 appendMessage(thread, message, currentUserId);
             });
+
         } catch (error) {
-            // A temporary polling failure should not interrupt composing.
-            console.debug("Message refresh temporarily failed:", error);
+            console.debug(
+                "Message refresh temporarily failed:",
+                error
+            );
         } finally {
             isRefreshingMessages = false;
         }
     }
 
-    // Refresh while the page is visible. Stop when the tab is in the
-    // background to avoid unnecessary database requests.
+
     window.setInterval(function () {
         if (!document.hidden) {
             refreshActiveMessages();
@@ -1228,14 +1368,22 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Conversation selection
+
+    /* ----------------------------------------------------------------------
+     * Conversation Selection
+     * ---------------------------------------------------------------------- */
+
     conversationButtons.forEach(function (chat) {
         chat.addEventListener("click", function () {
             selectConversation(chat);
         });
     });
 
-    // Conversation search
+
+    /* ----------------------------------------------------------------------
+     * Conversation Search
+     * ---------------------------------------------------------------------- */
+
     const searchInput = document.querySelector(
         "[data-conversation-search]"
     );
@@ -1250,7 +1398,11 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // All / unread filters
+
+    /* ----------------------------------------------------------------------
+     * All / Unread Filters
+     * ---------------------------------------------------------------------- */
+
     const filterButtons = document.querySelectorAll(
         "[data-message-filter]"
     );
@@ -1265,78 +1417,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
             conversationButtons.forEach(function (chat) {
                 chat.hidden =
-                    filter === "unread" && chat.dataset.unread !== "true";
+                    filter === "unread" &&
+                    chat.dataset.unread !== "true";
             });
         });
     });
 
-    
-    function formatMessageTime(value) {
-        if (!value) return "";
 
-        const date = new Date(value);
-        if (Number.isNaN(date.getTime())) return "";
+    /* ----------------------------------------------------------------------
+     * Send Message
+     * ---------------------------------------------------------------------- */
 
-        return new Intl.DateTimeFormat(undefined, {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-            hour: "numeric",
-            minute: "2-digit"
-        }).format(date);
-    }
-
-    function appendMessage(thread, message, currentUserId) {
-        if (!thread || !message) return;
-
-        // Avoid duplicates if polling receives a message already appended.
-        if (message.m_id && thread.querySelector(
-            `[data-message-id="${CSS.escape(String(message.m_id))}"]`
-        )) {
-            return;
-        }
-
-        const emptyState = thread.querySelector(
-            ".patient-messages-empty-thread"
-        );
-        if (emptyState) emptyState.remove();
-
-        const mine = String(message.sender_id) === String(currentUserId);
-
-        const article = document.createElement("article");
-        article.className = "patient-messages-message " +
-            (mine
-                ? "patient-messages-message--mine"
-                : "patient-messages-message--theirs");
-
-        if (message.m_id) {
-            article.dataset.messageId = String(message.m_id);
-        }
-
-        const bubble = document.createElement("div");
-        bubble.className = "patient-messages-bubble";
-
-        const paragraph = document.createElement("p");
-        // textContent prevents message content from being interpreted as HTML.
-        paragraph.textContent = message.message_content || "";
-
-        const time = document.createElement("time");
-        const formattedTime = formatMessageTime(message.sent_at);
-        time.textContent = formattedTime;
-
-        if (message.sent_at) {
-            time.dateTime = message.sent_at;
-        }
-
-        bubble.append(paragraph, time);
-        article.appendChild(bubble);
-        thread.appendChild(article);
-
-        thread.scrollTop = thread.scrollHeight;
-    }
-
-    
-    // Submit a message without reloading the page.
     form.addEventListener("submit", async function (event) {
         event.preventDefault();
 
@@ -1381,7 +1472,11 @@ document.addEventListener("DOMContentLoaded", function () {
         const submittedText = messageContent;
 
         isSubmitting = true;
-        if (sendButton) sendButton.disabled = true;
+
+        if (sendButton) {
+            sendButton.disabled = true;
+        }
+
         messageInput.disabled = true;
 
         try {
@@ -1410,12 +1505,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (!result.message) {
                 throw new Error(
-                    "The server saved the request but returned no message data."
+                    "The server returned no message data."
                 );
             }
 
-            // Clear only the text that was submitted. Do not erase any
-            // newer text the patient may have typed while the request ran.
             if (messageInput.value.trim() === submittedText) {
                 messageInput.value = "";
             }
@@ -1424,15 +1517,20 @@ document.addEventListener("DOMContentLoaded", function () {
                 item => item.dataset.chatThread === chatId
             );
 
-            appendMessage(
-                thread,
-                result.message,
-                document.querySelector("[data-current-user-id]")?.dataset.currentUserId
-            );
+            const currentUserId = document.querySelector(
+                "[data-current-user-id]"
+            )?.dataset.currentUserId;
+
+            appendMessage(thread, result.message, currentUserId);
 
         } catch (error) {
-            console.error("Patient message submission failed:", error);
+            console.error(
+                "Patient message submission failed:",
+                error
+            );
+
             alert(error.message || "Unable to send your message.");
+
         } finally {
             isSubmitting = false;
 
@@ -1446,7 +1544,10 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 
-    // Initial conversation
+    /* ----------------------------------------------------------------------
+     * Initial Conversation
+     * ---------------------------------------------------------------------- */
+
     const initiallySelected = conversationButtons.find(function (chat) {
         return chat.classList.contains("is-active");
     });

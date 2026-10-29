@@ -3792,12 +3792,19 @@
     line-height: 1.6;
 }
 
-.patient-messages-bubble time {
+
+.patient-messages-bubble time,
+.patient-messages-message__time {
     display: block;
-    margin-top: 0.5rem;
-    color: var(--patient-muted, #64748b);
-    font-size: 0.65rem;
-    text-align: right;
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+    opacity: 1;
+    visibility: visible;
+}
+
+.patient-messages-bubble time:empty {
+    display: none;
 }
 
 .patient-messages-empty-thread {
@@ -4108,3 +4115,171 @@
     }
 }
 
+
+/* =========================================================
+   PATIENT MESSAGES — VIEWPORT-SIZED LAYOUT
+   ========================================================= */
+
+.patient-messages-page {
+    height: calc(100vh - 110px);
+    min-height: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.patient-messages-workspace {
+    display: grid;
+    grid-template-columns:
+        minmax(240px, 0.85fr)
+        minmax(0, 2fr)
+        minmax(220px, 0.8fr);
+    gap: 16px;
+
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    align-items: stretch;
+}
+
+.patient-messages-list-panel,
+.patient-messages-chat-panel,
+.patient-messages-details-panel {
+    display: flex;
+    flex-direction: column;
+
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* Conversation list: scroll when more items exceed panel height. */
+.patient-messages-list-panel {
+    min-height: 0;
+}
+
+.patient-messages-list-panel__header {
+    flex: 0 0 auto;
+}
+
+.patient-messages-tabs {
+    flex: 0 0 auto;
+}
+
+.patient-messages-conversation-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    padding-right: 4px;
+}
+
+/* Keep each doctor row visible at its natural height. */
+.patient-messages-conversation {
+    flex: 0 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Message panel: header and composer remain fixed. */
+.patient-messages-chat-header,
+.patient-messages-chat-context,
+.patient-messages-composer-area {
+    flex: 0 0 auto;
+}
+
+/* Each selected conversation occupies the available chat area. */
+.patient-messages-thread {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    padding: 16px;
+    overflow-wrap: anywhere;
+}
+
+/* Prevent long messages from stretching the panel. */
+.patient-messages-message,
+.patient-messages-bubble {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.patient-messages-bubble p {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+/* Details panel scrolls independently if its content is too tall. */
+.patient-messages-details-panel {
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+}
+
+/* Keep hidden conversation threads hidden despite flex styling. */
+.patient-messages-thread[hidden],
+.patient-messages-composer[hidden],
+.patient-messages-composer-help[hidden],
+[data-details-appointment][hidden],
+[data-details-support][hidden] {
+    display: none !important;
+}
+
+/* Smaller screens: remove the details column and preserve scrolling. */
+@media (max-width: 1050px) {
+    .patient-messages-workspace {
+        grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.8fr);
+    }
+
+    .patient-messages-details-panel {
+        display: none;
+    }
+}
+
+@media (max-width: 700px) {
+    .patient-messages-page {
+        height: auto;
+        min-height: calc(100dvh - 110px);
+        overflow: visible;
+    }
+
+    .patient-messages-workspace {
+        display: flex;
+        flex-direction: column;
+        height: auto;
+        min-height: 0;
+        overflow: visible;
+    }
+
+    .patient-messages-list-panel {
+        height: 300px;
+        flex: 0 0 300px;
+    }
+
+    .patient-messages-chat-panel {
+        height: min(65dvh, 650px);
+        min-height: 400px;
+        flex: 0 0 auto;
+    }
+
+    .patient-messages-thread {
+        height: 0;
+        flex: 1 1 auto;
+    }
+}
+
+.message-time {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    color: #666 !important;
+    font-size: 12px;
+    margin-top: 4px;
+}
