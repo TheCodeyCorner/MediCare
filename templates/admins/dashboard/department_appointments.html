@@ -16,7 +16,7 @@
             </div>
 
             <h3 class="admin-card__title">
-                Department-wise Appointments
+                Department-wise Appointments This Month
             </h3>
 
         </div>
@@ -32,7 +32,10 @@
 
         <div class="admin-department-chart-wrapper">
 
-            <div class="admin-department-chart"></div>
+            <div class="admin-department-chart"
+                 style="background: {{ department_appointments_gradient }};"
+                 role="img"
+                 aria-label="Appointments by department"></div>
 
             <div class="admin-department-chart__inner">
 
@@ -59,7 +62,8 @@
 
             <div class="admin-department-legend__item">
 
-                <span class="admin-department-legend__dot {{ department.slug }}"></span>
+                <span class="admin-department-legend__dot {{ department.slug }}"
+                      style="background: {{ department.color }};"></span>
 
                 <span>
                     {{ department.name }}
@@ -72,6 +76,10 @@
             </div>
 
             {% endfor %}
+
+            {% if not department_appointments %}
+            <p>No appointment data yet.</p>
+            {% endif %}
 
         </div>
 

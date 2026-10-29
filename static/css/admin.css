@@ -1829,6 +1829,12 @@
     border-radius: 50%;
 
     object-fit: cover;
+    background: var(--admin-primary-soft);
+    color: var(--admin-primary);
+    font-size: 0.55rem;
+    font-weight: 700;
+    line-height: 1.5rem;
+    text-align: center;
 }
 
 
@@ -1983,6 +1989,12 @@
     border-radius: 50%;
 
     object-fit: cover;
+    background: var(--admin-primary-soft);
+    color: var(--admin-primary);
+    font-size: 0.55rem;
+    font-weight: 700;
+    line-height: 1.5rem;
+    text-align: center;
 }
 
 

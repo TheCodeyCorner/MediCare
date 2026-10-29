@@ -16,7 +16,7 @@
     </header>
 
     <ol class="booking-appointment-page__steps" aria-label="Booking steps">
-        <li class="is-current">
+        <li>
             <span>1</span>
             <div><strong>Visit details</strong><small>Department and reason</small></div>
         </li>
@@ -147,6 +147,15 @@
                                 </small>
                             {% endif %}
                         </div>
+                        <div class="profile-form__field profile-form__field--full">
+                            <label for="notes">Note (Optional)</label>
+                            <textarea id="notes"
+                                      name="notes"
+                                      rows="3"
+                                      maxlength="2000"
+                                      placeholder="Add a note for this appointment (optional)">{{ form_values.notes }}</textarea>
+                            <small>This note is saved with the appointment.</small>
+                        </div>
                     </div>
 
                     <section class="booking-schedule-card"
@@ -204,6 +213,7 @@
             const doctorSelect = document.getElementById("doctor_id");
             const reasonSelect = document.getElementById("reason_id");
             const scheduleInput = document.getElementById("schedule_time");
+            const appointmentTypeSelect = document.getElementById("app_type_id");
             const schedulePanel = document.getElementById("doctor-schedule-panel");
             const scheduleTitle = document.getElementById("doctor-schedule-title");
             const scheduleMessage = document.getElementById("doctor-schedule-message");
@@ -243,11 +253,13 @@
                 if (!departmentSelect.value || !departmentName) {
                     resetSelect(doctorSelect, "Choose a department first");
                     resetSelect(reasonSelect, "Choose a department first");
+                    if (schedulePanel) schedulePanel.hidden = true;
                     return;
                 }
 
                 resetSelect(doctorSelect, "Loading doctors...");
                 resetSelect(reasonSelect, "Loading reasons...");
+                if (schedulePanel) schedulePanel.hidden = true;
 
                 try {
                     const url = new URL(departmentSelect.dataset.optionsUrl, window.location.href);
@@ -330,8 +342,12 @@
                         : "Choose a doctor to see their hours, or leave it blank for the earliest available doctor.";
 
                     for (const doctor of doctors) {
-                        const card = document.createElement("article");
+                        const card = document.createElement("button");
+                        card.type = "button";
                         card.className = "booking-schedule-card__doctor";
+                        card.disabled = !doctor.windows.length;
+                        card.setAttribute("aria-pressed", String(doctorSelect.value === String(doctor.doctor_id)));
+                        card.setAttribute("aria-label", `Select ${doctor.name}`);
                         const name = document.createElement("strong");
                         name.textContent = doctor.name;
                         const hours = document.createElement("span");
@@ -339,6 +355,16 @@
                             ? doctor.windows.map((window) => `${formatTime(window.start)} – ${formatTime(window.end)}`).join(" · ")
                             : "Not scheduled this day";
                         card.append(name, hours);
+                        card.addEventListener("click", () => {
+                            const doctorOption = Array.from(doctorSelect.options).find((option) =>
+                                option.value === String(doctor.doctor_id)
+                            ) || Array.from(doctorSelect.options).find((option) =>
+                                option.textContent.trim().toLocaleLowerCase() === doctor.name.trim().toLocaleLowerCase()
+                            );
+                            if (!doctorOption) return;
+                            doctorSelect.value = doctorOption.value;
+                            doctorSelect.dispatchEvent(new Event("change", { bubbles: true }));
+                        });
                         scheduleList.append(card);
                     }
                 } catch (error) {
@@ -349,7 +375,6 @@
             };
 
             departmentSelect.addEventListener("change", loadOptions);
-            departmentSelect.addEventListener("change", loadSchedule);
             doctorSelect.addEventListener("change", loadSchedule);
             scheduleInput?.addEventListener("change", loadSchedule);
             scheduleInput?.addEventListener("input", loadSchedule);

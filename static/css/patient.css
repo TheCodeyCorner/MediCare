@@ -4689,8 +4689,10 @@
    ------------------------- */
 
 .apt-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    gap: 14px;
+    padding: 18px 22px;
+    background: #f8fafc;
 }
 
 .apt-card {
@@ -4701,18 +4703,25 @@
                            minmax(100px, 0.7fr)
                            auto;
     align-items: center;
-    gap: 22px;
-    padding: 23px 26px;
-    border-bottom: 1px solid #edf1f6;
-    transition: background 0.2s ease;
+    gap: 20px;
+    min-width: 0;
+    padding: 20px 22px;
+    border: 1px solid var(--apt-border);
+    border-radius: 14px;
+    background: var(--apt-surface);
+    box-shadow: 0 2px 8px rgb(15 23 42 / 3%);
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .apt-card:last-child {
-    border-bottom: 0;
+    border-bottom: 1px solid var(--apt-border);
 }
 
 .apt-card:hover {
-    background: #fbfdff;
+    transform: translateY(-1px);
+    border-color: #cbdaf0;
+    background: #ffffff;
+    box-shadow: 0 8px 20px rgb(15 23 42 / 6%);
 }
 
 .apt-card-date,
@@ -4730,10 +4739,11 @@
     flex-shrink: 0;
     width: 42px;
     height: 42px;
-    border: 1px solid #dbeafe;
-    border-radius: 11px;
-    background: #eff6ff;
-    color: var(--apt-primary);
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: linear-gradient(145deg, #2563eb, #0891b2);
+    box-shadow: 0 4px 10px rgb(37 99 235 / 18%);
+    color: #ffffff;
     font-size: 16px;
 }
 
@@ -4777,9 +4787,11 @@
     flex-shrink: 0;
     width: 40px;
     height: 40px;
-    border-radius: 50%;
-    background: #e0e7ff;
-    color: #4338ca;
+    border: 1px solid rgb(255 255 255 / 72%);
+    border-radius: 12px;
+    background: linear-gradient(145deg, #7c3aed, #4f46e5);
+    box-shadow: 0 4px 10px rgb(79 70 229 / 18%);
+    color: #ffffff;
     font-size: 16px;
 }
 
@@ -4816,10 +4828,13 @@
 
 .apt-id {
     display: block;
+    max-width: 14rem;
     margin-top: 6px;
+    overflow: hidden;
     color: #94a3b8;
     font-size: 10px;
-    overflow-wrap: anywhere;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* -------------------------
@@ -4862,6 +4877,22 @@
     border-color: #fde68a;
     background: #fffbeb;
     color: #92400e;
+}
+
+.apt-card-reason {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+    padding-top: 12px;
+    border-top: 1px solid #edf1f6;
+}
+
+.apt-card-reason > span:last-child {
+    color: #334155;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
 }
 
 .apt-card-actions {
@@ -5202,10 +5233,15 @@
         padding-left: 20px;
     }
 
+    .apt-list {
+        gap: 12px;
+        padding: 14px 16px;
+    }
+
     .apt-card {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 22px;
-        padding: 22px 20px;
+        gap: 20px;
+        padding: 20px;
     }
 
     .apt-card-actions {
@@ -5314,10 +5350,16 @@
         font-size: 11px;
     }
 
+    .apt-list {
+        gap: 10px;
+        padding: 12px;
+    }
+
     .apt-card {
         grid-template-columns: minmax(0, 1fr);
-        gap: 18px;
-        padding: 20px 16px;
+        gap: 17px;
+        padding: 18px 16px;
+        border-radius: 12px;
     }
 
     .apt-card-label {
@@ -5475,16 +5517,6 @@
     color: var(--patient-text-muted);
     font-size: 0.7rem;
     font-weight: 750;
-}
-
-.booking-appointment-page__steps li.is-current {
-    border-color: color-mix(in oklch, var(--patient-primary) 32%, var(--patient-border));
-    background: color-mix(in oklch, var(--patient-primary) 5%, var(--patient-surface));
-}
-
-.booking-appointment-page__steps li.is-current > span {
-    background: var(--patient-primary);
-    color: #fff;
 }
 
 .booking-appointment-page__steps strong,
@@ -5661,11 +5693,37 @@
 
 .booking-schedule-card__doctor {
     display: grid;
+    width: 100%;
     gap: 0.25rem;
     padding: 0.65rem 0.75rem;
     border: 1px solid var(--patient-border);
     border-radius: 0.55rem;
     background: var(--patient-surface);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--patient-transition-fast), background var(--patient-transition-fast), box-shadow var(--patient-transition-fast);
+}
+
+.booking-schedule-card__doctor:hover:not(:disabled),
+.booking-schedule-card__doctor[aria-pressed="true"] {
+    border-color: var(--patient-primary);
+    background: color-mix(in oklch, var(--patient-primary) 5%, var(--patient-surface));
+}
+
+.booking-schedule-card__doctor[aria-pressed="true"] {
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--patient-primary) 18%, transparent);
+}
+
+.booking-schedule-card__doctor:focus-visible {
+    outline: 2px solid var(--patient-primary);
+    outline-offset: 2px;
+}
+
+.booking-schedule-card__doctor:disabled {
+    opacity: 0.58;
+    cursor: not-allowed;
 }
 
 .booking-schedule-card__doctor strong {

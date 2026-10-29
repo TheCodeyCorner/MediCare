@@ -2489,6 +2489,23 @@ def patient_messages(request):
                 else None
             )
 
+            # Resolve the official Announcements account used as receiver.
+            cursor.execute(
+                """
+                SELECT user_id
+                FROM medicare.users
+                WHERE LOWER(email) = LOWER(%s)
+                LIMIT 1;
+                """,
+                ("announcements@medicare.internal",),
+            )
+            announcement_row = cursor.fetchone()
+            announcement_user_id = (
+                str(announcement_row[0])
+                if announcement_row is not None
+                else None
+            )
+
             # Select only the 10 most recently active doctors.
             # A doctor's latest appointment represents that conversation.
             cursor.execute(
@@ -2684,6 +2701,29 @@ def patient_messages(request):
             else:
                 appointment_messages = []
 
+            # Load announcements addressed to the official announcement account.
+            if announcement_user_id is not None:
+                cursor.execute(
+                    """
+                    SELECT
+                        m.m_id,
+                        m.appointment_id,
+                        m.sender_id,
+                        m.receiver_id,
+                        m.message_content,
+                        m.sent_at,
+                        m.status
+                    FROM medicare.messages AS m
+                    WHERE m.receiver_id = %s
+                    ORDER BY m.sent_at DESC, m.m_id DESC
+                    LIMIT 20;
+                    """,
+                    (announcement_user_id,),
+                )
+                announcement_messages = list(reversed(_dict_rows(cursor)))
+            else:
+                announcement_messages = []
+
             # Retrieve the latest 20 Customer Care messages.
             if support_user_id is not None:
                 cursor.execute(
@@ -2839,6 +2879,11 @@ def patient_messages(request):
 
         appointment["unread_count"] = 0
 
+    # Serialize Announcements messages addressed to the official account.
+    for message in announcement_messages:
+        _serialize_message(message)
+        message["is_mine"] = False
+
     # Serialize Customer Care messages and identify the sender.
     for message in support_messages:
         _serialize_message(message)
@@ -2863,6 +2908,7 @@ def patient_messages(request):
             "page_title": "Messages",
             "breadcrumb": "Patient / Messages",
             "chats": appointments,
+            "announcement_messages": announcement_messages,
             "support_chat": support_chat,
             "support_messages": support_messages[-20:],
             "support_available": support_user_id is not None,
@@ -3569,6 +3615,8 @@ def patient_appointments(request):
             ON s.staff_id = a.doctor_id
         LEFT JOIN medicare.department AS d
             ON d.department_id = s.department_id
+        LEFT JOIN medicare.department AS appointment_department
+            ON appointment_department.department_id::text = a.location::text
     """
 
     terminal_statuses = (
@@ -3714,7 +3762,7 @@ def patient_appointments(request):
                             OR COALESCE(
                                 array_to_string(s.specializations, ', '), ''
                             ) ILIKE %s
-                            OR COALESCE(d.department_name, '') ILIKE %s
+                            OR COALESCE(appointment_department.department_name, d.department_name, '') ILIKE %s
                             OR COALESCE(a.notes, '') ILIKE %s
                         )
                         """
@@ -3741,12 +3789,16 @@ def patient_appointments(request):
                             ' ', s.first_name, s.last_name
                         ) AS doctor_name,
                         COALESCE(
+                            appointment_department.department_name,
                             NULLIF(
                                 array_to_string(s.specializations, ', '), ''
                             ),
                             d.department_name
                         ) AS speciality,
-                        d.department_name,
+                        COALESCE(
+                            appointment_department.department_name,
+                            d.department_name
+                        ) AS department_name,
                         a.status,
                         a.notes,
                         aq.token_number,
@@ -3754,8 +3806,11 @@ def patient_appointments(request):
                         aq.patients_ahead,
                         aq.queue_status,
                         latest_prediction.predicted_wait_minutes,
-                        latest_prediction.recommended_arrival
+                        latest_prediction.recommended_arrival,
+                        reason.reason AS reason_for_visit
                     {base_from}
+                    LEFT JOIN medicare.reason_for_visit AS reason
+                        ON reason.reason_id = a.reason_id
                     LEFT JOIN medicare.appointment_queue AS aq
                         ON aq.appointment_id = a.appointment_id
                     LEFT JOIN LATERAL (
@@ -3800,6 +3855,7 @@ def patient_appointments(request):
             queue_status,
             estimated_wait,
             recommended_arrival,
+            reason_for_visit,
         ) = row
 
         if schedule_datetime is not None:
@@ -3852,6 +3908,7 @@ def patient_appointments(request):
                 "staff": doctor_name or "Not yet assigned",
                 "speciality": speciality or department or "Specialty unavailable",
                 "department": department,
+                "reason_for_visit": reason_for_visit or "Not provided",
                 "status": status_text,
                 "note": note or "",
                 "token": token_number if category == "upcoming" else None,
@@ -4017,6 +4074,7 @@ def book_patient_appointments(request):
         "reason_id": "",
         "app_type_id": "",
         "schedule_time": "",
+        "notes": "",
     }
     availability_notice = ""
     booking_created = False
@@ -4027,6 +4085,7 @@ def book_patient_appointments(request):
             key: request.POST.get(key, "").strip()
             for key in form_values
         }
+        form_values["notes"] = form_values["notes"][:2000]
 
         required_values = (
             form_values["department_id"],
@@ -4124,7 +4183,8 @@ def book_patient_appointments(request):
                                     s.first_name,
                                     s.last_name,
                                     s.experience,
-                                    s.department_id
+                                    s.department_id,
+                                    s.user_id
                                 FROM medicare.staff AS s
                                 WHERE s.department_id = %s
                                   AND s.active = TRUE
@@ -4180,6 +4240,7 @@ def book_patient_appointments(request):
                                     doctor_last_name,
                                     doctor_experience,
                                     doctor_department_id,
+                                    doctor_user_id,
                                 ) = doctor_row
                                 local_requested_time = timezone.localtime(
                                     requested_time
@@ -4402,6 +4463,7 @@ def book_patient_appointments(request):
                                     "doctor_id": doctor_id,
                                     "doctor_first_name": doctor_first_name,
                                     "doctor_last_name": doctor_last_name,
+                                    "doctor_user_id": doctor_user_id,
                                     "model_type": model_type,
                                     "predicted_minutes": predicted_minutes,
                                     "available_time": candidate_time,
@@ -4425,6 +4487,7 @@ def book_patient_appointments(request):
                             doctor_id = chosen_booking["doctor_id"]
                             doctor_first_name = chosen_booking["doctor_first_name"]
                             doctor_last_name = chosen_booking["doctor_last_name"]
+                            doctor_user_id = chosen_booking["doctor_user_id"]
                             model_type = chosen_booking["model_type"]
                             predicted_minutes = chosen_booking["predicted_minutes"]
                             candidate_time = chosen_booking["available_time"]
@@ -4491,6 +4554,28 @@ def book_patient_appointments(request):
                                 )
                                 daily_token_number = cursor.fetchone()[0] + 1
 
+                                # Notify the doctor again when this patient has
+                                # booked with them before. The new message is
+                                # linked to this appointment, while the chat can
+                                # display the patient's full conversation.
+                                cursor.execute(
+                                    """
+                                    SELECT EXISTS (
+                                        SELECT 1
+                                        FROM medicare.appointments AS prior
+                                        WHERE prior.patient_id = %s
+                                          AND prior.doctor_id = %s
+                                          AND LOWER(COALESCE(prior.status, ''))
+                                              NOT IN (
+                                                  'cancelled', 'canceled',
+                                                  'rejected'
+                                              )
+                                    );
+                                    """,
+                                    (str(patient_id), str(doctor_id)),
+                                )
+                                has_prior_appointment = cursor.fetchone()[0]
+
                                 booking_row = {
                                     "appointment_id": str(proposed_appointment_id),
                                     "patient_id": str(patient_id),
@@ -4528,10 +4613,11 @@ def book_patient_appointments(request):
                                         schedule_time,
                                         booking_time,
                                         estimated_wait_minutes,
-                                        location
+                                        location,
+                                        notes
                                     ) VALUES (
                                         %s, %s, %s, %s, %s,
-                                        %s, %s, %s, %s, %s
+                                        %s, %s, %s, %s, %s, %s
                                     );
                                     """,
                                     (
@@ -4545,8 +4631,40 @@ def book_patient_appointments(request):
                                         now,
                                         predicted_minutes,
                                         str(department_id),
+                                        form_values["notes"] or None,
                                     ),
                                 )
+                                if has_prior_appointment and doctor_user_id:
+                                    local_booking_time = timezone.localtime(
+                                        requested_time
+                                    ).strftime("%A, %B %d, %Y at %I:%M %p")
+                                    cursor.execute(
+                                        """
+                                        INSERT INTO medicare.messages (
+                                            sender_id,
+                                            receiver_id,
+                                            appointment_id,
+                                            message_content,
+                                            sent_at,
+                                            status
+                                        )
+                                        VALUES (
+                                            %s, %s, %s, %s,
+                                            CURRENT_TIMESTAMP, 'sent'
+                                        );
+                                        """,
+                                        (
+                                            str(request.user.id),
+                                            str(doctor_user_id),
+                                            str(proposed_appointment_id),
+                                            (
+                                                "Hello, I have booked another "
+                                                "appointment with you for "
+                                                f"{local_booking_time}. "
+                                                "Thank you."
+                                            ),
+                                        ),
+                                    )
                                 cursor.execute(
                                     """
                                     INSERT INTO medicare.queue_predictions (
@@ -5047,15 +5165,538 @@ def staff_doctor_edit(request, doctor_id):
 
 @role_required("Admin")
 def admin_dashboard(request):
-
-    return render(
-        request,
-        "admins/dashboard.html",
-        {
-            "page_title": "Admin Dashboard",
-            "breadcrumb": "Admin",
-        },
+    today = timezone.localdate()
+    timezone_now = timezone.now()
+    local_now = timezone.localtime(timezone_now)
+    tz = timezone.get_current_timezone()
+    month_start_date = date(today.year, today.month, 1)
+    next_month_start_date = (
+        date(today.year + 1, 1, 1)
+        if today.month == 12
+        else date(today.year, today.month + 1, 1)
     )
+    month_start = timezone.make_aware(
+        datetime.combine(month_start_date, time.min), tz
+    )
+    next_month_start = timezone.make_aware(
+        datetime.combine(next_month_start_date, time.min), tz
+    )
+    today_start = timezone.make_aware(datetime.combine(today, time.min), tz)
+    tomorrow_start = today_start + timedelta(days=1)
+    yesterday_start = today_start - timedelta(days=1)
+
+    def trend(current, previous, higher_is_better=True):
+        current = float(current or 0)
+        previous = float(previous or 0)
+        percent = (
+            100.0 if previous == 0 and current > 0
+            else 0.0 if previous == 0
+            else (current - previous) * 100.0 / previous
+        )
+        percent = round(percent)
+        improving = percent >= 0 if higher_is_better else percent <= 0
+        return {
+            "value": percent,
+            "direction": "up" if percent >= 0 else "down",
+            "tone": "positive" if improving else "negative",
+        }
+
+    context = {
+        "page_title": "Admin Dashboard",
+        "breadcrumb": "Admin",
+        "total_appointments": 0,
+        "appointments_trend": 0,
+        "appointments_trend_direction": "up",
+        "appointments_trend_tone": "positive",
+        "patients_visited": 0,
+        "patients_visited_trend": 0,
+        "patients_visited_trend_direction": "up",
+        "patients_visited_trend_tone": "positive",
+        "average_waiting_time": 0,
+        "average_waiting_time_unit": "min",
+        "waiting_time_trend": 0,
+        "waiting_time_trend_direction": "up",
+        "waiting_time_trend_tone": "positive",
+        "active_doctors": 0,
+        "scheduled_doctors": 0,
+        "support_staff": 0,
+        "scheduled_support_staff": 0,
+        "registered_patients": 0,
+        "department_appointments_total": 0,
+        "department_appointments": [],
+        "department_appointments_gradient": "conic-gradient(var(--admin-border) 0% 100%)",
+        "patient_demographics": [],
+        "todays_appointments": [],
+        "live_queue": [],
+        "queue_patient_count": 0,
+        "queue_average_duration": 0,
+        "recent_registrations": [],
+        "upcoming_doctor_schedule": [],
+    }
+
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        messages.error(request, "Dashboard data is temporarily unavailable.")
+        return render(request, "admins/dashboard.html", context)
+
+    try:
+        with psycopg2.connect(database_url) as db:
+            with db.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT
+                        COUNT(*) FILTER (
+                            WHERE a.schedule_time >= %s
+                              AND a.schedule_time < %s
+                        ) AS appointments_this_month,
+                        COUNT(*) FILTER (
+                            WHERE a.schedule_time >= %s
+                              AND a.schedule_time < %s
+                        ) AS appointments_today,
+                        COUNT(*) FILTER (
+                            WHERE a.schedule_time >= %s
+                              AND a.schedule_time < %s
+                        ) AS appointments_yesterday,
+                        COUNT(DISTINCT a.patient_id) FILTER (
+                            WHERE a.schedule_time >= %s
+                              AND a.schedule_time < %s
+                              AND LOWER(COALESCE(a.status, '')) = 'completed'
+                        ) AS patients_visited_today,
+                        COUNT(DISTINCT a.patient_id) FILTER (
+                            WHERE a.schedule_time >= %s
+                              AND a.schedule_time < %s
+                              AND LOWER(COALESCE(a.status, '')) = 'completed'
+                        ) AS patients_visited_yesterday,
+                        AVG(a.estimated_wait_minutes) FILTER (
+                            WHERE a.schedule_time >= %s
+                              AND a.schedule_time < %s
+                        ) AS duration_today,
+                        AVG(a.estimated_wait_minutes) FILTER (
+                            WHERE a.schedule_time >= %s
+                              AND a.schedule_time < %s
+                        ) AS duration_yesterday
+                    FROM medicare.appointments AS a
+                    WHERE a.schedule_time >= %s
+                      AND a.schedule_time < %s;
+                    """,
+                    (
+                        month_start, next_month_start,
+                        today_start, tomorrow_start,
+                        yesterday_start, today_start,
+                        today_start, tomorrow_start,
+                        yesterday_start, today_start,
+                        month_start, next_month_start,
+                        today_start, tomorrow_start,
+                        yesterday_start, today_start,
+                    ),
+                )
+                stats = cursor.fetchone()
+                (
+                    total_appointments,
+                    appointments_today,
+                    appointments_yesterday,
+                    patients_visited_today,
+                    patients_visited_yesterday,
+                    duration_today,
+                    duration_yesterday,
+                ) = stats
+                appointments_change = trend(appointments_today, appointments_yesterday)
+                patients_change = trend(patients_visited_today, patients_visited_yesterday)
+                duration_change = trend(duration_today, duration_yesterday, higher_is_better=False)
+                context.update({
+                    "total_appointments": total_appointments or 0,
+                    "appointments_trend": appointments_change["value"],
+                    "appointments_trend_direction": appointments_change["direction"],
+                    "appointments_trend_tone": appointments_change["tone"],
+                    "patients_visited": patients_visited_today or 0,
+                    "patients_visited_trend": patients_change["value"],
+                    "patients_visited_trend_direction": patients_change["direction"],
+                    "patients_visited_trend_tone": patients_change["tone"],
+                    "average_waiting_time": round(float(duration_today or 0)),
+                    "waiting_time_trend": duration_change["value"],
+                    "waiting_time_trend_direction": duration_change["direction"],
+                    "waiting_time_trend_tone": duration_change["tone"],
+                })
+
+                cursor.execute(
+                    """
+                    SELECT
+                        COUNT(DISTINCT s.staff_id) FILTER (
+                            WHERE LOWER(sl.staff_level) LIKE '%%doctor%%'
+                        ) AS active_doctors,
+                        COUNT(DISTINCT s.staff_id) FILTER (
+                            WHERE LOWER(sl.staff_level) LIKE '%%doctor%%'
+                              AND sch.schedule_id IS NOT NULL
+                        ) AS scheduled_doctors,
+                        COUNT(DISTINCT s.staff_id) FILTER (
+                            WHERE LOWER(sl.staff_level) NOT LIKE '%%doctor%%'
+                        ) AS support_staff,
+                        COUNT(DISTINCT s.staff_id) FILTER (
+                            WHERE LOWER(sl.staff_level) NOT LIKE '%%doctor%%'
+                              AND sch.schedule_id IS NOT NULL
+                        ) AS scheduled_support_staff
+                    FROM medicare.staff AS s
+                    JOIN medicare.staff_levels AS sl
+                      ON sl.staff_level_id = s.staff_level_id
+                    LEFT JOIN medicare.schedule AS sch
+                      ON sch.staff_id = s.staff_id
+                     AND sch.active = TRUE
+                     AND (
+                         sch.day_of_week IS NULL
+                         OR LOWER(sch.day_of_week::text) = LOWER(%s)
+                     )
+                    WHERE s.active = TRUE;
+                    """,
+                    (today.strftime("%A"),),
+                )
+                staff_stats = cursor.fetchone()
+                context.update({
+                    "active_doctors": staff_stats[0] or 0,
+                    "scheduled_doctors": staff_stats[1] or 0,
+                    "support_staff": staff_stats[2] or 0,
+                    "scheduled_support_staff": staff_stats[3] or 0,
+                })
+
+                cursor.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM medicare.patients AS p
+                    JOIN medicare.users AS u
+                      ON u.user_id = p.user_id
+                    WHERE u.created_at >= %s
+                      AND u.created_at < %s;
+                    """,
+                    (month_start, next_month_start),
+                )
+                context["registered_patients"] = cursor.fetchone()[0] or 0
+
+                cursor.execute(
+                    """
+                    SELECT
+                        CASE
+                            WHEN p.dob IS NULL THEN 'Unknown'
+                            WHEN DATE_PART('year', AGE(CURRENT_DATE, p.dob)) < 18 THEN 'Under 18'
+                            WHEN DATE_PART('year', AGE(CURRENT_DATE, p.dob)) < 30 THEN '18–29'
+                            WHEN DATE_PART('year', AGE(CURRENT_DATE, p.dob)) < 45 THEN '30–44'
+                            WHEN DATE_PART('year', AGE(CURRENT_DATE, p.dob)) < 60 THEN '45–59'
+                            ELSE '60+'
+                        END AS age_group,
+                        COUNT(*)
+                    FROM medicare.patients AS p
+                    JOIN medicare.users AS u
+                      ON u.user_id = p.user_id
+                    WHERE u.created_at >= %s
+                      AND u.created_at < %s
+                    GROUP BY age_group
+                    ORDER BY MIN(p.dob) NULLS LAST;
+                    """,
+                    (month_start, next_month_start),
+                )
+                demographic_counts = dict(cursor.fetchall())
+                demographic_labels = ["Under 18", "18–29", "30–44", "45–59", "60+", "Unknown"]
+                demographic_total = sum(demographic_counts.values())
+                context["patient_demographics"] = [
+                    {
+                        "label": label,
+                        "percentage": round(demographic_counts.get(label, 0) * 100 / demographic_total)
+                        if demographic_total else 0,
+                        "bar_height": max(
+                            4,
+                            round(demographic_counts.get(label, 0) * 100 / demographic_total),
+                        ) if demographic_total else 4,
+                    }
+                    for label in demographic_labels
+                ]
+
+                cursor.execute(
+                    """
+                    SELECT
+                        COALESCE(d.department_name, 'Other departments') AS name,
+                        COUNT(*) AS appointment_count
+                    FROM medicare.appointments AS a
+                    LEFT JOIN medicare.staff AS s
+                      ON s.staff_id = a.doctor_id
+                    LEFT JOIN medicare.department AS d
+                      ON d.department_id::text = COALESCE(
+                          a.location::text, s.department_id::text
+                      )
+                    WHERE a.schedule_time >= %s
+                      AND a.schedule_time < %s
+                    GROUP BY 1
+                    ORDER BY appointment_count DESC, name ASC;
+                    """,
+                    (month_start, next_month_start),
+                )
+                department_rows = cursor.fetchall()
+                department_total = sum(row[1] for row in department_rows)
+                top_departments = department_rows[:5]
+                other_count = sum(row[1] for row in department_rows[5:])
+                if other_count:
+                    top_departments.append(("Other departments", other_count))
+                department_colors = [
+                    "var(--admin-primary)",
+                    "oklch(0.72 0.12 170)",
+                    "oklch(0.72 0.12 300)",
+                    "oklch(0.78 0.08 245)",
+                    "oklch(0.72 0.12 350)",
+                    "var(--admin-border)",
+                ]
+                department_appointments = []
+                gradient_parts = []
+                cumulative_percent = 0.0
+                for index, (name, count) in enumerate(top_departments):
+                    percentage = count * 100 / department_total if department_total else 0
+                    normalized_name = name.casefold()
+                    if "cardio" in normalized_name:
+                        slug = "cardiology"
+                    elif "dermat" in normalized_name:
+                        slug = "dermatology"
+                    elif "ortho" in normalized_name:
+                        slug = "orthopedics"
+                    elif "pediat" in normalized_name:
+                        slug = "pediatrics"
+                    elif "gyne" in normalized_name:
+                        slug = "gynecology"
+                    elif "general" in normalized_name:
+                        slug = "general"
+                    else:
+                        slug = "others"
+                    department_appointments.append({
+                        "name": name,
+                        "slug": slug,
+                        "count": count,
+                        "percentage": round(percentage),
+                        "color": department_colors[min(index, len(department_colors) - 1)],
+                    })
+                    if department_total:
+                        end_percent = cumulative_percent + percentage
+                        gradient_parts.append(
+                            f"{department_colors[min(index, len(department_colors) - 1)]} "
+                            f"{cumulative_percent:.2f}% {end_percent:.2f}%"
+                        )
+                        cumulative_percent = end_percent
+                if gradient_parts:
+                    context["department_appointments_gradient"] = (
+                        "conic-gradient(" + ", ".join(gradient_parts) + ")"
+                    )
+                context.update({
+                    "department_appointments_total": department_total,
+                    "department_appointments": department_appointments,
+                })
+
+                cursor.execute(
+                    """
+                    SELECT
+                        a.schedule_time,
+                        CONCAT_WS(' ', p.first_name, p.last_name) AS patient_name,
+                        CONCAT_WS(' ', s.first_name, s.last_name) AS doctor_name,
+                        COALESCE(d.department_name, 'Unassigned') AS department,
+                        COALESCE(a.status, 'Scheduled') AS status
+                    FROM medicare.appointments AS a
+                    LEFT JOIN medicare.patients AS p
+                      ON p.patient_id = a.patient_id
+                    LEFT JOIN medicare.staff AS s
+                      ON s.staff_id = a.doctor_id
+                    LEFT JOIN medicare.department AS d
+                      ON d.department_id::text = COALESCE(
+                          a.location::text, s.department_id::text
+                      )
+                    WHERE a.schedule_time >= %s
+                      AND a.schedule_time < %s
+                    ORDER BY a.schedule_time ASC
+                    LIMIT 8;
+                    """,
+                    (today_start, tomorrow_start),
+                )
+                todays_appointments = []
+                for appointment_time, patient_name, doctor_name, department, status in cursor.fetchall():
+                    status_text = str(status or "Scheduled").replace("_", " ").title()
+                    status_key = str(status or "scheduled").casefold()
+                    if status_key in {"completed", "done"}:
+                        status_class = "completed"
+                    elif status_key in {"in_progress", "consultation", "called", "arrived", "checked_in"}:
+                        status_class = "consultation"
+                    elif status_key in {"waiting", "pending"}:
+                        status_class = "waiting"
+                    else:
+                        status_class = "scheduled"
+                    if appointment_time is not None:
+                        if timezone.is_naive(appointment_time):
+                            appointment_time = timezone.make_aware(appointment_time, tz)
+                        appointment_time = timezone.localtime(appointment_time)
+                    todays_appointments.append({
+                        "time": appointment_time.strftime("%I:%M %p").lstrip("0")
+                        if appointment_time else "Time unavailable",
+                        "patient_name": patient_name or "Patient",
+                        "doctor_name": doctor_name or "Unassigned",
+                        "department": department or "Unassigned",
+                        "status": status_text,
+                        "status_class": status_class,
+                    })
+                context["todays_appointments"] = todays_appointments
+
+                cursor.execute(
+                    """
+                    SELECT
+                        COALESCE(d.department_name, 'Unassigned') AS department,
+                        COUNT(*) AS waiting_count,
+                        MAX(aq.token_number) AS latest_token,
+                        ROUND(AVG(a.estimated_wait_minutes)) AS average_duration
+                    FROM medicare.appointments AS a
+                    LEFT JOIN medicare.appointment_queue AS aq
+                      ON aq.appointment_id = a.appointment_id
+                    LEFT JOIN medicare.staff AS s
+                      ON s.staff_id = a.doctor_id
+                    LEFT JOIN medicare.department AS d
+                      ON d.department_id::text = COALESCE(
+                          a.location::text, s.department_id::text
+                      )
+                    WHERE a.schedule_time >= %s
+                      AND a.schedule_time < %s
+                      AND LOWER(COALESCE(a.status, '')) NOT IN (
+                          'cancelled', 'canceled', 'completed', 'rejected',
+                          'no_show', 'no-show'
+                      )
+                    GROUP BY 1
+                    ORDER BY waiting_count DESC, department ASC
+                    """,
+                    (today_start, tomorrow_start),
+                )
+                live_queue = []
+                for department, waiting_count, latest_token, average_duration in cursor.fetchall():
+                    live_queue.append({
+                        "department": department,
+                        "waiting_count": waiting_count,
+                        "latest_token": latest_token,
+                        "average_duration": average_duration or 0,
+                        "status": "Busy" if waiting_count >= 5 else "Active",
+                        "status_class": "busy" if waiting_count >= 5 else "active",
+                    })
+                context["live_queue"] = live_queue
+                context["queue_patient_count"] = sum(item["waiting_count"] for item in live_queue)
+                queue_duration_total = sum(
+                    item["average_duration"] * item["waiting_count"]
+                    for item in live_queue
+                )
+                context["queue_average_duration"] = round(
+                    queue_duration_total / context["queue_patient_count"]
+                ) if context["queue_patient_count"] else 0
+
+                cursor.execute(
+                    """
+                    SELECT
+                        CONCAT_WS(' ', p.first_name, p.last_name) AS name,
+                        p.dob,
+                        p.gender,
+                        p.contact,
+                        u.created_at,
+                        COALESCE(u.status, 'Active') AS status
+                    FROM medicare.patients AS p
+                    JOIN medicare.users AS u
+                      ON u.user_id = p.user_id
+                    WHERE u.created_at >= %s
+                      AND u.created_at < %s
+                    ORDER BY u.created_at DESC NULLS LAST
+                    LIMIT 5;
+                    """,
+                    (month_start, next_month_start),
+                )
+                recent_registrations = []
+                for name, dob, gender, contact, created_at, status in cursor.fetchall():
+                    age = None
+                    if dob:
+                        age = today.year - dob.year - (
+                            (today.month, today.day) < (dob.month, dob.day)
+                        )
+                    name = name or "Patient"
+                    initials = "".join(part[0] for part in name.split()[:2] if part)
+                    status_text = str(status or "Active").replace("_", " ").title()
+                    recent_registrations.append({
+                        "name": name,
+                        "initials": initials or "P",
+                        "age_gender": f"{age if age is not None else '—'} / {gender or '—'}",
+                        "contact": contact or "Not provided",
+                        "registered_on": timezone.localtime(created_at).strftime("%d %b %Y")
+                        if created_at and timezone.is_aware(created_at)
+                        else created_at.strftime("%d %b %Y") if created_at else "Date unavailable",
+                        "status": status_text,
+                        "status_class": "completed" if str(status).casefold() == "active" else "waiting",
+                    })
+                context["recent_registrations"] = recent_registrations
+
+                cursor.execute(
+                    """
+                    SELECT
+                        s.staff_id,
+                        CONCAT_WS(' ', s.first_name, s.last_name) AS doctor_name,
+                        d.department_name,
+                        sch.start_time,
+                        sch.end_time,
+                        COALESCE(appointments_today.appointment_count, 0)
+                    FROM medicare.staff AS s
+                    JOIN medicare.staff_levels AS sl
+                      ON sl.staff_level_id = s.staff_level_id
+                    JOIN medicare.department AS d
+                      ON d.department_id = s.department_id
+                    JOIN medicare.schedule AS sch
+                      ON sch.staff_id = s.staff_id
+                     AND sch.active = TRUE
+                     AND (
+                         sch.day_of_week IS NULL
+                         OR LOWER(sch.day_of_week::text) = LOWER(%s)
+                     )
+                    LEFT JOIN LATERAL (
+                        SELECT COUNT(*) AS appointment_count
+                        FROM medicare.appointments AS a
+                        WHERE a.doctor_id = s.staff_id
+                          AND a.schedule_time >= %s
+                          AND a.schedule_time < %s
+                          AND LOWER(COALESCE(a.status, '')) NOT IN (
+                              'cancelled', 'canceled', 'completed', 'rejected',
+                              'no_show', 'no-show'
+                          )
+                    ) AS appointments_today ON TRUE
+                    WHERE s.active = TRUE
+                       AND LOWER(sl.staff_level) LIKE '%%doctor%%'
+                    ORDER BY sch.start_time, s.first_name, s.last_name
+                    LIMIT 12;
+                    """,
+                    (today.strftime("%A"), today_start, tomorrow_start),
+                )
+                schedules_by_doctor = {}
+                for staff_id, doctor_name, department, start_time, end_time, appointment_count in cursor.fetchall():
+                    key = str(staff_id)
+                    doctor = schedules_by_doctor.setdefault(key, {
+                        "name": doctor_name or "Doctor",
+                        "department": department or "Unassigned",
+                        "hours": [],
+                        "appointment_count": appointment_count or 0,
+                        "on_duty": False,
+                    })
+                    doctor["hours"].append((start_time, end_time))
+                    if start_time <= local_now.time().replace(tzinfo=None) <= end_time:
+                        doctor["on_duty"] = True
+                upcoming_schedule = []
+                for doctor in schedules_by_doctor.values():
+                    hours = [
+                        f"{start.strftime('%I:%M %p').lstrip('0')}–{end.strftime('%I:%M %p').lstrip('0')}"
+                        for start, end in doctor["hours"]
+                    ]
+                    upcoming_schedule.append({
+                        "name": doctor["name"],
+                        "initials": "".join(part[0] for part in doctor["name"].split()[:2] if part),
+                        "department": doctor["department"],
+                        "hours": ", ".join(hours),
+                        "appointment_count": doctor["appointment_count"],
+                        "status": "On Duty" if doctor["on_duty"] else "Off Duty",
+                        "status_class": "is-on-duty" if doctor["on_duty"] else "is-off-duty",
+                    })
+                context["upcoming_doctor_schedule"] = upcoming_schedule
+    except Exception:
+        logger.exception("Unable to load admin dashboard data.")
+        messages.error(request, "Some dashboard data could not be loaded.")
+
+    return render(request, "admins/dashboard.html", context)
 
 
 

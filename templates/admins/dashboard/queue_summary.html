@@ -36,11 +36,11 @@
         <div class="admin-live-queue-summary-card__info">
 
             <span class="admin-live-queue-summary-card__title">
-                Total Patients in Queue
+                Appointments in Queue
             </span>
 
             <span class="admin-live-queue-summary-card__value">
-                21
+                {{ queue_patient_count }}
             </span>
 
             <span class="admin-live-queue-summary-card__sub">
@@ -65,15 +65,15 @@
         <div class="admin-live-queue-summary-card__info">
 
             <span class="admin-live-queue-summary-card__title">
-                Estimated Wait Time
+                Average Predicted Duration
             </span>
 
             <span class="admin-live-queue-summary-card__value">
-                18 min
+                {{ queue_average_duration }} min
             </span>
 
             <span class="admin-live-queue-summary-card__sub">
-                On average
+                For active appointments today
             </span>
 
         </div>

@@ -7,6 +7,7 @@
                 data-speciality="{{ appointment.speciality }}"
                 data-type="{{ appointment.type }}"
                 data-status="{{ appointment.status }}"
+                data-reason="{{ appointment.reason_for_visit|default:'' }}"
                 data-note="{{ appointment.note }}"
                 data-token="{{ appointment.token|default:'' }}"
                 data-estimated-wait="{{ appointment.estimated_wait|default_if_none:'' }}"
@@ -57,7 +58,12 @@
                 <div class="apt-card-type">
                     <span class="apt-card-label">Appointment type</span>
                     <span class="apt-type">{{ appointment.type|default:"Consultation" }}</span>
-                    <span class="apt-id">ID: {{ appointment.appointment_id }}</span>
+                    <span class="apt-id" title="Appointment ID: {{ appointment.appointment_id }}">ID: {{ appointment.appointment_id }}</span>
+                </div>
+
+                <div class="apt-card-reason">
+                    <span class="apt-card-label">Reason for visit</span>
+                    <span>{{ appointment.reason_for_visit|default:"Not provided" }}</span>
                 </div>
 
                 <div class="apt-card-status">
