@@ -2,7 +2,6 @@ from django.urls import reverse
 
 
 def get_patient_navigation():
-
     return [
         {
             "id": "dashboard",
@@ -51,6 +50,12 @@ def get_patient_navigation():
                     "url": reverse("patient_appointments") + "?status=past",
                 },
             ],
+        },
+        {
+            "id": "messages",
+            "label": "Messages",
+            "icon": "messages-square",
+            "url": reverse("patient_messages"),
         },
     ]
 

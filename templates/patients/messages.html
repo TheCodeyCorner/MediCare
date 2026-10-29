@@ -1,0 +1,407 @@
+ 
+{% extends "patients/base.html" %}
+{% load static %}
+
+{% block patient_title %}Messages | Medicare{% endblock %}
+
+{% block content %}
+<section class="patient-page patient-messages-page"
+         data-current-user-id="{{ patient_user_id }}">
+
+    <!-- Message overview -->
+    <section class="patient-messages-stats" aria-label="Message overview">
+        <article class="patient-card patient-messages-stat">
+            <div class="patient-messages-stat__top">
+                <span>Total conversations</span>
+                <span class="patient-messages-stat__icon">✉</span>
+            </div>
+            <strong>{{ total_conversations|default:0 }}</strong>
+            <p>Your message history</p>
+        </article>
+
+        <article class="patient-card patient-messages-stat">
+            <div class="patient-messages-stat__top">
+                <span>Unread messages</span>
+                <span class="patient-messages-stat__icon patient-messages-stat__icon--amber">●</span>
+            </div>
+            <strong>{{ unread_messages|default:0 }}</strong>
+            <p>Messages awaiting your attention</p>
+        </article>
+
+        <article class="patient-card patient-messages-stat">
+            <div class="patient-messages-stat__top">
+                <span>Active chats</span>
+                <span class="patient-messages-stat__icon patient-messages-stat__icon--blue">↔</span>
+            </div>
+            <strong>{{ active_chats|default:0 }}</strong>
+            <p>Conversations you can reply to</p>
+        </article>
+
+        <article class="patient-card patient-messages-stat">
+            <div class="patient-messages-stat__top">
+                <span>Announcements</span>
+                <span class="patient-messages-stat__icon patient-messages-stat__icon--rose">!</span>
+            </div>
+            <strong>{{ announcement_count|default:0 }}</strong>
+            <p>Updates from Medicare</p>
+        </article>
+    </section>
+
+    <section class="patient-messages-workspace" aria-label="Messaging workspace">
+
+        <!-- Conversation list -->
+        <aside class="patient-card patient-messages-list-panel">
+            <div class="patient-messages-list-panel__header">
+                <div>
+                    <h2 class="patient-card__title">Conversations</h2>
+                    <p class="patient-card__subtitle">
+                        Your support and appointment chats
+                    </p>
+                </div>
+
+                <label class="patient-messages-search">
+                    <span class="patient-messages-sr-only">Search conversations</span>
+                    <input type="search"
+                           data-conversation-search
+                           placeholder="Search conversations...">
+                </label>
+            </div>
+
+            <div class="patient-messages-tabs" role="group" aria-label="Filter conversations">
+                <button type="button" class="is-active" data-message-filter="all">
+                    All
+                </button>
+                <button type="button" data-message-filter="unread">
+                    Unread
+                </button>
+            </div>
+
+            <div class="patient-messages-conversation-list" data-conversation-list>
+
+                <!-- Announcements: read-only -->
+                <button type="button"
+                        class="patient-messages-conversation is-active"
+                        data-chat-id="announcements"
+                        data-chat-type="announcements"
+                        data-chat-can-chat=false
+                        data-can-chat=false
+                        data-chat-name="Announcements"
+                        data-chat-subtitle="Official updates from Medicare"
+                        data-chat-context="Important updates and notices from Medicare."
+                        data-chat-avatar="A"
+                        aria-pressed="true">
+
+                    <span class="patient-messages-avatar patient-messages-avatar--announcements">A</span>
+
+                    <span class="patient-messages-conversation__content">
+                        <span class="patient-messages-conversation__top">
+                            <strong>Announcements</strong>
+                            <span class="patient-messages-conversation__time">Official</span>
+                        </span>
+                        <span class="patient-messages-conversation__preview">
+                            Updates from Medicare
+                        </span>
+                        <span class="patient-messages-conversation__meta">Read only</span>
+                    </span>
+                </button>
+
+                <!-- Customer Care -->
+                <button type="button"
+                        class="patient-messages-conversation"
+                        data-chat-id="customer-care"
+                        data-chat-type="support"
+                        data-chat-can-chat="{% if support_available %}true{% else %}false{% endif %}"
+                        data-can-chat="{% if support_available %}true{% else %}false{% endif %}"
+                        data-chat-name="Customer Care"
+                        data-chat-subtitle="Medicare Support"
+                        data-chat-context="Contact support for general account and platform assistance."
+                        data-chat-avatar="?"
+                        aria-pressed="false">
+
+                    <span class="patient-messages-avatar patient-messages-avatar--support">?</span>
+
+                    <span class="patient-messages-conversation__content">
+                        <span class="patient-messages-conversation__top">
+                            <strong>Customer Care</strong>
+                            <span class="patient-messages-conversation__time">Support</span>
+                        </span>
+                        <span class="patient-messages-conversation__preview">
+                            Contact Medicare support
+                        </span>
+                        <span class="patient-messages-conversation__meta">
+                            General assistance
+                        </span>
+                    </span>
+                </button>
+
+                <!-- Appointment conversations -->
+                {% for chat in chats %}
+                    <button type="button"
+                            class="patient-messages-conversation"
+                            data-chat-id="{{ chat.appointment_id|default:chat.chat_id }}"
+                            data-chat-type="appointment"
+                            data-chat-can-chat="{% if chat.can_chat %}true{% else %}false{% endif %}"
+                            data-can-chat="{% if chat.can_chat %}true{% else %}false{% endif %}"
+                            data-chat-name="{{ chat.doctor_name|default:'Care team' }}"
+                            data-chat-subtitle="Appointment conversation"
+                            data-chat-context="{{ chat.appointment_label|default:'Messages related to your appointment.' }}"
+                            data-chat-avatar="{{ chat.doctor_name|default:'C'|slice:':1'|upper }}"
+                            data-appointment-label="{{ chat.appointment_label|default:'Appointment conversation' }}"
+                            data-doctor-name="{{ chat.doctor_name|default:'Care team' }}"
+                            data-unread="{% if chat.unread_count %}true{% else %}false{% endif %}"
+                            aria-pressed="false">
+
+                        <span class="patient-messages-avatar">
+                            {{ chat.doctor_name|default:"Care team"|slice:":1"|upper }}
+                        </span>
+
+                        <span class="patient-messages-conversation__content">
+                            <span class="patient-messages-conversation__top">
+                                <strong>{{ chat.doctor_name|default:"Care team" }}</strong>
+                                {% if chat.last_message_at %}
+                                    <span class="patient-messages-conversation__time">
+                                        {{ chat.last_message_at|date:"M j" }}
+                                    </span>
+                                {% endif %}
+                            </span>
+
+                            <span class="patient-messages-conversation__preview">
+                                {{ chat.last_message|default:chat.appointment_label|default:"Appointment conversation" }}
+                            </span>
+
+                            <span class="patient-messages-conversation__meta">
+                                {% if chat.can_chat %}
+                                    Messaging available
+                                {% else %}
+                                    {{ chat.lock_reason|default:"Read only" }}
+                                {% endif %}
+                            </span>
+                        </span>
+
+                        {% if chat.unread_count %}
+                            <span class="patient-messages-unread">
+                                {{ chat.unread_count }}
+                            </span>
+                        {% endif %}
+                    </button>
+                {% endfor %}
+
+                {% if not chats %}
+                    <p class="patient-messages-list-empty">
+                        Your appointment conversations will appear here.
+                    </p>
+                {% endif %}
+            </div>
+        </aside>
+
+        <!-- Selected conversation -->
+        <section class="patient-card patient-messages-chat-panel"
+                 aria-label="Selected conversation">
+
+            <header class="patient-messages-chat-header">
+                <span class="patient-messages-avatar"
+                      data-active-avatar>A</span>
+
+                <div class="patient-messages-chat-header__identity">
+                    <h2 class="patient-card__title" data-active-name>
+                        Announcements
+                    </h2>
+                    <p class="patient-card__subtitle" data-active-subtitle>
+                        Official updates from Medicare
+                    </p>
+                </div>
+
+                <span class="patient-messages-status" data-active-status>
+                    Read only
+                </span>
+            </header>
+
+            <div class="patient-messages-chat-context" data-active-context>
+                Important updates and notices from Medicare.
+            </div>
+
+            <!-- Announcements thread -->
+            <div class="patient-messages-thread"
+                 data-chat-thread="announcements"
+                 role="log"
+                 aria-live="polite">
+
+                {% for message in announcement_messages %}
+                    <article class="patient-messages-message {% if message.is_mine %}patient-messages-message--mine{% else %}patient-messages-message--theirs{% endif %}">
+                        <div class="patient-messages-bubble">
+                            <p>{{ message.message_content|linebreaksbr }}</p>
+                            <time datetime="{{ message.sent_at|date:'c' }}">
+                                {{ message.sent_at|date:"M j, Y · g:i A" }}
+                            </time>
+                        </div>
+                    </article>
+                {% empty %}
+                    <div class="patient-messages-empty-thread">
+                        <span class="patient-messages-empty-thread__icon">A</span>
+                        <h3>No announcements yet</h3>
+                        <p>New Medicare announcements will appear here.</p>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Customer Care thread -->
+            <div class="patient-messages-thread"
+                 data-chat-thread="customer-care"
+                 role="log"
+                 aria-live="polite"
+                 hidden>
+
+                {% for message in support_messages %}
+                    <article class="patient-messages-message {% if message.is_mine %}patient-messages-message--mine{% else %}patient-messages-message--theirs{% endif %}">
+                        <div class="patient-messages-bubble">
+                            <p>{{ message.message_content|linebreaksbr }}</p>
+                            <time datetime="{{ message.sent_at|date:'c' }}">
+                                {{ message.sent_at|date:"M j, Y · g:i A" }}
+                            </time>
+                        </div>
+                    </article>
+                {% empty %}
+                    <div class="patient-messages-empty-thread">
+                        <span class="patient-messages-empty-thread__icon">?</span>
+                        <h3>How can we help?</h3>
+                        <p>Send Customer Care a message about your account or using Medicare.</p>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Appointment threads -->
+            {% for chat in chats %}
+                <div class="patient-messages-thread"
+                     data-chat-thread="{{ chat.appointment_id|default:chat.chat_id }}"
+                     role="log"
+                     aria-live="polite"
+                     hidden>
+
+                    {% if not chat.can_chat %}
+                        <div class="patient-messages-closed-notice">
+                            <strong>This conversation is read only</strong>
+                            <p>
+                                {{ chat.lock_reason|default:"The messaging period for this appointment has ended." }}
+                                You can still read your previous messages.
+                            </p>
+                        </div>
+                    {% endif %}
+
+                    {% for message in chat.messages %}
+                        <article class="patient-messages-message {% if message.is_mine %}patient-messages-message--mine{% else %}patient-messages-message--theirs{% endif %}">
+                            <div class="patient-messages-bubble">
+                                <p>{{ message.message_content|linebreaksbr }}</p>
+                                <time datetime="{{ message.sent_at|date:'c' }}">
+                                    {{ message.sent_at|date:"M j, Y · g:i A" }}
+                                </time>
+                            </div>
+                        </article>
+                    {% empty %}
+                        <div class="patient-messages-empty-thread">
+                            <h3>No messages yet</h3>
+                            <p>Messages about this appointment will appear here.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+            <!-- Composer -->
+            <footer class="patient-messages-composer-area">
+                <p class="patient-messages-readonly-note" data-readonly-note>
+                    Announcements are read-only. You cannot reply here.
+                </p>
+
+                <form class="patient-messages-composer"
+                      method="post"
+                      action="{% url 'patient_messages' %}"
+                      data-message-form
+                      hidden>
+                    {% csrf_token %}
+
+                    <input type="hidden"
+                           name="chat_id"
+                           data-composer-chat-id>
+
+                    <label class="patient-messages-sr-only"
+                           for="patient-message-input">
+                        Write a message
+                    </label>
+
+                    <textarea id="patient-message-input"
+                              name="message_content"
+                              rows="1"
+                              maxlength="5000"
+                              placeholder="Write a message..."
+                              required></textarea>
+
+                    <button type="submit" class="patient-messages-send-button">
+                        Send
+                    </button>
+                </form>
+
+                <p class="patient-messages-composer-help" data-composer-help hidden>
+                    Do not use messaging for emergencies.
+                </p>
+            </footer>
+        </section>
+
+        <!-- Conversation details -->
+        <aside class="patient-card patient-messages-details-panel">
+            <div class="patient-messages-details-section">
+                <span class="patient-messages-details-icon">i</span>
+                <h2 class="patient-card__title">Conversation details</h2>
+                <p class="patient-card__subtitle">
+                    Information about your selected chat.
+                </p>
+            </div>
+
+            <div class="patient-messages-details-section"
+                 data-details-appointment
+                 hidden>
+                <h3>Appointment</h3>
+                <dl class="patient-messages-detail-list">
+                    <div>
+                        <dt>Care team</dt>
+                        <dd data-detail-doctor>—</dd>
+                    </div>
+                    <div>
+                        <dt>Appointment</dt>
+                        <dd data-detail-appointment>—</dd>
+                    </div>
+                    <div>
+                        <dt>Messaging status</dt>
+                        <dd data-detail-status>—</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="patient-messages-details-section" data-details-announcements>
+                <h3>About Announcements</h3>
+                <p>
+                    Official Medicare updates are available here. Announcements
+                    are visible to patients and cannot be replied to.
+                </p>
+            </div>
+
+            <div class="patient-messages-details-section" data-details-support hidden>
+                <h3>Customer Care</h3>
+                <p>
+                    Contact support for general account and platform assistance.
+                    Your conversation history stays available here.
+                </p>
+            </div>
+
+            <div class="patient-messages-help-card">
+                <h3>Need more help?</h3>
+                <p>
+                    For urgent medical concerns, contact your healthcare provider
+                    directly. Do not wait for a message reply.
+                </p>
+                <a href="{% url 'patient_appointments' %}">
+                    View appointments
+                </a>
+            </div>
+        </aside>
+    </section>
+</section>
+{% endblock %}

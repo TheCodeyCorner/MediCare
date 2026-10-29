@@ -25,9 +25,15 @@ urlpatterns = [
     # ============================================================
 
     path("patient/", views.patient_dashboard, name="patient_dashboard"),
-    path("patient/appointments/", views.patient_appointments, name="patient_appointments"),
-    path("patient/medical-records/", views.patient_medical_records, name="patient_medical_records"),
     path("patient/profile/", views.patient_profile, name="patient_profile"),
+    path("patient/medical-records/", views.patient_medical_records, name="patient_medical_records"),
+    path("patient/appointments/", views.patient_appointments, name="patient_appointments"),
+    path("messages/", views.patient_messages, name="patient_messages"),
+    path("patient/messages/", views.patient_messages, name="patient_messages_alias", ),
+    path("patient/messages/<uuid:appointment_id>/", views.patient_chat_messages, name="patient_chat_messages", ),
+    path("patient/messages/<uuid:appointment_id>/send/", views.patient_send_message, name="patient_send_message",),
+    path("patient/messages/support/", views.patient_support_messages, name="patient_support_messages"),
+    path("patient/messages/support/send/", views.patient_send_support_message, name="patient_send_support_message",),
 
     # Patient API
     path("api/patient/profile-popup/dismiss/", views.dismiss_profile_popup, name="dismiss_profile_popup"),

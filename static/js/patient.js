@@ -934,3 +934,526 @@ function getCookie(name) {
     return null;
 
 }
+
+
+
+
+/* ==========================================================================
+ * Patient Messaging
+ * ========================================================================== */
+
+document.addEventListener("DOMContentLoaded", function () {
+    "use strict";
+
+    const form = document.querySelector("[data-message-form]");
+    const chatIdInput = document.querySelector("[data-composer-chat-id]");
+    const messageInput = document.getElementById("patient-message-input");
+
+    if (!form || !chatIdInput || !messageInput) {
+        return;
+    }
+
+    // Prevent duplicate event handlers if this script is loaded more than once.
+    if (form.dataset.messagingBound === "true") {
+        return;
+    }
+    form.dataset.messagingBound = "true";
+
+    const sendButton = form.querySelector('button[type="submit"]');
+    const readonlyNote = document.querySelector("[data-readonly-note]");
+    const composerHelp = document.querySelector("[data-composer-help]");
+
+    const activeName = document.querySelector("[data-active-name]");
+    const activeSubtitle = document.querySelector("[data-active-subtitle]");
+    const activeAvatar = document.querySelector("[data-active-avatar]");
+    const activeStatus = document.querySelector("[data-active-status]");
+    const activeContext = document.querySelector("[data-active-context]");
+
+    const appointmentDetails = document.querySelector(
+        "[data-details-appointment]"
+    );
+    const announcementsDetails = document.querySelector(
+        "[data-details-announcements]"
+    );
+    const supportDetails = document.querySelector("[data-details-support]");
+
+    const detailDoctor = document.querySelector("[data-detail-doctor]");
+    const detailAppointment = document.querySelector(
+        "[data-detail-appointment]"
+    );
+    const detailStatus = document.querySelector("[data-detail-status]");
+
+    const conversationButtons = Array.from(
+        document.querySelectorAll("[data-chat-id][data-chat-type]")
+    );
+
+    const threads = Array.from(
+        document.querySelectorAll("[data-chat-thread]")
+    );
+
+    const csrfInput = form.querySelector(
+        'input[name="csrfmiddlewaretoken"]'
+    );
+
+    const csrfToken = csrfInput
+        ? csrfInput.value
+        : getCookie("csrftoken");
+
+    let activeChat = null;
+    let isSubmitting = false;
+
+    const uuidPattern =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    function setText(element, value) {
+        if (element) {
+            element.textContent = value || "";
+        }
+    }
+
+    function showElement(element, visible) {
+        if (element) {
+            element.hidden = !visible;
+        }
+    }
+
+    function getThreadId(chat) {
+        return chat.dataset.chatId || "";
+    }
+
+    function getChatType(chat) {
+        return chat.dataset.chatType || "";
+    }
+
+    function getChatName(chat) {
+        const title = chat.querySelector(
+            ".patient-messages-conversation__top strong"
+        );
+
+        return chat.dataset.chatName ||
+            title?.textContent.trim() ||
+            "Conversation";
+    }
+
+    function getChatCanChat(chat) {
+        return chat.dataset.chatCanChat === "true" ||
+            chat.dataset.canChat === "true";
+    }
+
+    function getChatStatus(chat) {
+        const meta = chat.querySelector(
+            ".patient-messages-conversation__meta"
+        );
+
+        if (!getChatCanChat(chat)) {
+            return meta?.textContent.trim() || "Read only";
+        }
+
+        return getChatType(chat) === "support"
+            ? "Customer Care"
+            : "Messaging available";
+    }
+
+    function updateComposer(chat) {
+        const type = getChatType(chat);
+        const canChat = getChatCanChat(chat);
+
+        const showComposer =
+            canChat &&
+            (type === "support" || type === "appointment");
+
+        showElement(form, showComposer);
+
+        if (sendButton) {
+            sendButton.disabled = !showComposer || isSubmitting;
+        }
+
+        messageInput.disabled = !showComposer;
+        messageInput.placeholder = type === "support"
+            ? "Message Customer Care..."
+            : "Write a message...";
+
+        showElement(readonlyNote, !showComposer);
+        showElement(composerHelp, showComposer);
+
+        if (readonlyNote) {
+            readonlyNote.textContent = type === "announcements"
+                ? "Announcements are read-only. You cannot reply here."
+                : "This conversation is read-only. You can still view previous messages.";
+        }
+    }
+
+    function updateDetails(chat) {
+        const type = getChatType(chat);
+        const isAppointment = type === "appointment";
+
+        showElement(appointmentDetails, isAppointment);
+        showElement(announcementsDetails, type === "announcements");
+        showElement(supportDetails, type === "support");
+
+        if (isAppointment) {
+            setText(detailDoctor, chat.dataset.doctorName || getChatName(chat));
+            setText(
+                detailAppointment,
+                chat.dataset.appointmentLabel || "Appointment conversation"
+            );
+            setText(detailStatus, getChatStatus(chat));
+        }
+    }
+
+    function selectConversation(chat) {
+        if (!chat) {
+            return;
+        }
+
+        activeChat = chat;
+
+        const chatId = getThreadId(chat);
+        const type = getChatType(chat);
+        const name = getChatName(chat);
+
+        conversationButtons.forEach(function (button) {
+            const selected = button === chat;
+            button.classList.toggle("is-active", selected);
+            button.setAttribute("aria-pressed", String(selected));
+        });
+
+        threads.forEach(function (thread) {
+            thread.hidden = thread.dataset.chatThread !== chatId;
+        });
+
+        chatIdInput.value = chatId;
+
+        setText(activeName, name);
+        setText(
+            activeSubtitle,
+            chat.dataset.chatSubtitle ||
+                (type === "appointment"
+                    ? "Appointment conversation"
+                    : type === "support"
+                        ? "Medicare Support"
+                        : "Official updates from Medicare")
+        );
+
+        setText(
+            activeAvatar,
+            chat.dataset.chatAvatar || name.slice(0, 1).toUpperCase()
+        );
+
+        setText(activeStatus, getChatStatus(chat));
+        setText(
+            activeContext,
+            chat.dataset.chatContext ||
+                "Messages and information for this conversation."
+        );
+
+        updateComposer(chat);
+        updateDetails(chat);
+
+        const visibleThread = threads.find(function (thread) {
+            return thread.dataset.chatThread === chatId;
+        });
+
+        if (visibleThread) {
+            visibleThread.scrollTop = visibleThread.scrollHeight;
+        }
+    }
+
+    
+    // Lightweight message refresh for the currently selected chat.
+    let isRefreshingMessages = false;
+
+    async function refreshActiveMessages() {
+        if (isRefreshingMessages || !activeChat) return;
+
+        const chatId = getThreadId(activeChat);
+        const type = getChatType(activeChat);
+
+        let endpoint;
+
+        if (type === "support") {
+            endpoint = "/patient/messages/support/";
+        } else if (type === "appointment" && uuidPattern.test(chatId)) {
+            endpoint =
+                `/patient/messages/${encodeURIComponent(chatId)}/`;
+        } else {
+            return;
+        }
+
+        const thread = threads.find(
+            item => item.dataset.chatThread === chatId
+        );
+
+        if (!thread) return;
+
+        isRefreshingMessages = true;
+
+        try {
+            const response = await fetch(endpoint, {
+                method: "GET",
+                credentials: "same-origin",
+                headers: { "Accept": "application/json" },
+                cache: "no-store"
+            });
+
+            if (!response.ok) return;
+
+            const result = await response.json();
+            const currentUserId = document.querySelector(
+                "[data-current-user-id]"
+            )?.dataset.currentUserId;
+
+            (result.messages || []).forEach(message => {
+                appendMessage(thread, message, currentUserId);
+            });
+        } catch (error) {
+            // A temporary polling failure should not interrupt composing.
+            console.debug("Message refresh temporarily failed:", error);
+        } finally {
+            isRefreshingMessages = false;
+        }
+    }
+
+    // Refresh while the page is visible. Stop when the tab is in the
+    // background to avoid unnecessary database requests.
+    window.setInterval(function () {
+        if (!document.hidden) {
+            refreshActiveMessages();
+        }
+    }, 4000);
+
+    document.addEventListener("visibilitychange", function () {
+        if (!document.hidden) {
+            refreshActiveMessages();
+        }
+    });
+
+    // Conversation selection
+    conversationButtons.forEach(function (chat) {
+        chat.addEventListener("click", function () {
+            selectConversation(chat);
+        });
+    });
+
+    // Conversation search
+    const searchInput = document.querySelector(
+        "[data-conversation-search]"
+    );
+
+    if (searchInput) {
+        searchInput.addEventListener("input", function () {
+            const query = searchInput.value.trim().toLowerCase();
+
+            conversationButtons.forEach(function (chat) {
+                chat.hidden = !chat.textContent.toLowerCase().includes(query);
+            });
+        });
+    }
+
+    // All / unread filters
+    const filterButtons = document.querySelectorAll(
+        "[data-message-filter]"
+    );
+
+    filterButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            const filter = button.dataset.messageFilter;
+
+            filterButtons.forEach(function (item) {
+                item.classList.toggle("is-active", item === button);
+            });
+
+            conversationButtons.forEach(function (chat) {
+                chat.hidden =
+                    filter === "unread" && chat.dataset.unread !== "true";
+            });
+        });
+    });
+
+    
+    function formatMessageTime(value) {
+        if (!value) return "";
+
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "";
+
+        return new Intl.DateTimeFormat(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit"
+        }).format(date);
+    }
+
+    function appendMessage(thread, message, currentUserId) {
+        if (!thread || !message) return;
+
+        // Avoid duplicates if polling receives a message already appended.
+        if (message.m_id && thread.querySelector(
+            `[data-message-id="${CSS.escape(String(message.m_id))}"]`
+        )) {
+            return;
+        }
+
+        const emptyState = thread.querySelector(
+            ".patient-messages-empty-thread"
+        );
+        if (emptyState) emptyState.remove();
+
+        const mine = String(message.sender_id) === String(currentUserId);
+
+        const article = document.createElement("article");
+        article.className = "patient-messages-message " +
+            (mine
+                ? "patient-messages-message--mine"
+                : "patient-messages-message--theirs");
+
+        if (message.m_id) {
+            article.dataset.messageId = String(message.m_id);
+        }
+
+        const bubble = document.createElement("div");
+        bubble.className = "patient-messages-bubble";
+
+        const paragraph = document.createElement("p");
+        // textContent prevents message content from being interpreted as HTML.
+        paragraph.textContent = message.message_content || "";
+
+        const time = document.createElement("time");
+        const formattedTime = formatMessageTime(message.sent_at);
+        time.textContent = formattedTime;
+
+        if (message.sent_at) {
+            time.dateTime = message.sent_at;
+        }
+
+        bubble.append(paragraph, time);
+        article.appendChild(bubble);
+        thread.appendChild(article);
+
+        thread.scrollTop = thread.scrollHeight;
+    }
+
+    
+    // Submit a message without reloading the page.
+    form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        if (isSubmitting) return;
+
+        if (!activeChat) {
+            alert("Select a conversation first.");
+            return;
+        }
+
+        const chatId = getThreadId(activeChat);
+        const type = getChatType(activeChat);
+        const messageContent = messageInput.value.trim();
+
+        if (!messageContent) {
+            messageInput.focus();
+            return;
+        }
+
+        if (!getChatCanChat(activeChat)) {
+            alert("This conversation is read-only.");
+            return;
+        }
+
+        let endpoint;
+
+        if (type === "support") {
+            endpoint = "/patient/messages/support/send/";
+        } else if (type === "appointment") {
+            if (!uuidPattern.test(chatId)) {
+                alert("The appointment ID is missing or invalid.");
+                return;
+            }
+
+            endpoint =
+                `/patient/messages/${encodeURIComponent(chatId)}/send/`;
+        } else {
+            alert("This conversation does not support sending messages.");
+            return;
+        }
+
+        const submittedText = messageContent;
+
+        isSubmitting = true;
+        if (sendButton) sendButton.disabled = true;
+        messageInput.disabled = true;
+
+        try {
+            const response = await fetch(endpoint, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken || "",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    message_content: submittedText
+                })
+            });
+
+            const result = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                throw new Error(
+                    result.error ||
+                    result.detail ||
+                    `Message sending failed (HTTP ${response.status}).`
+                );
+            }
+
+            if (!result.message) {
+                throw new Error(
+                    "The server saved the request but returned no message data."
+                );
+            }
+
+            // Clear only the text that was submitted. Do not erase any
+            // newer text the patient may have typed while the request ran.
+            if (messageInput.value.trim() === submittedText) {
+                messageInput.value = "";
+            }
+
+            const thread = threads.find(
+                item => item.dataset.chatThread === chatId
+            );
+
+            appendMessage(
+                thread,
+                result.message,
+                document.querySelector("[data-current-user-id]")?.dataset.currentUserId
+            );
+
+        } catch (error) {
+            console.error("Patient message submission failed:", error);
+            alert(error.message || "Unable to send your message.");
+        } finally {
+            isSubmitting = false;
+
+            if (activeChat) {
+                updateComposer(activeChat);
+            } else {
+                if (sendButton) sendButton.disabled = false;
+                messageInput.disabled = false;
+            }
+        }
+    });
+
+
+    // Initial conversation
+    const initiallySelected = conversationButtons.find(function (chat) {
+        return chat.classList.contains("is-active");
+    });
+
+    if (initiallySelected) {
+        selectConversation(initiallySelected);
+    } else if (conversationButtons.length > 0) {
+        selectConversation(conversationButtons[0]);
+    }
+});

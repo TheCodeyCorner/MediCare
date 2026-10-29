@@ -3,14 +3,14 @@ import os
 import psycopg2
 import uuid
 
-from datetime import date
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
 
 from medicare.supabase_client import supabase
 from supabase import create_client
 
 from django.contrib.auth import authenticate
-from django.http import JsonResponse
+from django.http import JsonResponse, request
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST, require_GET, require_http_methods
 from django.utils import timezone
@@ -2113,6 +2113,910 @@ def patient_profile(request):
             "errors": errors,
         },
     )
+
+
+
+
+# ============================================================================
+# Patient Messaging
+# ============================================================================
+
+def _open_medicare_connection():
+    """Open PostgreSQL using the project's existing connection pattern."""
+    database_url = os.getenv("DATABASE_URL")
+
+    if not database_url:
+        raise RuntimeError("DATABASE_URL is missing.")
+
+    return psycopg2.connect(
+        database_url,
+        cursor_factory=SchemaCursor,
+    )
+
+
+def _get_patient_identity(request):
+    """
+    Resolve the authenticated user to their patient record.
+
+    Returns:
+        {"user_id": ..., "patient_id": ...}
+        or None if the patient record does not exist.
+    """
+    if not request.user.is_authenticated:
+        return None
+
+    user_id = str(request.user.id)
+    db = _open_medicare_connection()
+
+    try:
+        with db.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT patient_id, user_id
+                FROM medicare.patients
+                WHERE user_id = %s
+                LIMIT 1;
+                """,
+                (user_id,),
+            )
+            row = cursor.fetchone()
+    finally:
+        db.close()
+
+    if row is None:
+        return None
+
+    return {
+        "patient_id": str(row[0]),
+        "user_id": str(row[1]),
+    }
+
+
+def _dict_rows(cursor):
+    """Convert PostgreSQL query results into dictionaries."""
+    columns = [column[0] for column in cursor.description]
+    return [
+        dict(zip(columns, row))
+        for row in cursor.fetchall()
+    ]
+
+
+def _serialize_message(message):
+    """Convert UUID and datetime values to JSON-friendly values."""
+    for key in (
+        "m_id",
+        "appointment_id",
+        "sender_id",
+        "receiver_id",
+    ):
+        if message.get(key) is not None:
+            message[key] = str(message[key])
+
+    sent_at = message.get("sent_at")
+    if sent_at is not None:
+        message["sent_at"] = sent_at.isoformat()
+
+    return message
+
+
+def _chat_is_writable(schedule_time):
+    """
+    Allow sending for upcoming appointments and until seven days
+    after the appointment's scheduled time.
+    """
+    if schedule_time is None:
+        return False
+
+    # Support a PostgreSQL DATE column as well as a timestamp.
+    if isinstance(schedule_time, date) and not isinstance(
+        schedule_time, datetime
+    ):
+        schedule_time = datetime.combine(
+            schedule_time,
+            time.min,
+        )
+
+    if timezone.is_naive(schedule_time):
+        schedule_time = timezone.make_aware(
+            schedule_time,
+            timezone.get_current_timezone(),
+        )
+
+    return timezone.now() <= schedule_time + timedelta(days=7)
+
+
+def _get_patient_appointment(patient_id, appointment_id):
+    """
+    Return an appointment belonging to this patient, including the
+    assigned doctor's user ID for message delivery.
+    """
+    db = _open_medicare_connection()
+
+    try:
+        with db.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    a.appointment_id,
+                    a.patient_id,
+                    a.doctor_id,
+                    a.schedule_time,
+                    s.user_id AS doctor_user_id
+                FROM medicare.appointments AS a
+                LEFT JOIN medicare.staff AS s
+                    ON s.staff_id = a.doctor_id
+                WHERE a.appointment_id = %s
+                  AND a.patient_id = %s
+                LIMIT 1;
+                """,
+                (appointment_id, patient_id),
+            )
+            row = cursor.fetchone()
+    finally:
+        db.close()
+
+    if row is None:
+        return None
+
+    return {
+        "appointment_id": str(row[0]),
+        "patient_id": str(row[1]),
+        "doctor_id": str(row[2]) if row[2] is not None else None,
+        "schedule_time": row[3],
+        "doctor_user_id": (
+            str(row[4]) if row[4] is not None else None
+        ),
+    }
+
+
+
+
+def _seed_upcoming_appointment_intros(patient_id, user_id):
+    """
+    Create one introductory patient message for each upcoming
+    appointment that has no existing patient-to-doctor message.
+
+    The appointment row is locked to prevent concurrent page loads
+    from inserting duplicate introductions.
+    """
+    db = _open_medicare_connection()
+
+    try:
+        with db:
+            with db.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT
+                        a.appointment_id,
+                        a.schedule_time,
+                        a.status,
+                        s.user_id AS doctor_user_id
+                    FROM medicare.appointments AS a
+                    JOIN medicare.staff AS s
+                      ON s.staff_id = a.doctor_id
+                    WHERE a.patient_id = %s
+                      AND a.schedule_time >= CURRENT_TIMESTAMP
+                      AND LOWER(a.status) NOT IN (
+                          'cancelled', 'canceled', 'rejected'
+                      )
+                    ORDER BY a.schedule_time ASC
+                    FOR UPDATE OF a;
+                    """,
+                    (patient_id,),
+                )
+
+                upcoming = cursor.fetchall()
+
+                for appointment_id, schedule_time, status, doctor_user_id in upcoming:
+                    if doctor_user_id is None:
+                        continue
+
+                    # If the patient has already started this conversation,
+                    # do not add an automatic introduction.
+                    cursor.execute(
+                        """
+                        SELECT 1
+                        FROM medicare.messages
+                        WHERE appointment_id = %s
+                          AND sender_id = %s
+                          AND receiver_id = %s
+                        LIMIT 1;
+                        """,
+                        (
+                            appointment_id,
+                            user_id,
+                            doctor_user_id,
+                        ),
+                    )
+
+                    if cursor.fetchone():
+                        continue
+
+                    local_schedule = timezone.localtime(schedule_time)
+                    appointment_time = local_schedule.strftime(
+                        "%A, %B %d, %Y at %I:%M %p"
+                    )
+
+                    introductory_message = (
+                        "Hello, I have an upcoming appointment "
+                        f"scheduled for {appointment_time}. "
+                        "I'm starting this chat so we can communicate "
+                        "about the appointment here. Thank you."
+                    )
+
+                    cursor.execute(
+                        """
+                        INSERT INTO medicare.messages (
+                            sender_id,
+                            receiver_id,
+                            appointment_id,
+                            message_content,
+                            sent_at,
+                            status
+                        )
+                        VALUES (
+                            %s, %s, %s, %s, CURRENT_TIMESTAMP, 'sent'
+                        );
+                        """,
+                        (
+                            user_id,
+                            doctor_user_id,
+                            appointment_id,
+                            introductory_message,
+                        ),
+                    )
+    finally:
+        db.close()
+
+
+
+@role_required("Patient")
+@require_GET
+def patient_messages(request):
+    """
+    Render appointment conversations and the complete Customer Care
+    conversation history. Mark each message as outgoing or incoming
+    for the authenticated patient.
+    """
+    identity = _get_patient_identity(request)
+
+    if identity is None:
+        return JsonResponse(
+            {"error": "No patient record is associated with this account."},
+            status=404,
+        )
+
+    patient_id = identity["patient_id"]
+    user_id = identity["user_id"]
+    _seed_upcoming_appointment_intros(patient_id, user_id)
+
+    db = _open_medicare_connection()
+
+    try:
+        with db.cursor() as cursor:
+            # Resolve the Customer Care account.
+            cursor.execute(
+                """
+                SELECT user_id, email
+                FROM medicare.users
+                WHERE LOWER(email) = LOWER(%s)
+                LIMIT 1;
+                """,
+                ("support@medicare.internal",),
+            )
+            support_row = cursor.fetchone()
+
+            support_user_id = (
+                str(support_row[0])
+                if support_row is not None
+                else None
+            )
+
+            # Retrieve appointment conversations.
+            cursor.execute(
+                """
+                SELECT
+                    a.appointment_id,
+                    a.doctor_id,
+                    a.schedule_time,
+                    s.user_id AS doctor_user_id
+                FROM medicare.appointments AS a
+                LEFT JOIN medicare.staff AS s
+                    ON s.staff_id = a.doctor_id
+                WHERE a.patient_id = %s
+                  AND (
+                      a.schedule_time >=
+                          CURRENT_TIMESTAMP - INTERVAL '7 days'
+                      OR EXISTS (
+                          SELECT 1
+                          FROM medicare.messages AS m
+                          WHERE m.appointment_id = a.appointment_id
+                            AND (
+                                m.sender_id = %s
+                                OR m.receiver_id = %s
+                            )
+                      )
+                  )
+                ORDER BY a.schedule_time DESC NULLS LAST;
+                """,
+                (patient_id, user_id, user_id),
+            )
+            appointments = _dict_rows(cursor)
+
+            appointment_ids = [
+                str(appointment["appointment_id"])
+                for appointment in appointments
+            ]
+
+            # Retrieve appointment message history.
+            if appointment_ids:
+                cursor.execute(
+                    """
+                    SELECT
+                        m.m_id,
+                        m.appointment_id,
+                        m.sender_id,
+                        m.receiver_id,
+                        m.message_content,
+                        m.sent_at,
+                        m.status
+                    FROM medicare.messages AS m
+                    WHERE m.appointment_id = ANY(%s::uuid[])
+                      AND (
+                          m.sender_id = %s
+                          OR m.receiver_id = %s
+                      )
+                    ORDER BY m.sent_at ASC, m.m_id ASC;
+                    """,
+                    (appointment_ids, user_id, user_id),
+                )
+                appointment_messages = _dict_rows(cursor)
+            else:
+                appointment_messages = []
+
+            # Retrieve the complete Customer Care conversation.
+            if support_user_id is not None:
+                cursor.execute(
+                    """
+                    SELECT
+                        m.m_id,
+                        m.appointment_id,
+                        m.sender_id,
+                        m.receiver_id,
+                        m.message_content,
+                        m.sent_at,
+                        m.status
+                    FROM medicare.messages AS m
+                    WHERE m.appointment_id IS NULL
+                      AND (
+                          (
+                              m.sender_id = %s
+                              AND m.receiver_id = %s
+                          )
+                          OR
+                          (
+                              m.sender_id = %s
+                              AND m.receiver_id = %s
+                          )
+                      )
+                    ORDER BY m.sent_at ASC, m.m_id ASC;
+                    """,
+                    (
+                        user_id,
+                        support_user_id,
+                        support_user_id,
+                        user_id,
+                    ),
+                )
+                support_messages = _dict_rows(cursor)
+            else:
+                support_messages = []
+
+    finally:
+        db.close()
+
+    # Serialize appointment messages and mark outgoing messages.
+    messages_by_appointment = {}
+
+    for message in appointment_messages:
+        _serialize_message(message)
+
+        message["is_mine"] = (
+            message["sender_id"] == user_id
+        )
+
+        appointment_key = message["appointment_id"]
+
+        messages_by_appointment.setdefault(
+            appointment_key, []
+        ).append(message)
+
+    # Prepare appointment conversations.
+    for appointment in appointments:
+        appointment["appointment_id"] = str(
+            appointment["appointment_id"]
+        )
+        appointment["chat_id"] = appointment["appointment_id"]
+
+        appointment["doctor_id"] = (
+            str(appointment["doctor_id"])
+            if appointment["doctor_id"] is not None
+            else None
+        )
+
+        appointment["doctor_user_id"] = (
+            str(appointment["doctor_user_id"])
+            if appointment["doctor_user_id"] is not None
+            else None
+        )
+
+        appointment["can_chat"] = _chat_is_writable(
+            appointment["schedule_time"]
+        )
+
+        appointment["chat_type"] = "appointment"
+
+        appointment["messages"] = messages_by_appointment.get(
+            appointment["appointment_id"],
+            [],
+        )
+
+    # Serialize support messages and identify the sender.
+    for message in support_messages:
+        _serialize_message(message)
+
+        message["is_mine"] = (
+            message["sender_id"] == user_id
+        )
+
+    # IMPORTANT: The template and JavaScript use "customer-care"
+    # as the support conversation ID. Keep the ID consistent.
+    support_chat = {
+        "chat_id": "customer-care",
+        "appointment_id": None,
+        "chat_type": "support",
+        "name": "Customer Care",
+        "can_chat": support_user_id is not None,
+        "messages": support_messages,
+    }
+
+    return render(
+        request,
+        "patients/messages.html",
+        {
+            "page_title": "Messages",
+            "breadcrumb": "Patient / Messages",
+            "chats": appointments,
+            "support_chat": support_chat,
+            "support_messages": support_messages,
+            "support_available": support_user_id is not None,
+            "patient_user_id": user_id,
+        },
+    )
+
+
+
+@role_required("Patient")
+@require_GET
+def patient_chat_messages(request, appointment_id):
+    """Return the complete message history for an authorized appointment."""
+    identity = _get_patient_identity(request)
+
+    if identity is None:
+        return JsonResponse(
+            {"error": "No patient record is associated with this account."},
+            status=404,
+        )
+
+    patient_id = identity["patient_id"]
+    user_id = identity["user_id"]
+
+    appointment = _get_patient_appointment(
+        patient_id,
+        appointment_id,
+    )
+
+    if appointment is None:
+        return JsonResponse(
+            {"error": "Chat not found."},
+            status=404,
+        )
+
+    db = _open_medicare_connection()
+
+    try:
+        with db.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    m_id,
+                    appointment_id,
+                    sender_id,
+                    receiver_id,
+                    message_content,
+                    sent_at,
+                    status
+                FROM medicare.messages
+                WHERE appointment_id = %s
+                  AND (
+                      sender_id = %s
+                      OR receiver_id = %s
+                  )
+                ORDER BY sent_at ASC;
+                """,
+                (appointment_id, user_id, user_id),
+            )
+            chat_messages = _dict_rows(cursor)
+    finally:
+        db.close()
+
+    for message in chat_messages:
+        _serialize_message(message)
+
+    return JsonResponse(
+        {
+            "appointment_id": str(appointment_id),
+            "can_chat": _chat_is_writable(
+                appointment["schedule_time"]
+            ),
+            "messages": chat_messages,
+        }
+    )
+
+
+@role_required("Patient")
+@require_POST
+def patient_send_message(request, appointment_id):
+    """Send a message to the doctor assigned to the appointment."""
+    identity = _get_patient_identity(request)
+
+    if identity is None:
+        return JsonResponse(
+            {"error": "No patient record is associated with this account."},
+            status=404,
+        )
+
+    patient_id = identity["patient_id"]
+    user_id = identity["user_id"]
+
+    appointment = _get_patient_appointment(
+        patient_id,
+        appointment_id,
+    )
+
+    if appointment is None:
+        return JsonResponse(
+            {"error": "Chat not found."},
+            status=404,
+        )
+
+    if not _chat_is_writable(appointment["schedule_time"]):
+        return JsonResponse(
+            {
+                "error": (
+                    "This chat is read-only. "
+                    "You can still view its history."
+                )
+            },
+            status=403,
+        )
+
+    doctor_user_id = appointment["doctor_user_id"]
+
+    if doctor_user_id is None:
+        return JsonResponse(
+            {"error": "The assigned doctor has no linked user account."},
+            status=409,
+        )
+
+    # Accept JSON requests or standard Django form submissions.
+    if request.content_type == "application/json":
+        try:
+            payload = json.loads(request.body or b"{}")
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return JsonResponse(
+                {"error": "Invalid JSON."},
+                status=400,
+            )
+    else:
+        payload = request.POST
+
+    message_content = (
+        payload.get("message_content") or ""
+    ).strip()
+
+    if not message_content:
+        return JsonResponse(
+            {"error": "Message cannot be empty."},
+            status=400,
+        )
+
+    if len(message_content) > 5000:
+        return JsonResponse(
+            {"error": "Message cannot exceed 5000 characters."},
+            status=400,
+        )
+
+    db = _open_medicare_connection()
+
+    try:
+        # A psycopg2 connection context commits on success and rolls back
+        # on an exception. The connection is explicitly closed below.
+        with db:
+            with db.cursor() as cursor:
+                # Recheck ownership and appointment time inside the
+                # transaction. Lock the appointment row while inserting.
+                cursor.execute(
+                    """
+                    SELECT
+                        a.appointment_id,
+                        a.schedule_time,
+                        s.user_id AS doctor_user_id
+                    FROM medicare.appointments AS a
+                    LEFT JOIN medicare.staff AS s
+                        ON s.staff_id = a.doctor_id
+                    WHERE a.appointment_id = %s
+                      AND a.patient_id = %s
+                    FOR UPDATE OF a;
+                    """,
+                    (appointment_id, patient_id),
+                )
+                current_row = cursor.fetchone()
+
+                if current_row is None:
+                    return JsonResponse(
+                        {"error": "Chat not found."},
+                        status=404,
+                    )
+
+                current_schedule_time = current_row[1]
+                current_doctor_user_id = (
+                    str(current_row[2])
+                    if current_row[2] is not None
+                    else None
+                )
+
+                if not _chat_is_writable(current_schedule_time):
+                    return JsonResponse(
+                        {"error": "This chat is now read-only."},
+                        status=403,
+                    )
+
+                if current_doctor_user_id is None:
+                    return JsonResponse(
+                        {
+                            "error": (
+                                "The assigned doctor has no linked "
+                                "user account."
+                            )
+                        },
+                        status=409,
+                    )
+
+                cursor.execute(
+                    """
+                    INSERT INTO medicare.messages (
+                        sender_id,
+                        receiver_id,
+                        appointment_id,
+                        message_content,
+                        sent_at,
+                        status
+                    )
+                    VALUES (
+                        %s, %s, %s, %s, CURRENT_TIMESTAMP, 'sent'
+                    )
+                    RETURNING
+                        m_id,
+                        appointment_id,
+                        sender_id,
+                        receiver_id,
+                        message_content,
+                        sent_at,
+                        status;
+                    """,
+                    (
+                        user_id,
+                        current_doctor_user_id,
+                        appointment_id,
+                        message_content,
+                    ),
+                )
+
+                saved_message = _dict_rows(cursor)[0]
+
+    finally:
+        db.close()
+
+    _serialize_message(saved_message)
+
+    return JsonResponse(
+        {"message": saved_message},
+        status=201,
+    )
+
+
+
+@role_required("Patient")
+@require_POST
+def patient_send_support_message(request):
+    """Send a patient message to the Medicare Customer Care account."""
+    identity = _get_patient_identity(request)
+
+    if identity is None:
+        return JsonResponse(
+            {"error": "No patient record is associated with this account."},
+            status=404,
+        )
+
+    # Accept JSON requests or regular Django form submissions.
+    if request.content_type == "application/json":
+        try:
+            payload = json.loads(request.body or b"{}")
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return JsonResponse({"error": "Invalid JSON."}, status=400)
+    else:
+        payload = request.POST
+
+    message_content = (
+        payload.get("message_content") or ""
+    ).strip()
+
+    if not message_content:
+        return JsonResponse(
+            {"error": "Message cannot be empty."},
+            status=400,
+        )
+
+    if len(message_content) > 5000:
+        return JsonResponse(
+            {"error": "Message cannot exceed 5000 characters."},
+            status=400,
+        )
+
+    sender_id = identity["user_id"]
+    db = _open_medicare_connection()
+
+    try:
+        with db:
+            with db.cursor() as cursor:
+                # Resolve the support recipient from the existing account.
+                cursor.execute(
+                    """
+                    SELECT user_id
+                    FROM medicare.users
+                    WHERE LOWER(email) = LOWER(%s)
+                    LIMIT 1;
+                    """,
+                    ("support@medicare.internal",),
+                )
+                recipient = cursor.fetchone()
+
+                if recipient is None:
+                    return JsonResponse(
+                        {
+                            "error": (
+                                "The Medicare Customer Care account "
+                                "could not be found."
+                            )
+                        },
+                        status=409,
+                    )
+
+                support_user_id = str(recipient[0])
+
+                # Customer Care messages are not tied to appointments.
+                cursor.execute(
+                    """
+                    INSERT INTO medicare.messages (
+                        sender_id,
+                        receiver_id,
+                        message_content,
+                        sent_at,
+                        status
+                    )
+                    VALUES (%s, %s, %s, CURRENT_TIMESTAMP, 'sent')
+                    RETURNING
+                        m_id,
+                        sender_id,
+                        receiver_id,
+                        message_content,
+                        sent_at,
+                        status;
+                    """,
+                    (
+                        sender_id,
+                        support_user_id,
+                        message_content,
+                    ),
+                )
+
+                saved_message = _dict_rows(cursor)[0]
+
+    finally:
+        db.close()
+
+    _serialize_message(saved_message)
+
+    return JsonResponse(
+        {"message": saved_message},
+        status=201,
+    )
+
+
+
+
+@role_required("Patient")
+@require_GET
+def patient_support_messages(request):
+    """Return the authenticated patient's Customer Care history."""
+    identity = _get_patient_identity(request)
+
+    if identity is None:
+        return JsonResponse(
+            {"error": "No patient record is associated with this account."},
+            status=404,
+        )
+
+    user_id = identity["user_id"]
+    db = _open_medicare_connection()
+
+    try:
+        with db.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT user_id
+                FROM medicare.users
+                WHERE LOWER(email) = LOWER(%s)
+                LIMIT 1;
+                """,
+                ("support@medicare.internal",),
+            )
+            recipient = cursor.fetchone()
+
+            if recipient is None:
+                return JsonResponse(
+                    {"error": "Customer Care is unavailable."},
+                    status=404,
+                )
+
+            support_user_id = str(recipient[0])
+
+            cursor.execute(
+                """
+                SELECT
+                    m_id,
+                    appointment_id,
+                    sender_id,
+                    receiver_id,
+                    message_content,
+                    sent_at,
+                    status
+                FROM medicare.messages
+                WHERE appointment_id IS NULL
+                  AND (
+                      (sender_id = %s AND receiver_id = %s)
+                      OR
+                      (sender_id = %s AND receiver_id = %s)
+                  )
+                ORDER BY sent_at ASC, m_id ASC;
+                """,
+                (
+                    user_id,
+                    support_user_id,
+                    support_user_id,
+                    user_id,
+                ),
+            )
+
+            messages = _dict_rows(cursor)
+    finally:
+        db.close()
+
+    for message in messages:
+        _serialize_message(message)
+
+    return JsonResponse({"messages": messages})
 
 
 
