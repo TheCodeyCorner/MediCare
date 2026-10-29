@@ -1,10 +1,12 @@
 import json
+import math
 import os
 import psycopg2
 import uuid
 
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 
 from medicare.supabase_client import supabase
 from supabase import create_client
@@ -12,12 +14,14 @@ from supabase import create_client
 from django.contrib.auth import authenticate
 from django.http import JsonResponse, request
 from django.shortcuts import redirect, render
+from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST, require_GET, require_http_methods
 from django.utils import timezone
 from django.db import connection
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.utils.dateparse import parse_date
+from django.urls import reverse
 
 from dotenv import load_dotenv
 
@@ -676,7 +680,7 @@ def patient_dashboard(request):
                 cursor.execute(
                     """
                     SELECT
-                        aq.appointment_id,
+                        a.appointment_id,
                         aq.token_number,
                         aq.queue_position,
                         aq.patients_ahead,
@@ -688,7 +692,9 @@ def patient_dashboard(request):
                         qp.predicted_at,
                         qp.actual_wait_minutes,
                         qp.prediction_error_minutes
-                    FROM medicare.appointment_queue aq
+                    FROM medicare.appointments a
+                    LEFT JOIN medicare.appointment_queue aq
+                        ON aq.appointment_id = a.appointment_id
                     LEFT JOIN LATERAL (
                         SELECT
                             predicted_wait_minutes,
@@ -699,11 +705,11 @@ def patient_dashboard(request):
                             actual_wait_minutes,
                             prediction_error_minutes
                         FROM medicare.queue_predictions qp
-                        WHERE qp.appointment_id = aq.appointment_id
+                        WHERE qp.appointment_id = a.appointment_id
                         ORDER BY qp.predicted_at DESC
                         LIMIT 1
                     ) qp ON TRUE
-                    WHERE aq.appointment_id = ANY(%s::uuid[]);
+                    WHERE a.appointment_id = ANY(%s::uuid[]);
                     """,
                     (appointment_ids,),
                 )
@@ -1324,7 +1330,7 @@ def patient_dashboard(request):
         )
 
         appointment["staff"]["image"] = _signed_storage_url(
-            "patient_profiles",
+            "staff-profiles",
             next_appointment_row["staff_profile_image_path"],
         )
 
@@ -3211,6 +3217,1162 @@ def patient_support_messages(request):
         _serialize_message(message)
 
     return JsonResponse({"messages": messages})
+
+
+
+@role_required("Patient")
+def patient_appointments(request):
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        raise ValueError("DATABASE_URL is missing")
+
+    user_id = str(request.user.id)
+    now = timezone.now()
+
+    # Each appointment query returns at most ten rows.
+    page_size = 10
+
+    try:
+        page_number = max(1, int(request.GET.get("page", "1")))
+    except (TypeError, ValueError):
+        page_number = 1
+
+    search = request.GET.get("q", "").strip()[:200]
+    sort = request.GET.get("sort", "newest").lower()
+    if sort not in ("newest", "oldest"):
+        sort = "newest"
+
+    requested_view = request.GET.get("view", "all").lower()
+    requested_status = request.GET.get("status", "").strip()
+
+    # Support old links such as ?status=past.
+    valid_views = {"all", "upcoming", "past", "cancelled"}
+    if requested_status.lower() in valid_views:
+        requested_view = requested_status.lower()
+        requested_status = ""
+
+    if requested_view not in valid_views:
+        requested_view = "all"
+
+    base_from = """
+        FROM medicare.appointments AS a
+        LEFT JOIN medicare.appointment_type AS at
+            ON at.app_type_id = a.app_type_id
+        LEFT JOIN medicare.staff AS s
+            ON s.staff_id = a.doctor_id
+        LEFT JOIN medicare.department AS d
+            ON d.department_id = s.department_id
+    """
+
+    terminal_statuses = (
+        "'cancelled', 'canceled', 'completed', 'no_show', 'no-show'"
+    )
+    cancelled_statuses = "('cancelled', 'canceled')"
+
+    try:
+        with psycopg2.connect(database_url) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT patient_id
+                    FROM medicare.patients
+                    WHERE user_id = %s
+                    LIMIT 1;
+                    """,
+                    (user_id,),
+                )
+                patient_row = cursor.fetchone()
+
+                if patient_row is None:
+                    return render(
+                        request,
+                        "patients/appointments/view_appointments.html",
+                        {
+                            "page_title": "Appointments",
+                            "breadcrumb": "Patient / Appointments",
+                            "booking_url": reverse("book_patient_appointments"),
+                            "appointments": [],
+                            "upcoming_count": 0,
+                            "completed_count": 0,
+                            "cancelled_count": 0,
+                            "appointment_statuses": [],
+                            "has_more": False,
+                            "loaded_count": 0,
+                            "page_size": page_size,
+                            "selected_view": requested_view,
+                            "selected_status": requested_status,
+                            "search_query": search,
+                            "selected_sort": sort,
+                        },
+                    )
+
+                patient_id = str(patient_row[0])
+
+                if request.GET.get("partial") == "summary":
+                    cursor.execute(
+                        f"""
+                        SELECT
+                            COUNT(*) FILTER (
+                                WHERE a.schedule_time >= %s
+                                  AND LOWER(COALESCE(a.status, 'pending'))
+                                      NOT IN ({terminal_statuses})
+                            ) AS upcoming_count,
+                            COUNT(*) FILTER (
+                                WHERE LOWER(COALESCE(a.status, ''))
+                                      = 'completed'
+                            ) AS completed_count,
+                            COUNT(*) FILTER (
+                                WHERE LOWER(COALESCE(a.status, ''))
+                                      IN {cancelled_statuses}
+                            ) AS cancelled_count
+                        {base_from}
+                        WHERE a.patient_id = %s;
+                        """,
+                        (now, patient_id),
+                    )
+                    upcoming_count, completed_count, cancelled_count = cursor.fetchone()
+
+                    cursor.execute(
+                        """
+                        SELECT DISTINCT COALESCE(status, 'Pending')
+                        FROM medicare.appointments
+                        WHERE patient_id = %s
+                        ORDER BY 1;
+                        """,
+                        (patient_id,),
+                    )
+                    appointment_statuses = [
+                        row[0] for row in cursor.fetchall()
+                    ]
+                    return JsonResponse(
+                        {
+                            "upcoming_count": upcoming_count,
+                            "completed_count": completed_count,
+                            "cancelled_count": cancelled_count,
+                            "appointment_statuses": appointment_statuses,
+                        }
+                    )
+
+                upcoming_count = completed_count = cancelled_count = None
+                appointment_statuses = []
+
+                conditions = ["a.patient_id = %s"]
+                filter_params = [patient_id]
+
+                if requested_view == "upcoming":
+                    conditions.append(
+                        f"""
+                        a.schedule_time >= %s
+                        AND LOWER(COALESCE(a.status, 'pending'))
+                            NOT IN ({terminal_statuses})
+                        """
+                    )
+                    filter_params.append(now)
+
+                elif requested_view == "past":
+                    conditions.append(
+                        f"""
+                        LOWER(COALESCE(a.status, ''))
+                            NOT IN {cancelled_statuses}
+                        AND (
+                            a.schedule_time < %s
+                            OR a.schedule_time IS NULL
+                            OR LOWER(COALESCE(a.status, ''))
+                                IN ('completed', 'no_show', 'no-show')
+                        )
+                        """
+                    )
+                    filter_params.append(now)
+
+                elif requested_view == "cancelled":
+                    conditions.append(
+                        f"LOWER(COALESCE(a.status, '')) IN "
+                        f"{cancelled_statuses}"
+                    )
+
+                if requested_status:
+                    conditions.append("LOWER(COALESCE(a.status, 'pending')) = LOWER(%s)")
+                    filter_params.append(requested_status)
+
+                if search:
+                    search_pattern = f"%{search}%"
+                    conditions.append(
+                        """
+                        (
+                            CAST(a.appointment_id AS TEXT) ILIKE %s
+                            OR COALESCE(at.type_name, '') ILIKE %s
+                            OR CONCAT_WS(
+                                ' ', s.first_name, s.last_name
+                            ) ILIKE %s
+                            OR COALESCE(
+                                array_to_string(s.specializations, ', '), ''
+                            ) ILIKE %s
+                            OR COALESCE(d.department_name, '') ILIKE %s
+                            OR COALESCE(a.notes, '') ILIKE %s
+                        )
+                        """
+                    )
+                    filter_params.extend([search_pattern] * 6)
+
+                where_clause = " AND ".join(conditions)
+
+                # Fetch only one page from PostgreSQL.
+                offset = (page_number - 1) * page_size
+                order_clause = (
+                    "a.schedule_time ASC NULLS LAST, a.appointment_id ASC"
+                    if sort == "oldest"
+                    else "a.schedule_time DESC NULLS LAST, a.appointment_id DESC"
+                )
+
+                cursor.execute(
+                    f"""
+                    SELECT
+                        a.appointment_id,
+                        a.schedule_time,
+                        at.type_name AS appointment_type,
+                        CONCAT_WS(
+                            ' ', s.first_name, s.last_name
+                        ) AS doctor_name,
+                        COALESCE(
+                            NULLIF(
+                                array_to_string(s.specializations, ', '), ''
+                            ),
+                            d.department_name
+                        ) AS speciality,
+                        d.department_name,
+                        a.status,
+                        a.notes,
+                        aq.token_number,
+                        aq.queue_position,
+                        aq.patients_ahead,
+                        aq.queue_status,
+                        latest_prediction.predicted_wait_minutes,
+                        latest_prediction.recommended_arrival
+                    {base_from}
+                    LEFT JOIN medicare.appointment_queue AS aq
+                        ON aq.appointment_id = a.appointment_id
+                    LEFT JOIN LATERAL (
+                        SELECT
+                            qp.predicted_wait_minutes,
+                            qp.recommended_arrival
+                        FROM medicare.queue_predictions AS qp
+                        WHERE qp.appointment_id = a.appointment_id
+                        ORDER BY qp.predicted_at DESC
+                        LIMIT 1
+                    ) AS latest_prediction ON TRUE
+                    WHERE {where_clause}
+                    ORDER BY {order_clause}
+                    LIMIT %s OFFSET %s;
+                    """,
+                    filter_params + [page_size + 1, offset],
+                )
+
+                rows = cursor.fetchall()
+                has_more = len(rows) > page_size
+                rows = rows[:page_size]
+
+    except psycopg2.Error:
+        # Let Django's error handling/logging handle the database failure.
+        raise
+
+    appointments = []
+
+    for row in rows:
+        (
+            appointment_id,
+            schedule_datetime,
+            appointment_type,
+            doctor_name,
+            speciality,
+            department,
+            raw_status,
+            note,
+            token_number,
+            queue_position,
+            patients_ahead,
+            queue_status,
+            estimated_wait,
+            recommended_arrival,
+        ) = row
+
+        if schedule_datetime is not None:
+            if timezone.is_naive(schedule_datetime):
+                schedule_datetime = timezone.make_aware(
+                    schedule_datetime,
+                    timezone.get_current_timezone(),
+                )
+            schedule_datetime = timezone.localtime(schedule_datetime)
+
+        if recommended_arrival is not None:
+            if timezone.is_naive(recommended_arrival):
+                recommended_arrival = timezone.make_aware(
+                    recommended_arrival,
+                    timezone.get_current_timezone(),
+                )
+            recommended_arrival = timezone.localtime(recommended_arrival)
+
+        status_text = str(raw_status or "Pending").strip()
+        status_lower = status_text.lower()
+
+        is_cancelled = status_lower in {"cancelled", "canceled"}
+        is_completed = status_lower in {"completed", "no_show", "no-show"}
+
+        if is_cancelled:
+            category = "cancelled"
+        elif (
+            schedule_datetime is not None
+            and schedule_datetime >= timezone.localtime(now)
+            and not is_completed
+        ):
+            category = "upcoming"
+        else:
+            category = "past"
+
+        appointments.append(
+            {
+                "appointment_id": str(appointment_id),
+                "category": category,
+                "date": (
+                    schedule_datetime.date()
+                    if schedule_datetime else None
+                ),
+                "time": (
+                    schedule_datetime.time()
+                    if schedule_datetime else None
+                ),
+                "schedule_datetime": schedule_datetime,
+                "type": appointment_type or "Consultation",
+                "staff": doctor_name or "Not yet assigned",
+                "speciality": speciality or department or "Specialty unavailable",
+                "department": department,
+                "status": status_text,
+                "note": note or "",
+                "token": token_number if category == "upcoming" else None,
+                "queue_position": (
+                    queue_position if category == "upcoming" else None
+                ),
+                "patients_ahead": (
+                    patients_ahead if category == "upcoming" else None
+                ),
+                "queue_status": (
+                    queue_status if category == "upcoming" else None
+                ),
+                "estimated_wait": (
+                    estimated_wait if category == "upcoming" else None
+                ),
+                "recommended_arrival": (
+                    recommended_arrival
+                    if category == "upcoming"
+                    else None
+                ),
+            }
+        )
+
+    if request.GET.get("partial") == "1":
+        return JsonResponse(
+            {
+                "html": render_to_string(
+                    "patients/appointments/_appointment_cards.html",
+                    {"appointments": appointments},
+                    request=request,
+                ),
+                "has_more": has_more,
+                "next_page": page_number + 1 if has_more else None,
+            }
+        )
+
+    return render(
+        request,
+        "patients/appointments/view_appointments.html",
+        {
+            "page_title": "Appointments",
+            "breadcrumb": "Patient / Appointments",
+            "booking_url": reverse("book_patient_appointments"),
+            "appointments": appointments,
+            "upcoming_count": upcoming_count,
+            "completed_count": completed_count,
+            "cancelled_count": cancelled_count,
+            "appointment_statuses": appointment_statuses,
+            "has_more": has_more,
+            "loaded_count": len(appointments),
+            "next_page": page_number + 1,
+            "page_size": page_size,
+            "selected_view": requested_view,
+            "selected_status": requested_status,
+            "search_query": search,
+            "selected_sort": sort,
+        },
+    )
+
+
+def _doctor_aware_features(
+    doctor_id,
+    reason_id,
+    app_type_id,
+    doctor_experience,
+    doctor_department_id,
+    reason_department_id,
+    scheduled_time,
+):
+    """Build one inference row using catboost_model.py feature names."""
+    return {
+        "doctor_id": str(doctor_id),
+        "reason_id": str(reason_id),
+        "app_type_id": str(app_type_id),
+        "doctor_experience": float(doctor_experience or 0),
+        "doctor_department_id": str(doctor_department_id),
+        "reason_department_id": str(reason_department_id),
+        # Training uses Python/pandas weekday values: Monday is zero.
+        "day_of_week": str(scheduled_time.weekday()),
+        "hour_of_day": int(scheduled_time.hour),
+    }
+
+
+def _general_features(
+    reason_id,
+    app_type_id,
+    reason_department_id,
+    scheduled_time,
+):
+    """Build one inference row for the general CatBoost fallback."""
+    return {
+        "reason_id": str(reason_id),
+        "app_type_id": str(app_type_id),
+        "reason_department_id": str(reason_department_id),
+        "day_of_week": str(scheduled_time.weekday()),
+        "hour_of_day": int(scheduled_time.hour),
+    }
+
+
+def _load_appointment_model(model_type):
+    """Load the selected checked-in CatBoost model for inference."""
+    from catboost import CatBoostRegressor
+
+    filename = (
+        "catboost_doctor_aware.cbm"
+        if model_type == "doctor_aware"
+        else "catboost_general_fallback.cbm"
+    )
+    model_path = (
+        Path(__file__).resolve().parent
+        / "ml"
+        / filename
+    )
+    if not model_path.is_file():
+        raise FileNotFoundError(
+            f"CatBoost model not found: {model_path}"
+        )
+
+    model = CatBoostRegressor()
+    model.load_model(str(model_path))
+    return model
+
+
+def _predict_consultation_minutes(model, feature_rows, model_type):
+    """Predict and round up durations so proposed queue slots do not overlap."""
+    import pandas as pd
+
+    if model_type == "doctor_aware":
+        feature_order = [
+            "doctor_id",
+            "reason_id",
+            "app_type_id",
+            "doctor_experience",
+            "doctor_department_id",
+            "reason_department_id",
+            "day_of_week",
+            "hour_of_day",
+        ]
+    else:
+        feature_order = [
+            "reason_id",
+            "app_type_id",
+            "reason_department_id",
+            "day_of_week",
+            "hour_of_day",
+        ]
+    dataframe = pd.DataFrame(feature_rows, columns=feature_order)
+    predictions = model.predict(dataframe)
+    return [max(1, math.ceil(float(value))) for value in predictions]
+
+
+@role_required("Patient")
+@require_http_methods(["GET", "POST"])
+def book_patient_appointments(request):
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        raise ValueError("DATABASE_URL is missing")
+
+    errors = {}
+    form_values = {
+        "department_id": "",
+        "doctor_id": "",
+        "reason_id": "",
+        "app_type_id": "",
+        "schedule_time": "",
+    }
+    availability_notice = ""
+    booking_created = False
+    booking_preview = None
+
+    if request.method == "POST":
+        form_values = {
+            key: request.POST.get(key, "").strip()
+            for key in form_values
+        }
+
+        required_values = (
+            form_values["department_id"],
+            form_values["reason_id"],
+            form_values["app_type_id"],
+            form_values["schedule_time"],
+        )
+        if any(not value for value in required_values):
+            errors["general"] = "Complete all required fields before continuing."
+        else:
+            try:
+                requested_time = datetime.fromisoformat(
+                    form_values["schedule_time"]
+                )
+                if timezone.is_naive(requested_time):
+                    requested_time = timezone.make_aware(
+                        requested_time,
+                        timezone.get_current_timezone(),
+                    )
+                now = timezone.now()
+                if requested_time < now + timedelta(hours=1):
+                    errors["schedule_time"] = (
+                        "Appointments must be booked at least one hour ahead."
+                    )
+            except (TypeError, ValueError):
+                errors["schedule_time"] = "Enter a valid date and time."
+
+            if not errors:
+                try:
+                    with psycopg2.connect(database_url) as connection:
+                        with connection.cursor() as cursor:
+                            cursor.execute(
+                                """
+                                SELECT patient_id
+                                FROM medicare.patients
+                                WHERE user_id = %s
+                                LIMIT 1;
+                                """,
+                                (str(request.user.id),),
+                            )
+                            patient_row = cursor.fetchone()
+                            if patient_row is None:
+                                raise ValueError(
+                                    "Your patient record could not be found."
+                                )
+                            patient_id = patient_row[0]
+
+                            cursor.execute(
+                                """
+                                SELECT
+                                    d.department_id,
+                                    d.department_name,
+                                    r.reason_id,
+                                    r.department_id,
+                                    at.app_type_id
+                                FROM medicare.department AS d
+                                JOIN medicare.reason_for_visit AS r
+                                  ON r.department_id = d.department_id
+                                JOIN medicare.appointment_type AS at
+                                  ON at.app_type_id = %s
+                                WHERE d.department_id = %s
+                                  AND r.reason_id = %s
+                                  AND d.active = TRUE
+                                  AND r.active = TRUE
+                                  AND at.active = TRUE
+                                LIMIT 1;
+                                """,
+                                (
+                                    form_values["app_type_id"],
+                                    form_values["department_id"],
+                                    form_values["reason_id"],
+                                ),
+                            )
+                            selection_row = cursor.fetchone()
+                            if selection_row is None:
+                                raise ValueError(
+                                    "The selected department, reason, or "
+                                    "appointment type is no longer available."
+                                )
+
+                            (
+                                department_id,
+                                department_name,
+                                reason_id,
+                                reason_department_id,
+                                app_type_id,
+                            ) = selection_row
+
+                            # Lock the relevant staff rows so two bookings cannot
+                            # pass the availability check for the same doctor.
+                            cursor.execute(
+                                """
+                                SELECT
+                                    s.staff_id,
+                                    s.first_name,
+                                    s.last_name,
+                                    s.experience,
+                                    s.department_id
+                                FROM medicare.staff AS s
+                                WHERE s.department_id = %s
+                                  AND s.active = TRUE
+                                  AND (%s = '' OR s.staff_id::text = %s)
+                                ORDER BY s.staff_id
+                                FOR UPDATE OF s;
+                                """,
+                                (
+                                    department_id,
+                                    form_values["doctor_id"],
+                                    form_values["doctor_id"],
+                                ),
+                            )
+                            doctors = cursor.fetchall()
+                            if not doctors:
+                                raise ValueError(
+                                    "No active doctors are available in this department."
+                                )
+                            if form_values["doctor_id"] and len(doctors) != 1:
+                                raise ValueError(
+                                    "The selected doctor is no longer available."
+                                )
+
+                            doctor_ids = [row[0] for row in doctors]
+                            placeholders = ", ".join(["%s"] * len(doctor_ids))
+                            cursor.execute(
+                                f"""
+                                SELECT
+                                    doctor_id,
+                                    COUNT(*)
+                                FROM medicare.appointments
+                                WHERE doctor_id IN ({placeholders})
+                                  AND start_time IS NOT NULL
+                                  AND end_time IS NOT NULL
+                                  AND end_time > start_time
+                                GROUP BY doctor_id;
+                                """,
+                                tuple(str(doctor_id) for doctor_id in doctor_ids),
+                            )
+                            historical_counts = {
+                                row[0]: row[1]
+                                for row in cursor.fetchall()
+                            }
+
+                            # No doctor chosen means the general model selects
+                            # the earliest-free active staff member in this dept.
+                            candidate_bookings = []
+                            loaded_models = {}
+                            for doctor_row in doctors:
+                                (
+                                    doctor_id,
+                                    doctor_first_name,
+                                    doctor_last_name,
+                                    doctor_experience,
+                                    doctor_department_id,
+                                ) = doctor_row
+                                model_type = (
+                                    "doctor_aware"
+                                    if form_values["doctor_id"]
+                                    and historical_counts.get(doctor_id, 0) > 0
+                                    else "general_fallback"
+                                )
+                                if model_type not in loaded_models:
+                                    loaded_models[model_type] = (
+                                        _load_appointment_model(model_type)
+                                    )
+                                model = loaded_models[model_type]
+
+                                if model_type == "doctor_aware":
+                                    requested_features = _doctor_aware_features(
+                                        doctor_id,
+                                        reason_id,
+                                        app_type_id,
+                                        doctor_experience,
+                                        doctor_department_id,
+                                        reason_department_id,
+                                        requested_time,
+                                    )
+                                else:
+                                    requested_features = _general_features(
+                                        reason_id,
+                                        app_type_id,
+                                        reason_department_id,
+                                        requested_time,
+                                    )
+                                predicted_minutes = (
+                                    _predict_consultation_minutes(
+                                        model,
+                                        [requested_features],
+                                        model_type,
+                                    )[0]
+                                )
+
+                                cursor.execute(
+                                    """
+                                    SELECT
+                                        a.schedule_time,
+                                        a.reason_id,
+                                        a.app_type_id,
+                                        s.experience,
+                                        s.department_id,
+                                        r.department_id,
+                                        COALESCE(
+                                            a.estimated_wait_minutes,
+                                            latest_prediction.predicted_wait_minutes
+                                        ) AS known_duration
+                                    FROM medicare.appointments AS a
+                                    JOIN medicare.staff AS s
+                                      ON s.staff_id = a.doctor_id
+                                    LEFT JOIN medicare.reason_for_visit AS r
+                                      ON r.reason_id = a.reason_id
+                                    LEFT JOIN LATERAL (
+                                        SELECT predicted_wait_minutes
+                                        FROM medicare.queue_predictions AS qp
+                                        WHERE qp.appointment_id = a.appointment_id
+                                        ORDER BY qp.predicted_at DESC
+                                        LIMIT 1
+                                    ) AS latest_prediction ON TRUE
+                                    WHERE a.doctor_id = %s
+                                      AND a.schedule_time IS NOT NULL
+                                      AND LOWER(COALESCE(a.status, '')) NOT IN (
+                                          'cancelled', 'canceled', 'completed',
+                                          'no_show', 'no-show'
+                                      )
+                                      AND (
+                                          a.schedule_time >= %s
+                                          OR LOWER(COALESCE(a.status, '')) IN (
+                                              'in_progress', 'checked_in',
+                                              'arrived', 'called'
+                                          )
+                                      )
+                                    ORDER BY a.schedule_time ASC;
+                                    """,
+                                    (str(doctor_id), now),
+                                )
+                                queue_rows = cursor.fetchall()
+
+                                queue_features = []
+                                queue_feature_indexes = []
+                                queue_durations = [None] * len(queue_rows)
+                                for index, queue_row in enumerate(queue_rows):
+                                    (
+                                        queue_time,
+                                        queue_reason_id,
+                                        queue_app_type_id,
+                                        queue_experience,
+                                        queue_doctor_department_id,
+                                        queue_reason_department_id,
+                                        known_duration,
+                                    ) = queue_row
+                                    if (
+                                        queue_reason_id is not None
+                                        and queue_app_type_id is not None
+                                        and queue_reason_department_id is not None
+                                    ):
+                                        if model_type == "doctor_aware":
+                                            queue_features.append(
+                                                _doctor_aware_features(
+                                                    doctor_id,
+                                                    queue_reason_id,
+                                                    queue_app_type_id,
+                                                    queue_experience,
+                                                    queue_doctor_department_id,
+                                                    queue_reason_department_id,
+                                                    queue_time,
+                                                )
+                                            )
+                                        else:
+                                            queue_features.append(
+                                                _general_features(
+                                                    queue_reason_id,
+                                                    queue_app_type_id,
+                                                    queue_reason_department_id,
+                                                    queue_time,
+                                                )
+                                            )
+                                        queue_feature_indexes.append(index)
+                                    elif known_duration is not None:
+                                        queue_durations[index] = max(
+                                            1,
+                                            math.ceil(float(known_duration)),
+                                        )
+                                    else:
+                                        queue_durations[index] = predicted_minutes
+
+                                if queue_features:
+                                    predicted_queue_durations = (
+                                        _predict_consultation_minutes(
+                                            model,
+                                            queue_features,
+                                            model_type,
+                                        )
+                                    )
+                                    for index, duration in zip(
+                                        queue_feature_indexes,
+                                        predicted_queue_durations,
+                                    ):
+                                        queue_durations[index] = duration
+
+                                candidate_time = requested_time
+                                while True:
+                                    candidate_end = candidate_time + timedelta(
+                                        minutes=predicted_minutes
+                                    )
+                                    overlapping_ends = []
+                                    for queue_row, queue_duration in zip(
+                                        queue_rows,
+                                        queue_durations,
+                                    ):
+                                        queue_time = queue_row[0]
+                                        if timezone.is_naive(queue_time):
+                                            queue_time = timezone.make_aware(
+                                                queue_time,
+                                                timezone.get_current_timezone(),
+                                            )
+                                        queue_end = queue_time + timedelta(
+                                            minutes=queue_duration or predicted_minutes
+                                        )
+                                        if (
+                                            candidate_time < queue_end
+                                            and queue_time < candidate_end
+                                        ):
+                                            overlapping_ends.append(queue_end)
+                                    if not overlapping_ends:
+                                        break
+                                    candidate_time = max(overlapping_ends)
+
+                                candidate_bookings.append({
+                                    "doctor_id": doctor_id,
+                                    "doctor_first_name": doctor_first_name,
+                                    "doctor_last_name": doctor_last_name,
+                                    "model_type": model_type,
+                                    "predicted_minutes": predicted_minutes,
+                                    "available_time": candidate_time,
+                                })
+
+                            chosen_booking = min(
+                                candidate_bookings,
+                                key=lambda item: (
+                                    item["available_time"],
+                                    str(item["doctor_id"]),
+                                ),
+                            )
+                            doctor_id = chosen_booking["doctor_id"]
+                            doctor_first_name = chosen_booking["doctor_first_name"]
+                            doctor_last_name = chosen_booking["doctor_last_name"]
+                            model_type = chosen_booking["model_type"]
+                            predicted_minutes = chosen_booking["predicted_minutes"]
+                            candidate_time = chosen_booking["available_time"]
+
+                            if candidate_time > requested_time:
+                                suggested_local_time = timezone.localtime(candidate_time)
+                                suggested_display = (
+                                    f"{suggested_local_time.strftime('%A, %B')} "
+                                    f"{suggested_local_time.day}, "
+                                    f"{suggested_local_time.year} at "
+                                    f"{suggested_local_time.strftime('%I:%M %p').lstrip('0')}"
+                                )
+                                availability_notice = (
+                                    f"That time is unavailable for Dr. "
+                                    f"{doctor_first_name} {doctor_last_name}. "
+                                    f"The next available time is {suggested_display}. "
+                                    "Please choose a time and submit again."
+                                )
+                            else:
+                                proposed_appointment_id = uuid.uuid4()
+                                prediction_id = uuid.uuid4()
+                                requested_local_time = timezone.localtime(
+                                    requested_time
+                                )
+                                local_day_start = timezone.make_aware(
+                                    datetime.combine(
+                                        requested_local_time.date(),
+                                        time.min,
+                                    ),
+                                    timezone.get_current_timezone(),
+                                )
+                                local_day_end = local_day_start + timedelta(
+                                    days=1
+                                )
+
+                                # The staff row is already locked above, so
+                                # simultaneous bookings for this doctor receive
+                                # distinct daily tokens.
+                                cursor.execute(
+                                    """
+                                    SELECT COUNT(*)
+                                    FROM medicare.appointments AS a
+                                    WHERE a.doctor_id = %s
+                                      AND a.schedule_time >= %s
+                                      AND a.schedule_time < %s
+                                      AND LOWER(COALESCE(a.status, '')) NOT IN (
+                                          'cancelled', 'canceled', 'completed',
+                                          'no_show', 'no-show'
+                                      );
+                                    """,
+                                    (
+                                        str(doctor_id),
+                                        local_day_start,
+                                        local_day_end,
+                                    ),
+                                )
+                                daily_token_number = cursor.fetchone()[0] + 1
+
+                                booking_row = {
+                                    "appointment_id": str(proposed_appointment_id),
+                                    "patient_id": str(patient_id),
+                                    "doctor_id": str(doctor_id),
+                                    "reason_id": str(reason_id),
+                                    "app_type_id": str(app_type_id),
+                                    "status": "scheduled",
+                                    "schedule_time": requested_time.isoformat(),
+                                    "booking_time": now.isoformat(),
+                                    "estimated_wait_minutes": predicted_minutes,
+                                    "location": str(department_id),
+                                    "token_number": daily_token_number,
+                                }
+                                prediction_row = {
+                                    "prediction_id": str(prediction_id),
+                                    "appointment_id": str(proposed_appointment_id),
+                                    "predicted_wait_minutes": predicted_minutes,
+                                    "recommended_arrival": requested_time.isoformat(),
+                                    "confidence": None,
+                                    "model_version": f"catboost_{model_type}",
+                                    "predicted_at": now.isoformat(),
+                                    "actual_wait_minutes": None,
+                                    "prediction_error_minutes": None,
+                                }
+
+                                cursor.execute(
+                                    """
+                                    INSERT INTO medicare.appointments (
+                                        appointment_id,
+                                        patient_id,
+                                        doctor_id,
+                                        reason_id,
+                                        app_type_id,
+                                        status,
+                                        schedule_time,
+                                        booking_time,
+                                        estimated_wait_minutes,
+                                        location
+                                    ) VALUES (
+                                        %s, %s, %s, %s, %s,
+                                        %s, %s, %s, %s, %s
+                                    );
+                                    """,
+                                    (
+                                        str(proposed_appointment_id),
+                                        str(patient_id),
+                                        str(doctor_id),
+                                        str(reason_id),
+                                        str(app_type_id),
+                                        "scheduled",
+                                        requested_time,
+                                        now,
+                                        predicted_minutes,
+                                        str(department_id),
+                                    ),
+                                )
+                                cursor.execute(
+                                    """
+                                    INSERT INTO medicare.queue_predictions (
+                                        prediction_id,
+                                        appointment_id,
+                                        predicted_wait_minutes,
+                                        recommended_arrival,
+                                        confidence,
+                                        model_version,
+                                        predicted_at,
+                                        actual_wait_minutes,
+                                        prediction_error_minutes
+                                    ) VALUES (
+                                        %s, %s, %s, %s, %s,
+                                        %s, %s, %s, %s
+                                    );
+                                    """,
+                                    (
+                                        str(prediction_id),
+                                        str(proposed_appointment_id),
+                                        predicted_minutes,
+                                        requested_time,
+                                        None,
+                                        f"catboost_{model_type}",
+                                        now,
+                                        None,
+                                        None,
+                                    ),
+                                )
+                                cursor.execute(
+                                    """
+                                    INSERT INTO medicare.appointment_queue (
+                                        appointment_id,
+                                        token_number,
+                                        queue_position,
+                                        patients_ahead,
+                                        queue_status
+                                    ) VALUES (%s, %s, %s, %s, %s);
+                                    """,
+                                    (
+                                        str(proposed_appointment_id),
+                                        daily_token_number,
+                                        daily_token_number,
+                                        daily_token_number - 1,
+                                        "scheduled",
+                                    ),
+                                )
+                                booking_created = True
+                                booking_preview = {
+                                    "appointment_row": booking_row,
+                                    "queue_prediction_row": prediction_row,
+                                }
+
+                    if booking_created:
+                        print(
+                            "\n[APPOINTMENT INSERTED]\n"
+                            + json.dumps(
+                                booking_preview,
+                                indent=2,
+                                default=str,
+                            ),
+                            flush=True,
+                        )
+                        messages.success(
+                            request,
+                            "Your appointment has been booked. "
+                            f"Dr. {doctor_first_name} {doctor_last_name}; "
+                            f"predicted consultation time: {predicted_minutes} minutes.",
+                        )
+                        return redirect("book_patient_appointments")
+                except ValueError as exc:
+                    errors["general"] = str(exc)
+                except Exception:
+                    logger.exception("Appointment booking failed.")
+                    errors["general"] = (
+                        "We could not book this appointment. "
+                        "Please try again."
+                    )
+
+    with psycopg2.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT department_id, department_name
+                FROM medicare.department
+                WHERE active = TRUE
+                ORDER BY department_name ASC;
+                """
+            )
+            departments = [
+                {"id": row[0], "name": row[1]}
+                for row in cursor.fetchall()
+            ]
+            cursor.execute(
+                """
+                SELECT app_type_id, type_name
+                FROM medicare.appointment_type
+                WHERE active = TRUE
+                ORDER BY type_name ASC;
+                """
+            )
+            appointment_types = [
+                {"id": row[0], "name": row[1]}
+                for row in cursor.fetchall()
+            ]
+
+    return render(
+        request,
+        "patients/appointments/book_appointments.html",
+        {
+            "page_title": "Book Appointment",
+            "breadcrumb": "Patient / Book Appointment",
+            "booking_url": reverse("book_patient_appointments"),
+            "departments": departments,
+            "appointment_types": appointment_types,
+            "errors": errors,
+            "form_values": form_values,
+            "availability_notice": availability_notice,
+        },
+    )
+
+
+@role_required("Patient")
+@require_GET
+def patient_appointment_options(request):
+    """Return active doctors and visit reasons for one active department."""
+    department_name = request.GET.get("department_name", "").strip()
+    if not department_name:
+        return JsonResponse(
+            {"error": "Choose a department first."},
+            status=400,
+        )
+
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        logger.error("DATABASE_URL is missing.")
+        return JsonResponse(
+            {"error": "Appointment options are temporarily unavailable."},
+            status=500,
+        )
+
+    with psycopg2.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT department_id
+                FROM medicare.department
+                WHERE department_name = %s
+                  AND active = TRUE
+                LIMIT 1;
+                """,
+                (department_name,),
+            )
+            department_row = cursor.fetchone()
+            if department_row is None:
+                return JsonResponse(
+                    {"error": "The selected department is unavailable."},
+                    status=404,
+                )
+            department_id = department_row[0]
+
+            cursor.execute(
+                """
+                SELECT s.staff_id, CONCAT_WS(' ', s.first_name, s.last_name)
+                FROM medicare.staff AS s
+                JOIN medicare.department AS d
+                  ON d.department_id = s.department_id
+                WHERE d.department_name = %s
+                  AND d.active = TRUE
+                  AND s.active = TRUE
+                ORDER BY s.first_name, s.last_name, s.staff_id;
+                """,
+                (department_name,),
+            )
+            doctors = [
+                {"id": str(row[0]), "name": row[1]}
+                for row in cursor.fetchall()
+            ]
+
+            cursor.execute(
+                """
+                SELECT reason_id, reason
+                FROM medicare.reason_for_visit
+                WHERE department_id = %s
+                  AND active = TRUE
+                ORDER BY reason ASC, reason_id;
+                """,
+                (department_id,),
+            )
+            reasons = [
+                {"id": str(row[0]), "name": row[1]}
+                for row in cursor.fetchall()
+            ]
+
+    return JsonResponse({"doctors": doctors, "reasons": reasons})
 
 
 

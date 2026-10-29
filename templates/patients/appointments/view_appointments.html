@@ -1,0 +1,423 @@
+{% extends "patients/base.html" %}
+{% load static %}
+
+{% block content %}
+<main class="appointments-page">
+<div class="appointments-container">
+
+    <header class="apt-header">
+        <div class="apt-heading">
+            <div class="apt-eyebrow">
+                <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+                Patient portal
+            </div>
+            <h1>My Appointments</h1>
+            <p>Review your appointments, check visit details, and manage your schedule.</p>
+        </div>
+
+        {% if booking_url %}
+        <a class="apt-book-btn" href="{{ booking_url }}">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            Book an appointment
+        </a>
+        {% endif %}
+    </header>
+
+    <section class="apt-summary" aria-label="Appointment summary">
+        <article class="apt-stat">
+            <div class="apt-stat-icon">
+                <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+            </div>
+            <div>
+                <span class="apt-stat-label">Upcoming appointments</span>
+                <strong class="apt-stat-value" data-summary="upcoming">{{ upcoming_count|default:"—" }}</strong>
+            </div>
+        </article>
+
+        <article class="apt-stat">
+            <div class="apt-stat-icon green">
+                <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+            </div>
+            <div>
+                <span class="apt-stat-label">Completed appointments</span>
+                <strong class="apt-stat-value" data-summary="completed">{{ completed_count|default:"—" }}</strong>
+            </div>
+        </article>
+
+        <article class="apt-stat">
+            <div class="apt-stat-icon red">
+                <i class="fa-regular fa-calendar-xmark" aria-hidden="true"></i>
+            </div>
+            <div>
+                <span class="apt-stat-label">Cancelled appointments</span>
+                <strong class="apt-stat-value" data-summary="cancelled">{{ cancelled_count|default:"—" }}</strong>
+            </div>
+        </article>
+    </section>
+
+    <section class="apt-panel" aria-labelledby="aptHistoryTitle">
+        <div class="apt-panel-header">
+            <div>
+                <h2 id="aptHistoryTitle">Your appointments</h2>
+                <p>Filter your appointments or open one to view its details.</p>
+            </div>
+            <span class="apt-count" id="aptCount">{{ loaded_count }} shown</span>
+        </div>
+
+        <nav class="apt-tabs" aria-label="Appointment views">
+            <a class="apt-tab"
+               href="?{% querystring view='all' page=1 %}"
+               aria-current="{% if selected_view == 'all' %}page{% endif %}">
+                All appointments
+            </a>
+            <a class="apt-tab"
+               href="?{% querystring view='upcoming' page=1 %}"
+               aria-current="{% if selected_view == 'upcoming' %}page{% endif %}">
+                <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                Upcoming
+            </a>
+            <a class="apt-tab"
+               href="?{% querystring view='past' page=1 %}"
+               aria-current="{% if selected_view == 'past' %}page{% endif %}">
+                <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                Past visits
+            </a>
+            <a class="apt-tab"
+               href="?{% querystring view='cancelled' page=1 %}"
+               aria-current="{% if selected_view == 'cancelled' %}page{% endif %}">
+                <i class="fa-regular fa-calendar-xmark" aria-hidden="true"></i>
+                Cancelled
+            </a>
+        </nav>
+
+        <div class="apt-toolbar">
+            <form method="get" action="" class="apt-controls">
+                <input type="hidden" name="view" value="{{ selected_view }}">
+
+                <label class="apt-search">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    <input
+                        name="q"
+                        type="search"
+                        value="{{ search_query }}"
+                        placeholder="Search doctor, ID, reason..."
+                        aria-label="Search appointments"
+                    >
+                </label>
+
+                <select name="status" id="aptStatusFilter"
+                        data-selected-status="{{ selected_status|lower }}"
+                        aria-label="Filter by status">
+                    <option value="">All statuses</option>
+                    {% if selected_status %}
+                    <option value="{{ selected_status|lower }}" selected>
+                        {{ selected_status|capfirst }}
+                    </option>
+                    {% endif %}
+                    {% for status in appointment_statuses %}
+                    <option value="{{ status|lower }}"
+                        {% if selected_status|lower == status|lower %}selected{% endif %}>
+                        {{ status|capfirst }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <select name="sort" aria-label="Sort appointments">
+                    <option value="newest"
+                        {% if selected_sort == 'newest' %}selected{% endif %}>
+                        Newest first
+                    </option>
+                    <option value="oldest"
+                        {% if selected_sort == 'oldest' %}selected{% endif %}>
+                        Oldest first
+                    </option>
+                </select>
+
+                <button type="submit" class="apt-view-btn">
+                    <i class="fa-solid fa-filter" aria-hidden="true"></i>
+                    Apply
+                </button>
+
+                <a class="apt-reset"
+                   href="?view={{ selected_view|urlencode }}">
+                    Reset filters
+                </a>
+            </form>
+        </div>
+
+        <div class="apt-list" id="aptList">
+            {% include "patients/appointments/_appointment_cards.html" %}
+            {% if not appointments %}
+            <div class="apt-card-empty show">
+                <div class="apt-empty-icon">
+                    <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                </div>
+                <h3>
+                    {% if search_query or selected_status %}
+                        No matching appointments
+                    {% elif selected_view == 'upcoming' %}
+                        No upcoming appointments
+                    {% elif selected_view == 'cancelled' %}
+                        No cancelled appointments
+                    {% elif selected_view == 'past' %}
+                        No past appointments
+                    {% else %}
+                        No appointments yet
+                    {% endif %}
+                </h3>
+                <p>
+                    Try changing your search or filters. If you have no appointments,
+                    they will appear here when scheduled.
+                </p>
+                {% if booking_url %}
+                <div class="apt-empty-book">
+                    <a class="apt-book-btn" href="{{ booking_url }}">
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                        Book an appointment
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        {% if has_more %}
+        <div class="apt-load-more-wrap">
+            <button class="apt-view-btn" type="button" id="aptLoadMore"
+                    data-next-page="{{ next_page }}">
+                Load more appointments
+            </button>
+        </div>
+        {% endif %}
+
+    </section>
+</div>
+</main>
+
+<dialog class="apt-dialog" id="aptDialog" aria-labelledby="aptDialogTitle">
+    <div class="apt-dialog-header">
+        <div>
+            <h2 id="aptDialogTitle">Appointment details</h2>
+            <p id="aptDialogId"></p>
+        </div>
+        <button class="apt-dialog-close" type="button" id="aptDialogClose"
+                aria-label="Close appointment details">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+    </div>
+
+    <div class="apt-dialog-body">
+        <div class="apt-detail">
+            <span class="apt-detail-label">Date</span>
+            <div class="apt-detail-value" id="detailDate"></div>
+        </div>
+        <div class="apt-detail">
+            <span class="apt-detail-label">Time</span>
+            <div class="apt-detail-value" id="detailTime"></div>
+        </div>
+        <div class="apt-detail">
+            <span class="apt-detail-label">Doctor / staff</span>
+            <div class="apt-detail-value" id="detailStaff"></div>
+        </div>
+        <div class="apt-detail">
+            <span class="apt-detail-label">Specialty / department</span>
+            <div class="apt-detail-value" id="detailSpeciality"></div>
+        </div>
+        <div class="apt-detail">
+            <span class="apt-detail-label">Appointment type</span>
+            <div class="apt-detail-value" id="detailType"></div>
+        </div>
+        <div class="apt-detail">
+            <span class="apt-detail-label">Status</span>
+            <div class="apt-detail-value" id="detailStatus"></div>
+        </div>
+        <div class="apt-detail">
+            <span class="apt-detail-label">Queue token</span>
+            <div class="apt-detail-value" id="detailToken"></div>
+        </div>
+        <div class="apt-detail">
+            <span class="apt-detail-label">Estimated wait</span>
+            <div class="apt-detail-value" id="detailEstimatedWait"></div>
+        </div>
+        <div class="apt-detail">
+            <span class="apt-detail-label">Patients ahead</span>
+            <div class="apt-detail-value" id="detailPatientsAhead"></div>
+        </div>
+        <div class="apt-detail">
+            <span class="apt-detail-label">Queue status</span>
+            <div class="apt-detail-value" id="detailQueueStatus"></div>
+        </div>
+        <div class="apt-detail full">
+            <span class="apt-detail-label">Recommended arrival</span>
+            <div class="apt-detail-value" id="detailRecommendedArrival"></div>
+        </div>
+        <div class="apt-detail full">
+            <span class="apt-detail-label">Reason / note</span>
+            <div class="apt-detail-value" id="detailNote"></div>
+        </div>
+    </div>
+
+    <div class="apt-dialog-footer">
+        <button class="apt-reset" type="button" id="aptDialogDone">Close</button>
+    </div>
+</dialog>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const dialog = document.getElementById("aptDialog");
+    const list = document.getElementById("aptList");
+
+    if (!dialog || !list) return;
+
+    function setText(id, value) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value || "Not provided";
+    }
+
+    function formatDate(value) {
+        if (!value) return "Not scheduled";
+
+        const parts = value.split("-").map(Number);
+        if (parts.length !== 3 || parts.some(Number.isNaN)) {
+            return "Not scheduled";
+        }
+
+        return new Intl.DateTimeFormat(undefined, {
+            day: "numeric",
+            month: "long",
+            year: "numeric"
+        }).format(new Date(parts[0], parts[1] - 1, parts[2]));
+    }
+
+    const summaryUrl = new URL(window.location.href);
+    summaryUrl.search = "";
+    summaryUrl.searchParams.set("partial", "summary");
+
+    fetch(summaryUrl.toString(), {
+        headers: {"Accept": "application/json"}
+    })
+        .then(function (response) {
+            if (!response.ok) throw new Error("Unable to load appointment summary.");
+            return response.json();
+        })
+        .then(function (summary) {
+            Object.entries({
+                upcoming: summary.upcoming_count,
+                completed: summary.completed_count,
+                cancelled: summary.cancelled_count
+            }).forEach(function ([key, value]) {
+                const element = document.querySelector('[data-summary="' + key + '"]');
+                if (element) element.textContent = String(value);
+            });
+
+            const statusSelect = document.getElementById("aptStatusFilter");
+            if (!statusSelect) return;
+
+            const selectedStatus = statusSelect.value;
+            statusSelect.innerHTML = "";
+            statusSelect.add(new Option("All statuses", ""));
+
+            (summary.appointment_statuses || []).forEach(function (status) {
+                statusSelect.add(new Option(status, String(status).toLowerCase()));
+            });
+
+            if (selectedStatus && !Array.from(statusSelect.options).some(function (option) {
+                return option.value === selectedStatus;
+            })) {
+                statusSelect.add(new Option(selectedStatus, selectedStatus));
+            }
+            statusSelect.value = selectedStatus;
+        })
+        .catch(function (error) {
+            console.error(error);
+        });
+
+    const loadMoreButton = document.getElementById("aptLoadMore");
+    const filterForm = document.querySelector(".apt-controls");
+
+    if (loadMoreButton && filterForm) {
+        loadMoreButton.addEventListener("click", async function () {
+            const nextPage = Number(loadMoreButton.dataset.nextPage);
+            if (!nextPage || loadMoreButton.disabled) return;
+
+            loadMoreButton.disabled = true;
+            loadMoreButton.textContent = "Loading...";
+
+            const params = new URLSearchParams(new FormData(filterForm));
+            params.set("page", String(nextPage));
+            params.set("partial", "1");
+
+            try {
+                const response = await fetch(
+                    window.location.pathname + "?" + params.toString(),
+                    {
+                        headers: {
+                            "Accept": "application/json",
+                            "X-Requested-With": "XMLHttpRequest"
+                        }
+                    }
+                );
+
+                if (!response.ok) throw new Error("Unable to load more appointments.");
+
+                const result = await response.json();
+                if (result.html) list.insertAdjacentHTML("beforeend", result.html);
+                const count = document.getElementById("aptCount");
+                if (count) count.textContent = String(list.querySelectorAll(".apt-card").length) + " shown";
+
+                if (result.has_more && result.next_page) {
+                    loadMoreButton.dataset.nextPage = String(result.next_page);
+                    loadMoreButton.textContent = "Load more appointments";
+                    loadMoreButton.disabled = false;
+                } else {
+                    loadMoreButton.remove();
+                }
+            } catch (error) {
+                console.error(error);
+                loadMoreButton.textContent = "Try loading more";
+                loadMoreButton.disabled = false;
+            }
+        });
+    }
+
+    list.addEventListener("click", function (event) {
+        const button = event.target.closest("[data-view-appointment]");
+        if (!button) return;
+
+        const card = button.closest(".apt-card");
+        if (!card) return;
+
+        setText("aptDialogTitle", "Appointment details");
+        setText("aptDialogId", "Appointment ID: " + card.dataset.id);
+        setText("detailDate", formatDate(card.dataset.date));
+        setText("detailTime", card.dataset.time || "Time unavailable");
+        setText("detailStaff", card.dataset.staff);
+        setText("detailSpeciality", card.dataset.speciality);
+        setText("detailType", card.dataset.type);
+        setText("detailStatus", card.dataset.status);
+        setText("detailToken", card.dataset.token);
+        setText("detailEstimatedWait", card.dataset.estimatedWait
+            ? card.dataset.estimatedWait + " min"
+            : "Not available");
+        setText("detailPatientsAhead", card.dataset.patientsAhead);
+        setText("detailQueueStatus", card.dataset.queueStatus);
+        setText("detailRecommendedArrival", card.dataset.recommendedArrival
+            || "To be confirmed");
+        setText("detailNote", card.dataset.note || "No note provided");
+
+        if (!dialog.open) dialog.showModal();
+    });
+
+    function closeDialog() {
+        if (dialog.open) dialog.close();
+    }
+
+    document.getElementById("aptDialogClose").addEventListener("click", closeDialog);
+    document.getElementById("aptDialogDone").addEventListener("click", closeDialog);
+
+    dialog.addEventListener("click", function (event) {
+        if (event.target === dialog) closeDialog();
+    });
+});
+</script>
+{% endblock %}

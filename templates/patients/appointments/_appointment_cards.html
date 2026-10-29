@@ -1,0 +1,126 @@
+            {% for appointment in appointments %}
+            <article class="apt-card"
+                data-id="{{ appointment.appointment_id }}"
+                data-date="{% if appointment.date %}{{ appointment.date|date:'Y-m-d' }}{% endif %}"
+                data-time="{% if appointment.time %}{{ appointment.time|time:'g:i A' }}{% endif %}"
+                data-staff="{{ appointment.staff }}"
+                data-speciality="{{ appointment.speciality }}"
+                data-type="{{ appointment.type }}"
+                data-status="{{ appointment.status }}"
+                data-note="{{ appointment.note }}"
+                data-token="{{ appointment.token|default:'' }}"
+                data-estimated-wait="{{ appointment.estimated_wait|default_if_none:'' }}"
+                data-patients-ahead="{{ appointment.patients_ahead|default_if_none:'' }}"
+                data-queue-status="{{ appointment.queue_status|default:'' }}"
+                data-recommended-arrival="{% if appointment.recommended_arrival %}{{ appointment.recommended_arrival|date:'M j, Y, g:i A' }}{% endif %}">
+
+                <div class="apt-card-date">
+                    <div class="apt-date-icon">
+                        <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <span class="apt-card-label">Date &amp; time</span>
+                        <span class="apt-date-main">
+                            {% if appointment.date %}
+                                {{ appointment.date|date:"d M Y" }}
+                            {% else %}
+                                Not scheduled
+                            {% endif %}
+                        </span>
+                        <span class="apt-date-time">
+                            {% if appointment.time %}
+                                {{ appointment.time|time:"g:i A" }}
+                            {% else %}
+                                Time unavailable
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="apt-card-doctor">
+                    <span class="apt-card-label">Healthcare professional</span>
+                    <div class="apt-doctor">
+                        <div class="apt-avatar" aria-hidden="true">
+                            <i class="fa-solid fa-user-doctor"></i>
+                        </div>
+                        <div class="apt-doctor-info">
+                            <span class="apt-doctor-name">
+                                {{ appointment.staff|default:"Not yet assigned" }}
+                            </span>
+                            <span class="apt-speciality">
+                                {{ appointment.speciality|default:appointment.department|default:"Specialty unavailable" }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="apt-card-type">
+                    <span class="apt-card-label">Appointment type</span>
+                    <span class="apt-type">{{ appointment.type|default:"Consultation" }}</span>
+                    <span class="apt-id">ID: {{ appointment.appointment_id }}</span>
+                </div>
+
+                <div class="apt-card-status">
+                    <span class="apt-card-label">Status</span>
+                    <span class="apt-status
+                        {% if appointment.category == 'upcoming' %}is-upcoming
+                        {% elif appointment.category == 'cancelled' %}is-cancelled
+                        {% elif appointment.status|lower == 'completed' %}is-completed
+                        {% else %}is-pending{% endif %}">
+                        {{ appointment.status|capfirst }}
+                    </span>
+                </div>
+
+                {% if appointment.category == 'upcoming' %}
+                <div class="apt-card-queue">
+                    <div>
+                        <span class="apt-card-label">Token</span>
+                        <strong>{{ appointment.token|default:"Not assigned" }}</strong>
+                    </div>
+                    <div>
+                        <span class="apt-card-label">Estimated wait</span>
+                        <strong>
+                            {% if appointment.estimated_wait != None %}
+                                {{ appointment.estimated_wait }} min
+                            {% else %}
+                                Not available
+                            {% endif %}
+                        </strong>
+                    </div>
+                    <div>
+                        <span class="apt-card-label">Patients ahead</span>
+                        <strong>
+                            {% if appointment.patients_ahead != None %}
+                                {{ appointment.patients_ahead }}
+                            {% else %}
+                                Not available
+                            {% endif %}
+                        </strong>
+                    </div>
+                    <div>
+                        <span class="apt-card-label">Recommended arrival</span>
+                        <strong>
+                            {% if appointment.recommended_arrival %}
+                                {{ appointment.recommended_arrival|date:"M j, Y, g:i A" }}
+                            {% else %}
+                                To be confirmed
+                            {% endif %}
+                        </strong>
+                    </div>
+                    {% if appointment.queue_status %}
+                    <div>
+                        <span class="apt-card-label">Queue status</span>
+                        <strong>{{ appointment.queue_status|capfirst }}</strong>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <div class="apt-card-actions">
+                    <button class="apt-view-btn" type="button" data-view-appointment>
+                        <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                        Details
+                    </button>
+                </div>
+            </article>
+            {% endfor %}

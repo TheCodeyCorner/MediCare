@@ -42,12 +42,12 @@ def get_patient_navigation():
             "url": reverse("patient_appointments"),
             "children": [
                 {
-                    "label": "Upcoming",
+                    "label": "View Appointments",
                     "url": reverse("patient_appointments") + "?status=upcoming",
                 },
                 {
-                    "label": "Past",
-                    "url": reverse("patient_appointments") + "?status=past",
+                    "label": "Book Appointment",
+                    "url": reverse("book_patient_appointments") + "?status=past",
                 },
             ],
         },

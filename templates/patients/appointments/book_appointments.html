@@ -1,0 +1,252 @@
+{% extends "patients/base.html" %}
+
+{% block content %}
+<main class="booking-appointment-page">
+    <header class="booking-appointment-page__header">
+        <div class="booking-appointment-page__intro">
+            <p class="booking-appointment-page__eyebrow">Appointments</p>
+            <h1>Book an Appointment</h1>
+            <p>Tell us what you need and choose a preferred time for your visit.</p>
+        </div>
+
+        <a href="{% url 'patient_appointments' %}"
+           class="booking-appointment-page__button booking-appointment-page__button--secondary">
+            Back to Appointments
+        </a>
+    </header>
+
+    {% if messages %}
+        <div class="booking-appointment-page__messages">
+            {% for message in messages %}
+                <div class="booking-appointment-page__alert booking-appointment-page__alert--{{ message.tags }}"
+                     role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <section class="patient-card profile-form-panel">
+        <header class="patient-card__header profile-form-panel__header">
+            <div class="profile-form-panel__heading">
+                <h2>Appointment Details</h2>
+                <p>Fields marked with * are required.</p>
+            </div>
+        </header>
+
+        <div class="patient-card__body profile-form-panel__body">
+            <form method="post"
+                  action=""
+                  class="profile-form"
+                  id="book-appointment-form">
+                {% csrf_token %}
+
+                <section class="profile-form__section">
+                    <header class="profile-form__section-header">
+                        <div>
+                            <h3>Visit preferences</h3>
+                            <p>Choose a department and preferred time first. Doctors and visit reasons will be available for that department.</p>
+                        </div>
+                    </header>
+
+                    <div class="profile-form__fields profile-form__fields--two">
+                        <div class="profile-form__field">
+                            <label for="department_id">Department *</label>
+                            <select id="department_id"
+                                    name="department_id"
+                                    data-options-url="{% url 'patient_appointment_options' %}"
+                                    required>
+                                <option value="">Select a department</option>
+                                {% for department in departments %}
+                                    <option value="{{ department.id }}"
+                                        {% if form_values.department_id == department.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ department.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if errors.department_id %}
+                                <small class="booking-appointment-page__field-error">
+                                    {{ errors.department_id }}
+                                </small>
+                            {% endif %}
+                        </div>
+
+                        <div class="profile-form__field">
+                            <label for="schedule_time">Preferred Date and Time *</label>
+                            <input type="datetime-local"
+                                   id="schedule_time"
+                                   name="schedule_time"
+                                   value="{{ form_values.schedule_time|default:'' }}"
+                                   required>
+                            {% if errors.schedule_time %}
+                                <small class="booking-appointment-page__field-error">
+                                    {{ errors.schedule_time }}
+                                </small>
+                            {% endif %}
+                        </div>
+
+                        <div class="profile-form__field">
+                            <label for="doctor_id">Preferred Doctor (Optional)</label>
+                            <select id="doctor_id"
+                                    name="doctor_id"
+                                    data-selected-value="{{ form_values.doctor_id|default:'' }}"
+                                    disabled>
+                                <option value="">Choose a department first</option>
+                            </select>
+                            {% if errors.doctor_id %}
+                                <small class="booking-appointment-page__field-error">
+                                    {{ errors.doctor_id }}
+                                </small>
+                            {% endif %}
+                        </div>
+
+                        <div class="profile-form__field">
+                            <label for="reason_id">Reason for Visit *</label>
+                            <select id="reason_id"
+                                    name="reason_id"
+                                    data-selected-value="{{ form_values.reason_id|default:'' }}"
+                                    required disabled>
+                                <option value="">Choose a department first</option>
+                            </select>
+                            {% if errors.reason_id %}
+                                <small class="booking-appointment-page__field-error">
+                                    {{ errors.reason_id }}
+                                </small>
+                            {% endif %}
+                        </div>
+
+                        <div class="profile-form__field">
+                            <label for="app_type_id">Appointment Type *</label>
+                            <select id="app_type_id" name="app_type_id" required>
+                                <option value="">Select an appointment type</option>
+                                {% for appointment_type in appointment_types %}
+                                    <option value="{{ appointment_type.id }}"
+                                        {% if form_values.app_type_id == appointment_type.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ appointment_type.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if errors.app_type_id %}
+                                <small class="booking-appointment-page__field-error">
+                                    {{ errors.app_type_id }}
+                                </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </section>
+
+                {% if availability_notice %}
+                    <div id="appointment-availability-notice"
+                         class="booking-appointment-page__alert booking-appointment-page__alert--error"
+                         data-message="{{ availability_notice }}"
+                         role="alert">
+                        {{ availability_notice }}
+                    </div>
+                {% endif %}
+
+                {% if errors.general %}
+                    <div class="booking-appointment-page__alert booking-appointment-page__alert--error"
+                         role="alert">
+                        {{ errors.general }}
+                    </div>
+                {% endif %}
+
+                <footer class="profile-form__actions booking-appointment-page__actions">
+                    <a href="{% url 'patient_appointments' %}"
+                       class="booking-appointment-page__button booking-appointment-page__button--secondary">
+                        Cancel
+                    </a>
+                    <button type="submit" class="profile-form__submit">
+                        Request Appointment
+                    </button>
+                </footer>
+            </form>
+        </div>
+    </section>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script>
+        (() => {
+            const departmentSelect = document.getElementById("department_id");
+            const doctorSelect = document.getElementById("doctor_id");
+            const reasonSelect = document.getElementById("reason_id");
+            const availabilityNotice = document.getElementById("appointment-availability-notice");
+
+            if (availabilityNotice) {
+                window.alert(availabilityNotice.dataset.message);
+            }
+
+            if (!departmentSelect || !doctorSelect || !reasonSelect) return;
+
+            let requestNumber = 0;
+
+            const resetSelect = (select, prompt) => {
+                select.replaceChildren(new Option(prompt, ""));
+                select.disabled = true;
+            };
+
+            const fillSelect = (select, items, emptyPrompt, initialPrompt) => {
+                select.replaceChildren(new Option(initialPrompt, ""));
+                for (const item of items) {
+                    select.add(new Option(item.name, item.id));
+                }
+                if (items.length === 0) {
+                    select.options[0].textContent = emptyPrompt;
+                }
+                select.disabled = items.length === 0;
+            };
+
+            const loadOptions = async () => {
+                const currentRequest = ++requestNumber;
+                const departmentOption = departmentSelect.selectedOptions[0];
+                const departmentName = departmentOption ? departmentOption.textContent.trim() : "";
+
+                if (!departmentSelect.value || !departmentName) {
+                    resetSelect(doctorSelect, "Choose a department first");
+                    resetSelect(reasonSelect, "Choose a department first");
+                    return;
+                }
+
+                resetSelect(doctorSelect, "Loading doctors...");
+                resetSelect(reasonSelect, "Loading reasons...");
+
+                try {
+                    const url = new URL(departmentSelect.dataset.optionsUrl, window.location.href);
+                    url.searchParams.set("department_name", departmentName);
+                    const response = await fetch(url, {
+                        headers: { "Accept": "application/json" },
+                        credentials: "same-origin"
+                    });
+                    const data = await response.json();
+
+                    if (currentRequest !== requestNumber) return;
+                    if (!response.ok) {
+                        throw new Error(data.error || "Could not load appointment options.");
+                    }
+
+                    fillSelect(doctorSelect, data.doctors || [], "No doctors available for this department", "Any available doctor (assign earliest)");
+                    fillSelect(reasonSelect, data.reasons || [], "No visit reasons available for this department", "Select a reason");
+                    if (doctorSelect.dataset.selectedValue) {
+                        doctorSelect.value = doctorSelect.dataset.selectedValue;
+                        delete doctorSelect.dataset.selectedValue;
+                    }
+                    if (reasonSelect.dataset.selectedValue) {
+                        reasonSelect.value = reasonSelect.dataset.selectedValue;
+                        delete reasonSelect.dataset.selectedValue;
+                    }
+                } catch (error) {
+                    if (currentRequest !== requestNumber) return;
+                    resetSelect(doctorSelect, "Could not load doctors");
+                    resetSelect(reasonSelect, "Could not load reasons");
+                    console.error("Unable to load appointment options:", error);
+                }
+            };
+
+            departmentSelect.addEventListener("change", loadOptions);
+            if (departmentSelect.value) loadOptions();
+        })();
+    </script>
+{% endblock %}

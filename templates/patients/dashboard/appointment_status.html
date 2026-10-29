@@ -99,8 +99,10 @@
 
                     <span class="appointment-status__live">
                         <span></span>
-                        {% if appointment.queue.token %}
-                            Queue information available
+                        {% if appointment.queue.status %}
+                            {{ appointment.queue.status|capfirst }}
+                        {% elif appointment.queue.estimated_wait != None or appointment.queue.recommended_arrival %}
+                            Arrival estimate ready
                         {% else %}
                             Awaiting queue information
                         {% endif %}
@@ -147,7 +149,11 @@
                 <div>
                     <span>Recommended Arrival</span>
                     <strong>
-                        {{ appointment.queue.recommended_arrival|default:"To be confirmed" }}
+                        {% if appointment.queue.recommended_arrival %}
+                            {{ appointment.queue.recommended_arrival|date:"M j, Y, g:i A" }}
+                        {% else %}
+                            To be confirmed
+                        {% endif %}
                     </strong>
                 </div>
             </div>
@@ -155,7 +161,13 @@
 
         <p class="appointment-status__notification">
             <i data-lucide="bell"></i>
-            Queue updates will appear here when available.
+            {% if appointment.queue.status %}
+                Queue status is {{ appointment.queue.status }}.
+            {% elif appointment.queue.estimated_wait != None %}
+                Arrival estimate is based on the latest appointment prediction.
+            {% else %}
+                Queue updates will appear here when available.
+            {% endif %}
         </p>
     </div>
 
